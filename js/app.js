@@ -729,6 +729,23 @@ const CONVERSAS = [
       { speaker: 'A', en: "I’m really thinking about that.", pt: 'Eu realmente estou pensando nisso.' },
       { speaker: 'B', en: 'I think you should work with what you like to do.', pt: 'Eu acho que você deve trabalhar com o que você gosta de fazer.' }
     ]
+  },
+  {
+    id: 9,
+    title: 'Hotel vs Motel',
+    sub: 'Procurando hotel',
+    dialogue: [
+      { speaker: 'A', en: 'Hi!', pt: 'Oi!' },
+      { speaker: 'B', en: 'Hello.', pt: 'Olá.' },
+      { speaker: 'A', en: 'I’m from France. I don’t speak English very well. Do you speak French?', pt: 'Eu sou da França. Eu não falo inglês muito bem. Você fala francês?' },
+      { speaker: 'B', en: 'No, I don’t. But what do you want?', pt: 'Não, eu não. Mas o que você quer?' },
+      { speaker: 'A', en: 'I’m looking for a hotel.', pt: 'Estou procurando um hotel.' },
+      { speaker: 'B', en: "No problem, there’s a lot of hotels here.", pt: 'Não há problema, há muitos hotéis aqui.' },
+      { speaker: 'A', en: 'Where? I can’t find one.', pt: 'Onde? Não consigo encontrar um.' },
+      { speaker: 'B', en: 'Really? How is it possible?', pt: 'Sério? Como isso é possível?' },
+      { speaker: 'A', en: 'I only see “Motel” and not “Hotel”.', pt: 'Eu apenas vejo “Motel” e não “Hotel”.' },
+      { speaker: 'B', en: "Heheheh, yeah, it’s almost the same. Don’t worry. I’ll show you.", pt: 'Heheheh, sim, é quase o mesmo. Não se preocupe. Eu vou te mostrar.' }
+    ]
   }
 ];
 

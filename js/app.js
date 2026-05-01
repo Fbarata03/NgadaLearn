@@ -1233,22 +1233,20 @@ function renderHome() {
       <div class="hero-top">
         <div class="hero-avatar">
           🧑
-          <div class="hero-level-badge">${lv + 1}</div>
+          <div class="hero-lvl">${lv + 1}</div>
         </div>
         <div class="hero-info">
           <h1>${levelName()}</h1>
-          <div class="hero-subtitle">Nível ${lv + 1} — ${done} lições concluídas</div>
+          <div class="hero-sub">Nível ${lv + 1} — ${done} lições concluídas</div>
         </div>
       </div>
 
-      <div class="hero-xp-wrap">
-        <div class="hero-xp-label">
-          <span>XP: ${xp()}</span>
-          <span>${xpN}/100 para o próximo nível</span>
-        </div>
-        <div class="hero-xp-bar-outer">
-          <div class="hero-xp-bar-inner" style="width:${xpN}%"></div>
-        </div>
+      <div class="hero-xp-label">
+        <span>XP: ${xp()}</span>
+        <span>${xpN}/100 para o próximo nível</span>
+      </div>
+      <div class="hero-xp-outer">
+        <div class="hero-xp-inner" style="width:${xpN}%"></div>
       </div>
 
       <div class="hero-chips">
@@ -1296,10 +1294,10 @@ function worldCard(cid) {
       <span class="world-emoji">${c.icon}</span>
       <div class="world-name">${c.name}</div>
       <div class="world-sub">${c.desc}</div>
-      <div class="world-prog-bar">
-        <div class="world-prog-fill" style="width:${pct}%"></div>
+      <div class="world-pb">
+        <div class="world-pf" style="width:${pct}%"></div>
       </div>
-      <div class="world-prog-text">${done} / ${c.total} lições · ${pct}%</div>
+      <div class="world-pt">${done} / ${c.total} lições · ${pct}%</div>
     </div>`;
 }
 
@@ -1697,6 +1695,14 @@ $('mainContent').addEventListener('click', e => {
     playLesson({ id, title: `Lição ${id}`, audio: apath }, pl, idx, pk, icon, cname);
     return;
   }
+});
+
+document.addEventListener('click', e => {
+  const navEl = e.target.closest('[data-nav]');
+  if (!navEl) return;
+  if (navEl.closest('#mainContent')) return;
+  e.preventDefault();
+  nav(navEl.dataset.nav);
 });
 
 // Double-click dot = mark done

@@ -786,6 +786,71 @@ function fmt(s) {
   return `${Math.floor(s/60)}:${Math.floor(s%60).toString().padStart(2,'0')}`;
 }
 
+let ttsVoices = [];
+
+function refreshTTSVoices() {
+  try {
+    ttsVoices = window.speechSynthesis?.getVoices?.() || [];
+  } catch {
+    ttsVoices = [];
+  }
+}
+
+refreshTTSVoices();
+if (window.speechSynthesis) {
+  window.speechSynthesis.onvoiceschanged = refreshTTSVoices;
+}
+
+function pickVoice(lang) {
+  const target = lang.toLowerCase();
+  const exact = ttsVoices.find(v => (v.lang || '').toLowerCase() === target);
+  if (exact) return exact;
+
+  const base = target.split('-')[0];
+  const prefix = ttsVoices.find(v => (v.lang || '').toLowerCase().startsWith(base));
+  return prefix || null;
+}
+
+function speakText(text, lang) {
+  if (!window.speechSynthesis || !window.SpeechSynthesisUtterance) return;
+  const t = String(text || '').trim();
+  if (!t) return;
+
+  window.speechSynthesis.cancel();
+  const u = new SpeechSynthesisUtterance(t);
+  u.lang = lang;
+  const v = pickVoice(lang);
+  if (v) u.voice = v;
+  u.rate = 1;
+  u.pitch = 1;
+  u.volume = 1;
+  window.speechSynthesis.speak(u);
+}
+
+function ttsLang(tag) {
+  return tag === 'pt' ? 'pt-BR' : 'en-US';
+}
+
+function resolveTTSText(scope, id, idx, field) {
+  if (scope === 'texto') {
+    const t = TEXTOS.find(x => x.id === id);
+    const p = t?.content?.[idx];
+    return p?.[field] || '';
+  }
+
+  if (scope === 'conversa') {
+    const c = CONVERSAS.find(x => x.id === id);
+    const l = c?.dialogue?.[idx];
+    return l?.[field] || '';
+  }
+
+  if (scope === 'fc') {
+    return fcCurrent?.[field] || '';
+  }
+
+  return '';
+}
+
 /* ---- PROGRESS / STORAGE ---- */
 
 let prog = load();
@@ -1260,6 +1325,10 @@ function nextFlashcard() {
       <div class="fc-count">${fcIndex + 1} / ${total}</div>
       <div class="fc-pb-wrap"><div class="fc-pb" style="width:${pct}%"></div></div>
     </div>
+    <div class="tts-row tts-row-center">
+      <button class="tts-btn" data-tts="1" data-scope="fc" data-lang="en" data-field="en">🔊 EN</button>
+      <button class="tts-btn" data-tts="1" data-scope="fc" data-lang="pt" data-field="pt">🔊 PT</button>
+    </div>
     <div class="flashcard-wrap" id="fcCard" onclick="this.classList.toggle('flipped')">
       <div class="flashcard-inner">
         <div class="fc-face fc-front">
@@ -1312,11 +1381,15 @@ function openModalTexto(id) {
     </div>
     <div class="modal-body">
       <div class="modal-text">
-        ${t.content.map(p => `
-          <p style="margin-bottom:16px;">
+        ${t.content.map((p, idx) => `
+          <div style="margin-bottom:16px;">
             <strong style="color:var(--text);font-size:15px">${p.en}</strong><br>
             <span style="color:var(--text2);font-size:13px">${p.pt}</span>
-          </p>
+            <div class="tts-row">
+              <button class="tts-btn" data-tts="1" data-scope="texto" data-id="${t.id}" data-idx="${idx}" data-lang="en" data-field="en">🔊 EN</button>
+              <button class="tts-btn" data-tts="1" data-scope="texto" data-id="${t.id}" data-idx="${idx}" data-lang="pt" data-field="pt">🔊 PT</button>
+            </div>
+          </div>
         `).join('')}
       </div>
     </div>
@@ -1338,12 +1411,16 @@ function openModalConversa(id) {
     </div>
     <div class="modal-body">
       <div class="dialogue">
-        ${c.dialogue.map(l => `
+        ${c.dialogue.map((l, idx) => `
           <div class="dialog-line">
             <div class="dl-speaker">${l.speaker}</div>
             <div class="dl-content">
               <div class="dl-en">${l.en}</div>
               <div class="dl-pt">${l.pt}</div>
+              <div class="tts-row">
+                <button class="tts-btn" data-tts="1" data-scope="conversa" data-id="${c.id}" data-idx="${idx}" data-lang="en" data-field="en">🔊 EN</button>
+                <button class="tts-btn" data-tts="1" data-scope="conversa" data-id="${c.id}" data-idx="${idx}" data-lang="pt" data-field="pt">🔊 PT</button>
+              </div>
             </div>
           </div>
         `).join('')}
@@ -1373,7 +1450,30 @@ window.markDoneAndClose = function(pk, id) {
 
 /* ---- EVENT DELEGATION ---- */
 
+function handleTTSClick(e) {
+  const btn = e.target.closest('.tts-btn[data-tts]');
+  if (!btn) return false;
+
+  e.preventDefault();
+  e.stopPropagation();
+
+  const scope = btn.dataset.scope;
+  const id = btn.dataset.id ? parseInt(btn.dataset.id) : null;
+  const idx = btn.dataset.idx ? parseInt(btn.dataset.idx) : null;
+  const field = btn.dataset.field;
+  const lang = ttsLang(btn.dataset.lang);
+  const text = resolveTTSText(scope, id, idx, field);
+  speakText(text, lang);
+  return true;
+}
+
+$('modal').addEventListener('click', e => {
+  handleTTSClick(e);
+});
+
 $('mainContent').addEventListener('click', e => {
+  if (handleTTSClick(e)) return;
+
   // Tab
   const tab = e.target.closest('.tab-btn[data-tab]');
   if (tab) {

@@ -3,124 +3,74 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>NgadaLearn — Fluência em Inglês</title>
+  <title>NgadaLearn</title>
   <link rel="stylesheet" href="css/style.css">
   <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
 </head>
 <body>
-  <div class="app" id="app">
+<div class="app" id="app">
 
-    <!-- Sidebar -->
-    <aside class="sidebar" id="sidebar">
-      <div class="sidebar-header">
-        <div class="logo">
-          <span class="logo-icon">🌍</span>
-          <span class="logo-text">NgadaLearn</span>
-        </div>
-        <button class="sidebar-toggle" id="sidebarToggle" title="Menu">☰</button>
-      </div>
-
-      <nav class="sidebar-nav">
-        <a href="#" class="nav-item active" data-page="home">
-          <span class="nav-icon">⊞</span>
-          <span class="nav-label">Início</span>
-        </a>
-
-        <div class="nav-section-title">Cursos de Áudio</div>
-
-        <a href="#" class="nav-item" data-page="assimil">
-          <span class="nav-icon">📚</span>
-          <span class="nav-label">Assimil</span>
-          <span class="nav-badge">146</span>
-        </a>
-        <a href="#" class="nav-item" data-page="pimsleur">
-          <span class="nav-icon">🎧</span>
-          <span class="nav-label">PIMSLEUR</span>
-          <span class="nav-badge">48</span>
-        </a>
-
-        <div class="nav-section-title">Materiais</div>
-
-        <a href="#" class="nav-item" data-page="udemy">
-          <span class="nav-icon">🎓</span>
-          <span class="nav-label">Udemy</span>
-          <span class="nav-badge">4</span>
-        </a>
-        <a href="#" class="nav-item" data-page="frases">
-          <span class="nav-icon">💬</span>
-          <span class="nav-label">1000 Frases</span>
-        </a>
-        <a href="#" class="nav-item" data-page="apostilas">
-          <span class="nav-icon">📄</span>
-          <span class="nav-label">Apostilas</span>
-        </a>
-
-        <div class="nav-section-title">Online</div>
-
-        <a href="#" class="nav-item" data-page="online">
-          <span class="nav-icon">🌐</span>
-          <span class="nav-label">Aulas Grátis</span>
-          <span class="nav-badge new">Novo</span>
-        </a>
-      </nav>
-
-      <div class="sidebar-footer">
-        <div class="sidebar-progress">
-          <div class="progress-label">Progresso Geral</div>
-          <div class="progress-bar-wrapper">
-            <div class="progress-bar" id="globalProgress" style="width: 0%"></div>
-          </div>
-          <div class="progress-text" id="globalProgressText">0 / 194 lições</div>
-        </div>
-      </div>
-    </aside>
-
-    <!-- Main Content -->
-    <main class="main-content" id="mainContent"></main>
-
-    <!-- Audio Player -->
-    <div class="player" id="player">
-      <div class="player-info">
-        <div class="player-icon" id="playerIcon">🎵</div>
-        <div class="player-meta">
-          <div class="player-title" id="playerTitle">Nenhuma lição selecionada</div>
-          <div class="player-course" id="playerCourse">Selecione uma lição para começar</div>
-        </div>
-      </div>
-
-      <div class="player-controls">
-        <button class="player-btn" id="prevBtn" title="Anterior">⏮</button>
-        <button class="player-btn player-btn-main" id="playBtn" title="Play/Pause">▶</button>
-        <button class="player-btn" id="nextBtn" title="Próxima">⏭</button>
-      </div>
-
-      <div class="player-progress-section">
-        <span class="player-time" id="currentTime">0:00</span>
-        <div class="player-progress" id="playerProgress">
-          <div class="player-progress-fill" id="playerProgressFill"></div>
-        </div>
-        <span class="player-time" id="totalTime">0:00</span>
-      </div>
-
-      <div class="player-options">
-        <select class="speed-select" id="speedSelect" title="Velocidade">
-          <option value="0.75">0.75×</option>
-          <option value="1" selected>1×</option>
-          <option value="1.25">1.25×</option>
-          <option value="1.5">1.5×</option>
-          <option value="2">2×</option>
-        </select>
-        <div class="volume-control">
-          <span class="vol-icon">🔊</span>
-          <input type="range" class="volume-slider" id="volumeSlider" min="0" max="1" step="0.05" value="1">
-        </div>
-      </div>
-
-      <audio id="audioPlayer" preload="metadata"></audio>
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-header">
+      <div class="logo"><span class="logo-icon">🌍</span><span class="logo-text">NgadaLearn</span></div>
+      <button class="sidebar-toggle" id="sidebarToggle">☰</button>
     </div>
-  </div>
 
-  <script src="js/app.js"></script>
+    <div class="sidebar-profile" id="sidebarProfile"></div>
+
+    <nav class="sidebar-nav">
+      <a href="#" class="nav-item active" data-page="home"><span class="nav-icon">🏠</span><span class="nav-label">Início</span></a>
+
+      <div class="nav-section">ÁUDIO</div>
+      <a href="#" class="nav-item" data-page="assimil"><span class="nav-icon">📚</span><span class="nav-label">Assimil</span><span class="nav-badge">146</span></a>
+      <a href="#" class="nav-item" data-page="pimsleur"><span class="nav-icon">🎧</span><span class="nav-label">PIMSLEUR</span><span class="nav-badge">48</span></a>
+
+      <div class="nav-section">APRENDER</div>
+      <a href="#" class="nav-item" data-page="textos"><span class="nav-icon">📖</span><span class="nav-label">Textos</span><span class="nav-badge" id="badgeTextos">5</span></a>
+      <a href="#" class="nav-item" data-page="frases"><span class="nav-icon">⚡</span><span class="nav-label">Flashcards</span><span class="nav-badge new" id="badgeFrases">15</span></a>
+      <a href="#" class="nav-item" data-page="conversas"><span class="nav-icon">🗣️</span><span class="nav-label">Conversas</span><span class="nav-badge" id="badgeConversas">4</span></a>
+
+      <div class="nav-section">EXTRA</div>
+      <a href="#" class="nav-item" data-page="conquistas"><span class="nav-icon">🏆</span><span class="nav-label">Conquistas</span></a>
+    </nav>
+  </aside>
+
+  <main class="main-content" id="mainContent"></main>
+
+  <div class="player" id="player">
+    <div class="player-info">
+      <div class="player-icon" id="playerIcon">🎵</div>
+      <div class="player-meta">
+        <div class="player-title" id="playerTitle">Nenhuma lição</div>
+        <div class="player-course" id="playerCourse">Seleciona uma lição para começar</div>
+      </div>
+    </div>
+    <div class="player-controls">
+      <button class="player-btn" id="prevBtn">⏮</button>
+      <button class="player-btn play-main" id="playBtn">▶</button>
+      <button class="player-btn" id="nextBtn">⏭</button>
+    </div>
+    <div class="player-prog-wrap">
+      <span class="ptime" id="currentTime">0:00</span>
+      <div class="player-bar" id="playerBar"><div class="player-bar-fill" id="playerBarFill"></div></div>
+      <span class="ptime" id="totalTime">0:00</span>
+    </div>
+    <div class="player-opts">
+      <select class="speed-sel" id="speedSelect">
+        <option value="0.75">0.75×</option><option value="1" selected>1×</option>
+        <option value="1.25">1.25×</option><option value="1.5">1.5×</option><option value="2">2×</option>
+      </select>
+      <input type="range" class="vol-slider" id="volSlider" min="0" max="1" step="0.05" value="1">
+    </div>
+    <audio id="audioEl" preload="metadata"></audio>
+  </div>
+</div>
+
+<div class="xp-pop" id="xpPop">+10 XP ⚡</div>
+<div class="overlay" id="overlay"></div>
+<div class="modal" id="modal"></div>
+
+<script src="js/app.js"></script>
 </body>
 </html>

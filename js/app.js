@@ -1,775 +1,962 @@
-/* ============================================================
-   NGADALEARN — APP
-   ============================================================ */
+/* =====================================================
+   NGADALEARN — GAME APP
+   ===================================================== */
 
 /* ---- DATA ---- */
 
-function makeLessons(count, titleFn, audioFn) {
-  return Array.from({ length: count }, (_, i) => ({
-    id: i + 1,
-    title: titleFn(i + 1),
-    audio: audioFn(i + 1)
-  }));
-}
-
 const COURSES = {
   assimil: {
-    id: 'assimil',
-    name: 'Assimil — Inglês Sem Esforço',
-    short: 'Assimil',
-    icon: '📚',
-    color: '#6366f1',
-    desc: 'Método natural com 146 lições progressivas em diálogos do cotidiano. Ideal para ouvir e repetir.',
-    totalAudio: 146,
-    pdf: 'Assimil/Assimil - O Novo Inglês Sem Esforço - PT-EN.pdf',
-    lessons: makeLessons(
-      146,
-      n => `Lição ${n}`,
-      n => `Assimil/Assimil - O Novo Inglês Sem Esforço - Audio/Lição (${n}).mp3`
-    )
+    id: 'assimil', pk: 'assimil',
+    name: 'Assimil', full: 'Assimil — Inglês Sem Esforço',
+    icon: '📚', wc: '#6366f1', cls: 'assimil',
+    desc: '146 lições progressivas com diálogos do cotidiano.',
+    total: 146,
+    lessons: range(146, n => ({
+      id: n,
+      title: `Lição ${n}`,
+      audio: `Assimil/Assimil - O Novo Inglês Sem Esforço - Audio/Lição (${n}).mp3`
+    }))
   },
   pimsleur: {
-    id: 'pimsleur',
-    name: 'PIMSLEUR — Inglês Americano',
-    short: 'PIMSLEUR',
-    icon: '🎧',
-    color: '#f59e0b',
-    desc: 'Método áudio-lingual intensivo. 30 lições + 18 leituras. Foco em conversação e pronúncia.',
-    totalAudio: 48,
-    lessons: makeLessons(
-      30,
-      n => `Inglês ${pad(n)}`,
-      n => `PIMSLEUR/ÁUDIO/Ingles ${pad(n)}.mp3`
-    ),
-    readings: makeLessons(
-      18,
-      n => `Leitura ${pad(n)}`,
-      n => n === 8
+    id: 'pimsleur', pk: 'pimsleur',
+    name: 'PIMSLEUR', full: 'PIMSLEUR — Inglês Americano',
+    icon: '🎧', wc: '#22c55e', cls: 'pimsleur',
+    desc: '30 lições principais + 18 leituras. Foco em conversação.',
+    total: 48,
+    lessons: range(30, n => ({
+      id: n,
+      title: `Inglês ${z(n)}`,
+      audio: `PIMSLEUR/ÁUDIO/Ingles ${z(n)}.mp3`
+    })),
+    readings: range(18, n => ({
+      id: n,
+      title: `Leitura ${z(n)}`,
+      audio: n === 8
         ? 'PIMSLEUR/ÁUDIO/Lieturas 08.mp3'
-        : `PIMSLEUR/ÁUDIO/Leituras ${pad(n)}.mp3`
-    ),
-    apostilas: [
-      { title: 'Apostila Curso FISK', path: 'PIMSLEUR/APOSTILA/APOSTILA CURSO FISK.pdf' },
-      { title: 'Guia de Referência das Lições', path: 'PIMSLEUR/APOSTILA/GUIA DE REFERÊNCIA DAS LIÇÕES EM ÁUDIO.pdf' }
-    ]
+        : `PIMSLEUR/ÁUDIO/Leituras ${z(n)}.mp3`
+    }))
   }
 };
 
-const MATERIALS = [
-  { id: 'frases',      icon: '💬', title: '1000 Frases Mais Usadas',   desc: 'As frases do cotidiano mais comuns no inglês',        path: 'PDF ENGLISH/1000-frases-mais-usadas-no-ingles.pdf' },
-  { id: 'udemy1',      icon: '📄', title: 'Apostila Udemy — Parte 1',  desc: 'Material principal do curso Udemy',                  path: 'Udemy/Apostila+parte+1.pdf' },
-  { id: 'udemy2',      icon: '📄', title: 'Apostila Udemy — Parte 2',  desc: 'Continuação do material Udemy',                      path: 'Udemy/Apostila+parte+2.pdf' },
-  { id: 'udemy3',      icon: '📝', title: 'Vocabulary Boost — Leituras', desc: 'Atividades de leitura e vocabulário',              path: 'Udemy/Atividades+de+leitura+-+Vocabulary+Boost+2+.pdf' },
-  { id: 'udemy4',      icon: '📝', title: 'Texto Complementar',         desc: 'Texto de apoio do curso Udemy',                    path: 'Udemy/texto+parte+1.pdf' },
-  { id: 'fisk',        icon: '🏫', title: 'Apostila FISK',             desc: 'Apostila do método PIMSLEUR/Fisk',                   path: 'PIMSLEUR/APOSTILA/APOSTILA CURSO FISK.pdf' },
-  { id: 'pimsleur-ref',icon: '📋', title: 'Guia de Referência PIMSLEUR', desc: 'Guia das lições em áudio',                       path: 'PIMSLEUR/APOSTILA/GUIA DE REFERÊNCIA DAS LIÇÕES EM ÁUDIO.pdf' },
-  { id: 'assimil-pdf', icon: '📚', title: 'Livro Assimil Completo',    desc: 'Livro texto PT-EN do método Assimil (105 MB)',       path: 'Assimil/Assimil - O Novo Inglês Sem Esforço - PT-EN.pdf' }
+const ACHIEVEMENTS = [
+  { id: 'first',    icon: '🌱', name: 'Primeira Lição',   desc: 'Completa a tua primeira lição',         cond: s => s.totalDone >= 1 },
+  { id: 'ten',      icon: '⚡', name: '10 Lições',         desc: 'Completa 10 lições',                    cond: s => s.totalDone >= 10 },
+  { id: 'streak3',  icon: '🔥', name: 'Em Chamas',         desc: 'Mantém um streak de 3 dias',            cond: s => s.streak >= 3 },
+  { id: 'twenty5',  icon: '🎯', name: 'Focado',            desc: 'Completa 25 lições',                    cond: s => s.totalDone >= 25 },
+  { id: 'fifty',    icon: '🏅', name: '50 Lições',         desc: 'Completa 50 lições',                    cond: s => s.totalDone >= 50 },
+  { id: 'hundred',  icon: '💎', name: '100 Lições',        desc: 'Completa 100 lições',                   cond: s => s.totalDone >= 100 },
+  { id: 'assimil',  icon: '👑', name: 'Mestre Assimil',    desc: 'Conclui todo o curso Assimil',          cond: s => s.assimilDone >= 146 },
+  { id: 'pimsleur', icon: '🎖️', name: 'Mestre PIMSLEUR',  desc: 'Conclui todo o curso PIMSLEUR',         cond: s => s.pimsleurDone >= 48 },
+  { id: 'streak7',  icon: '🌟', name: 'Semana Perfeita',   desc: 'Mantém um streak de 7 dias',            cond: s => s.streak >= 7 },
+  { id: 'all',      icon: '🚀', name: 'NgadaLearn 100%',   desc: 'Completa todos os 194 áudios',          cond: s => s.totalDone >= 194 }
 ];
 
-// Recursos de aulasdeinglesgratis.net
-const ONLINE_RESOURCES = [
+const TEXTOS = [
   {
-    emoji: '📰',
-    label: 'Textos',
-    title: 'Textos em Inglês com Áudio',
-    desc: '200+ textos em inglês com tradução e áudio — do iniciante ao avançado.',
-    url: 'https://aulasdeinglesgratis.net/textos-em-ingles/',
-    tags: ['Reading', 'Áudio', 'Tradução']
+    id: 1,
+    title: 'Morning Routine',
+    level: 'iniciante',
+    preview: 'It is morning. People wake up. They get ready for the day...',
+    content: [
+      { en: 'It is morning.', pt: 'É de manhã.' },
+      { en: 'People wake up.', pt: 'As pessoas acordam.' },
+      { en: 'They get ready for the day.', pt: 'Elas se preparam para o dia.' },
+      { en: 'They eat breakfast.', pt: 'Elas tomam café da manhã.' },
+      { en: 'Some people drink coffee.', pt: 'Algumas pessoas bebem café.' },
+      { en: 'Then, they go to work or school.', pt: 'Então, elas vão para o trabalho ou escola.' }
+    ]
   },
   {
-    emoji: '💬',
-    label: 'Frases',
-    title: '1000 Frases em Inglês',
-    desc: 'Mais de 1000 frases do cotidiano, 200 phrasal verbs e 500 idioms com tradução.',
-    url: 'https://aulasdeinglesgratis.net/1000-frases-em-ingles-com-traducao/',
-    tags: ['Frases', 'Idioms', 'Phrasal Verbs']
+    id: 2,
+    title: 'First Day of School',
+    level: 'iniciante',
+    preview: 'Today is the first day of school. The kids are excited...',
+    content: [
+      { en: 'Today is the first day of school.', pt: 'Hoje é o primeiro dia de aula.' },
+      { en: 'The kids are excited but nervous.', pt: 'As crianças estão animadas, mas nervosas.' },
+      { en: 'They meet their new teachers.', pt: 'Elas conhecem seus novos professores.' },
+      { en: 'They make new friends.', pt: 'Elas fazem novos amigos.' },
+      { en: 'School is fun.', pt: 'A escola é divertida.' }
+    ]
   },
   {
-    emoji: '🗣️',
-    label: 'Conversação',
-    title: 'Conversações em Inglês',
-    desc: 'Diálogos e conversas do dia a dia para praticar o inglês falado.',
-    url: 'https://aulasdeinglesgratis.net/conversacoes-em-ingles/',
-    tags: ['Speaking', 'Diálogos']
+    id: 3,
+    title: 'Water on the Floor',
+    level: 'iniciante',
+    preview: 'There is water on the floor. Someone spilled a glass...',
+    content: [
+      { en: 'There is water on the floor.', pt: 'Tem água no chão.' },
+      { en: 'Someone spilled a glass of water.', pt: 'Alguém derramou um copo de água.' },
+      { en: 'We need to clean it up.', pt: 'Nós precisamos limpar isso.' },
+      { en: 'Get a towel, please.', pt: 'Pegue uma toalha, por favor.' },
+      { en: 'Now the floor is dry.', pt: 'Agora o chão está seco.' }
+    ]
   },
   {
-    emoji: '✍️',
-    label: 'Gramática',
-    title: 'Gramática Inglesa',
-    desc: 'Regras gramaticais e preparação para exames — explicadas em português.',
-    url: 'https://aulasdeinglesgratis.net/gramatica/',
-    tags: ['Gramática', 'Exames']
+    id: 4,
+    title: 'A Doctor',
+    level: 'intermediario',
+    preview: 'Dr. Smith works at the hospital. He helps sick people...',
+    content: [
+      { en: 'Dr. Smith works at the hospital.', pt: 'O Dr. Smith trabalha no hospital.' },
+      { en: 'He helps sick people every day.', pt: 'Ele ajuda pessoas doentes todos os dias.' },
+      { en: 'He listens to their hearts.', pt: 'Ele escuta os corações delas.' },
+      { en: 'He gives them medicine to feel better.', pt: 'Ele dá remédios para elas se sentirem melhor.' },
+      { en: 'Being a doctor is a hard job, but it is rewarding.', pt: 'Ser médico é um trabalho difícil, mas é gratificante.' }
+    ]
   },
   {
-    emoji: '📖',
-    label: 'Vocabulário',
-    title: 'Lista de Palavras por Tema',
-    desc: 'Adjetivos, advérbios, verbos e listas temáticas de vocabulário.',
-    url: 'https://aulasdeinglesgratis.net/lista-de-palavras/',
-    tags: ['Palavras', 'Temas']
-  },
-  {
-    emoji: '🌱',
-    label: 'Iniciante',
-    title: 'Textos para Iniciantes',
-    desc: 'Textos simples com áudio especialmente para quem está começando.',
-    url: 'https://aulasdeinglesgratis.net/textos-em-ingles-para-iniciantes-com-audio/',
-    tags: ['Iniciante', 'Áudio']
-  },
-  {
-    emoji: '🚀',
-    label: 'Avançado',
-    title: 'Textos Intermediário e Avançado',
-    desc: '110 textos em inglês intermediário e avançado com áudio e tradução.',
-    url: 'https://aulasdeinglesgratis.net/110-textos-em-ingles-intermediario-e-avancado-com-audio-e-traducao/',
-    tags: ['Avançado', 'Áudio']
-  },
-  {
-    emoji: '🧚',
-    label: 'Contos',
-    title: 'Fairy Tales em Inglês',
-    desc: 'Contos de fadas clássicos em inglês — leitura leve e envolvente.',
-    url: 'https://aulasdeinglesgratis.net/category/fairy-tales-contos-de-fadas/',
-    tags: ['Leitura', 'Contos']
-  },
-  {
-    emoji: '📝',
-    label: 'Blog',
-    title: 'Blog de Inglês',
-    desc: 'Artigos e dicas de inglês publicados regularmente.',
-    url: 'https://aulasdeinglesgratis.net/pagina-do-blog/',
-    tags: ['Dicas', 'Artigos']
+    id: 5,
+    title: 'The Weekend',
+    level: 'intermediario',
+    preview: 'Weekends are for relaxing. On Saturday, I usually go to the park...',
+    content: [
+      { en: 'Weekends are for relaxing.', pt: 'Os fins de semana são para relaxar.' },
+      { en: 'On Saturday, I usually go to the park.', pt: 'No sábado, eu costumo ir ao parque.' },
+      { en: 'I like to walk my dog there.', pt: 'Eu gosto de passear com meu cachorro lá.' },
+      { en: 'On Sunday, I visit my parents.', pt: 'No domingo, eu visito meus pais.' },
+      { en: 'We have a big family dinner.', pt: 'Nós temos um grande jantar em família.' }
+    ]
   }
+];
+
+const FRASES = [
+  { id: 1, en: 'How are you doing?', pt: 'Como vai você?' },
+  { id: 2, en: 'What time is it?', pt: 'Que horas são?' },
+  { id: 3, en: 'Can you help me?', pt: 'Você pode me ajudar?' },
+  { id: 4, en: 'I do not understand.', pt: 'Eu não entendo.' },
+  { id: 5, en: 'Where is the bathroom?', pt: 'Onde fica o banheiro?' },
+  { id: 6, en: 'How much does this cost?', pt: 'Quanto custa isso?' },
+  { id: 7, en: 'I am learning English.', pt: 'Eu estou aprendendo inglês.' },
+  { id: 8, en: 'Could you speak slower, please?', pt: 'Você poderia falar mais devagar, por favor?' },
+  { id: 9, en: 'Nice to meet you.', pt: 'Prazer em conhecê-lo.' },
+  { id: 10, en: 'See you tomorrow.', pt: 'Até amanhã.' },
+  { id: 11, en: 'Have a good day!', pt: 'Tenha um bom dia!' },
+  { id: 12, en: 'What do you do for a living?', pt: 'Com o que você trabalha?' },
+  { id: 13, en: 'I am hungry.', pt: 'Estou com fome.' },
+  { id: 14, en: 'Where are you from?', pt: 'De onde você é?' },
+  { id: 15, en: 'It is a beautiful day.', pt: 'É um dia lindo.' },
+
+  { id: 16, en: 'A few.', pt: 'Alguns.', pron: 'a fiu' },
+  { id: 17, en: 'A little.', pt: 'Um pouco.', pron: 'a lirou' },
+  { id: 18, en: 'A long time ago.', pt: 'Há muito tempo.', pron: 'a lon taime agou' },
+  { id: 19, en: 'A one way ticket.', pt: 'Uma passagem só de ida.', pron: 'a uon uei tiket' },
+  { id: 20, en: 'A round trip ticket.', pt: 'Uma passagem ida e volta.', pron: 'a ur-aund turr-ip tiket' },
+  { id: 21, en: 'About 300 kilometers.', pt: 'Aproximadamente 300 quilômetros.', pron: 'abaut 300 ki-lômeres' },
+  { id: 22, en: 'Across from the post office.', pt: 'Do outro lado do correio.', pron: 'acrós from tha post ófice' },
+  { id: 23, en: 'All day.', pt: 'O dia todo.', pron: 'óóu dei' },
+  { id: 24, en: 'Am I pronouncing it correctly?', pt: 'Eu estou pronunciando corretamente?', pron: 'em ai pronaucim it cor-urékit?' },
+  { id: 25, en: 'Amy is John’s girlfriend.', pt: 'Amy é a namorada do John.', pron: 'êmi is djóm gérlfriend' },
+  { id: 26, en: 'And you?', pt: 'E você?', pron: 'end iuu?' },
+  { id: 27, en: 'Anything else?', pt: 'Mais alguma coisa?', pron: 'éni-thin élse?' },
+  { id: 28, en: 'Are there any concerts?', pt: 'Tem algum show?', pron: 'ár der éni kóncerts?' },
+  { id: 29, en: 'Are they coming this evening?', pt: 'Eles estão vindo esta noite?', pron: 'ár deii camim dis ivinin?' },
+  { id: 30, en: 'Are they the same?', pt: 'Eles são iguais? / São as mesmas coisas?', pron: 'ár deii tha sêimi?' },
+  { id: 31, en: 'Are you afraid?', pt: 'Você está com medo?', pron: 'ár iuu afreid?' },
+  { id: 32, en: 'Are you allergic to anything?', pt: 'Você tem alergia a alguma coisa?', pron: 'ár iuu alorjéc tchu éni-thin?' },
+  { id: 33, en: 'Are you American?', pt: 'Você é americano?', pron: 'ár iuu amér-ur-ikén?' },
+  { id: 34, en: 'Are you busy?', pt: 'Você está ocupado?', pron: 'ár iuu bizi?' },
+  { id: 35, en: 'Are you comfortable?', pt: 'Você está confortável?', pron: 'ár iuu comfortebou?' },
+  { id: 36, en: 'Are you coming this evening?', pt: 'Você vem esta noite?', pron: 'ár iuu camim dis ivinin?' },
+
+  { id: 37, en: 'Be careful.', pt: 'Cuidado.' },
+  { id: 38, en: 'Be careful driving.', pt: 'Cuidado ao dirigir.' },
+  { id: 39, en: 'Can you translate this for me?', pt: 'Você pode me traduzir isso?' },
+  { id: 40, en: 'Chicago is very different from Boston.', pt: 'Chicago é bem diferente de Boston.' },
+  { id: 41, en: 'Don’t worry.', pt: 'Não se preocupe.' },
+  { id: 42, en: 'Everyone knows it.', pt: 'Todo mundo sabe isso.' },
+  { id: 43, en: 'Everything is ready.', pt: 'Está tudo pronto.' },
+  { id: 44, en: 'Excellent.', pt: 'Excelente.' },
+  { id: 45, en: 'From time to time.', pt: 'De tempos em tempos.' },
+  { id: 46, en: 'Good idea.', pt: 'Boa ideia.' }
+];
+
+const CONVERSAS = [
+  {
+    id: 1,
+    title: 'Leaving for work',
+    sub: 'Saindo para o trabalho',
+    dialogue: [
+      { speaker: 'John', en: 'I am leaving for work now.', pt: 'Estou saindo para o trabalho agora.' },
+      { speaker: 'Mary', en: 'Have a good day! Do not forget your keys.', pt: 'Tenha um bom dia! Não esqueça suas chaves.' },
+      { speaker: 'John', en: 'I have them. See you tonight.', pt: 'Eu estou com elas. Até hoje à noite.' },
+      { speaker: 'Mary', en: 'See you! Drive safely.', pt: 'Até mais! Dirija com cuidado.' }
+    ]
+  },
+  {
+    id: 2,
+    title: 'Shopping at the supermarket',
+    sub: 'Compras no supermercado',
+    dialogue: [
+      { speaker: 'Alex', en: 'Do we need milk?', pt: 'Nós precisamos de leite?' },
+      { speaker: 'Sarah', en: 'Yes, and get some eggs too.', pt: 'Sim, e pegue alguns ovos também.' },
+      { speaker: 'Alex', en: 'Alright, anything else?', pt: 'Certo, mais alguma coisa?' },
+      { speaker: 'Sarah', en: 'Just some apples and bread. That is all.', pt: 'Apenas algumas maçãs e pão. É só isso.' }
+    ]
+  },
+  {
+    id: 3,
+    title: 'Where are you from?',
+    sub: 'De onde você é?',
+    dialogue: [
+      { speaker: 'Paul', en: 'Hi, I am Paul. What is your name?', pt: 'Oi, eu sou Paul. Qual é o seu nome?' },
+      { speaker: 'Anna', en: 'Nice to meet you, Paul. I am Anna.', pt: 'Prazer em conhecê-lo, Paul. Eu sou Anna.' },
+      { speaker: 'Paul', en: 'Where are you from, Anna?', pt: 'De onde você é, Anna?' },
+      { speaker: 'Anna', en: 'I am from Brazil. And you?', pt: 'Eu sou do Brasil. E você?' },
+      { speaker: 'Paul', en: 'I am from Canada.', pt: 'Eu sou do Canadá.' }
+    ]
+  },
+  {
+    id: 4,
+    title: 'At the Restaurant',
+    sub: 'No Restaurante',
+    dialogue: [
+      { speaker: 'Waiter', en: 'Are you ready to order?', pt: 'Vocês estão prontos para fazer o pedido?' },
+      { speaker: 'Customer', en: 'Yes, I will have the chicken salad.', pt: 'Sim, eu vou querer a salada de frango.' },
+      { speaker: 'Waiter', en: 'Would you like anything to drink?', pt: 'Gostaria de algo para beber?' },
+      { speaker: 'Customer', en: 'Just water, please.', pt: 'Apenas água, por favor.' }
+    ]
+  },
+  {
+    id: 5,
+    title: 'Who will you vote for?',
+    sub: 'Em quem você vai votar?',
+    dialogue: [
+      { speaker: 'A', en: 'Hey, Jackson! Who will you vote for?', pt: 'Ei, Jackson! Em quem você vai votar?' },
+      { speaker: 'B', en: 'Well. To be honest, I don’t know. Things are looking bad.', pt: 'Bem. Para ser honesto, eu não sei. As coisas parecem ruins.' },
+      { speaker: 'A', en: 'I’ll vote for Mr. Smith.', pt: 'Eu vou votar no Smith.' },
+      { speaker: 'B', en: 'Do you think he will solve our problems?', pt: 'Você acha que ele vai resolver nossos problemas?' },
+      { speaker: 'A', en: 'Oh, I heard that he will give us many benefits.', pt: 'Ah, eu ouvi que ele nos dará muitos benefícios.' },
+      { speaker: 'B', en: 'Really? What’s benefits?', pt: 'Sério? Quais são os benefícios?' },
+      { speaker: 'A', en: 'He will improve security and education.', pt: 'Ele vai melhorar a segurança e educação.' },
+      { speaker: 'B', en: 'That’s sounds great!', pt: 'Isso parece ótimo!' },
+      { speaker: 'A', en: 'Yeah, it is. Why don’t you vote for him?', pt: 'Sim, é. Por que você não vota nele?' },
+      { speaker: 'B', en: 'I’ll do that! Thank you.', pt: 'Eu vou fazer isso! Obrigado.' }
+    ]
+  },
+  {
+    id: 6,
+    title: 'Something light',
+    sub: 'Algo leve',
+    dialogue: [
+      { speaker: 'A', en: 'Good evening, sir! What would you like to eat?', pt: 'Boa noite, senhor! O que você gostaria de comer?' },
+      { speaker: 'B', en: 'I’d like to eat something light.', pt: 'Eu gostaria de comer algo leve.' },
+      { speaker: 'A', en: 'A salad for example?', pt: 'Uma salada, por exemplo?' },
+      { speaker: 'B', en: 'Yes. What type of salad do you have?', pt: 'Sim. Que tipo de salada você tem?' },
+      { speaker: 'A', en: 'We have Salad Express, green salad and special salad.', pt: 'Nós temos salada express, salada verde e salada especial.' },
+      { speaker: 'B', en: 'What’s special salad?', pt: 'O que é salada especial?' },
+      { speaker: 'A', en: 'It includes vegetables and wine.', pt: 'Inclui legumes e vinho.' },
+      { speaker: 'B', en: 'I’d like one.', pt: 'Eu gostaria de uma.' },
+      { speaker: 'A', en: 'A moment, please.', pt: 'Um momento, por favor.' },
+      { speaker: 'B', en: 'Thanks!', pt: 'Obrigado!' }
+    ]
+  }
+];
+
+const LEVELS = [
+  'Curioso','Iniciante','Aprendiz','Explorador',
+  'Praticante','Fluente','Avançado','Expert','Mestre','Lendário'
 ];
 
 /* ---- HELPERS ---- */
 
-function pad(n) { return String(n).padStart(2, '0'); }
+function range(n, fn) { return Array.from({ length: n }, (_, i) => fn(i + 1)); }
+function z(n) { return String(n).padStart(2, '0'); }
+function $(id) { return document.getElementById(id); }
+function qs(sel, ctx) { return (ctx || document).querySelector(sel); }
+function qsa(sel, ctx) { return [...(ctx || document).querySelectorAll(sel)]; }
 
-function encodePath(path) {
-  return path.split('/').map(encodeURIComponent).join('/');
-}
+function encodePath(p) { return p.split('/').map(encodeURIComponent).join('/'); }
 
-function formatTime(s) {
+function fmt(s) {
   if (!s || isNaN(s)) return '0:00';
-  const m = Math.floor(s / 60);
-  const sec = Math.floor(s % 60);
-  return `${m}:${sec.toString().padStart(2, '0')}`;
+  return `${Math.floor(s/60)}:${Math.floor(s%60).toString().padStart(2,'0')}`;
 }
 
-/* ---- STATE ---- */
+/* ---- PROGRESS / STORAGE ---- */
 
-const state = {
-  page: 'home',
-  tab: 'lessons',
-  courseId: null,
-  lesson: null,
-  playlist: [],
-  playlistCourse: null,
-  playIndex: -1,
-  progress: loadProgress()
-};
+let prog = load();
 
-function loadProgress() {
-  try { return JSON.parse(localStorage.getItem('ngada_v1') || '{}'); }
+function load() {
+  try { return JSON.parse(localStorage.getItem('nga2') || '{}'); }
   catch { return {}; }
 }
 
-function saveProgress() {
-  localStorage.setItem('ngada_v1', JSON.stringify(state.progress));
-  refreshGlobalBar();
+function save() { localStorage.setItem('nga2', JSON.stringify(prog)); }
+
+function isDone(pk, id) { return (prog[pk]?.done || []).includes(id); }
+
+function toggleDone(pk, id) {
+  if (!prog[pk]) prog[pk] = { done: [] };
+  const arr = prog[pk].done;
+  const i = arr.indexOf(id);
+  if (i === -1) arr.push(id);
+  else arr.splice(i, 1);
+  save();
+  updateStreak();
 }
 
-function getCompleted(progressKey) {
-  return state.progress[progressKey]?.completed || [];
+function countDone(pk) { return (prog[pk]?.done || []).length; }
+
+function assimilDone() { return countDone('assimil'); }
+function pimsleurDone() { return countDone('pimsleur') + countDone('pimsleur_r'); }
+function textosDone() { return countDone('textos'); }
+function frasesDone() { return countDone('frases'); }
+function conversasDone() { return countDone('conversas'); }
+function totalDone() { return assimilDone() + pimsleurDone() + textosDone() + frasesDone() + conversasDone(); }
+
+function xp() { return totalDone() * 10; }
+function level() { return Math.min(Math.floor(xp() / 100), LEVELS.length - 1); }
+function levelName() { return LEVELS[level()]; }
+function xpInLevel() { return xp() % 100; }
+
+/* ---- STREAK ---- */
+
+function updateStreak() {
+  const today = new Date().toDateString();
+  if (!prog.streak) prog.streak = { count: 0, last: null };
+  if (prog.streak.last === today) return;
+  const yesterday = new Date(Date.now() - 86400000).toDateString();
+  if (prog.streak.last === yesterday) {
+    prog.streak.count++;
+  } else {
+    prog.streak.count = 1;
+  }
+  prog.streak.last = today;
+  save();
 }
 
-function isDone(progressKey, id) {
-  return getCompleted(progressKey).includes(id);
+function streak() { return prog.streak?.count || 0; }
+
+/* ---- UNLOCKED ACHIEVEMENTS ---- */
+
+function getStats() {
+  return { totalDone: totalDone(), assimilDone: assimilDone(), pimsleurDone: pimsleurDone(), streak: streak() };
 }
 
-function toggleDone(progressKey, id) {
-  if (!state.progress[progressKey]) state.progress[progressKey] = { completed: [] };
-  const arr = state.progress[progressKey].completed;
-  const idx = arr.indexOf(id);
-  if (idx === -1) arr.push(id);
-  else arr.splice(idx, 1);
-  saveProgress();
-}
-
-function totalDone() {
-  const a = getCompleted('assimil').length;
-  const p = getCompleted('pimsleur').length;
-  const pr = getCompleted('pimsleur_r').length;
-  return a + p + pr;
-}
-
-function refreshGlobalBar() {
-  const done = totalDone();
-  const total = 194;
-  const pct = Math.round((done / total) * 100);
-  const bar = document.getElementById('globalProgress');
-  const txt = document.getElementById('globalProgressText');
-  if (bar) bar.style.width = pct + '%';
-  if (txt) txt.textContent = `${done} / ${total} lições`;
-}
+function isUnlocked(ach) { return ach.cond(getStats()); }
 
 /* ---- AUDIO ENGINE ---- */
 
-const audio = document.getElementById('audioPlayer');
+const audio = $('audioEl');
+let nowPK    = null;
+let nowId    = null;
+let playlist = [];
+let playIdx  = -1;
 
-function playItem(lesson, playlist, index, progressKey, icon, courseName) {
-  state.lesson      = lesson;
-  state.playlist    = playlist;
-  state.playIndex   = index;
-  state.playlistCourse = progressKey;
+function playLesson(lesson, pl, idx, pk, icon, cname) {
+  nowPK = pk; nowId = lesson.id;
+  playlist = pl; playIdx = idx;
 
   audio.src = encodePath(lesson.audio);
-  audio.playbackRate = parseFloat(sel('speedSelect').value);
+  audio.playbackRate = parseFloat($('speedSelect').value);
   audio.play().catch(() => {});
 
-  sel('playerTitle').textContent  = lesson.title;
-  sel('playerCourse').textContent = courseName;
-  sel('playerIcon').textContent   = icon;
-  sel('playBtn').textContent      = '⏸';
+  $('playerTitle').textContent  = lesson.title;
+  $('playerCourse').textContent = cname;
+  $('playerIcon').textContent   = icon;
+  $('playBtn').textContent      = '⏸';
 
-  highlightPlaying();
+  highlightDot();
 }
 
-function highlightPlaying() {
-  document.querySelectorAll('.lesson-item').forEach(el => el.classList.remove('playing'));
-  if (!state.lesson) return;
-  const el = document.querySelector(
-    `.lesson-item[data-id="${state.lesson.id}"][data-pk="${state.playlistCourse}"]`
-  );
+function highlightDot() {
+  qsa('.lesson-dot').forEach(el => el.classList.remove('playing'));
+  if (!nowId || !nowPK) return;
+  const el = qs(`.lesson-dot[data-id="${nowId}"][data-pk="${nowPK}"]`);
   if (el) el.classList.add('playing');
 }
 
 audio.addEventListener('timeupdate', () => {
   const pct = audio.duration ? (audio.currentTime / audio.duration) * 100 : 0;
-  sel('playerProgressFill').style.width = pct + '%';
-  sel('currentTime').textContent = formatTime(audio.currentTime);
-  sel('totalTime').textContent   = formatTime(audio.duration);
+  $('playerBarFill').style.width = pct + '%';
+  $('currentTime').textContent = fmt(audio.currentTime);
+  $('totalTime').textContent   = fmt(audio.duration);
 });
 
 audio.addEventListener('ended', () => {
-  if (state.playIndex < state.playlist.length - 1) {
-    const next = state.playlist[state.playIndex + 1];
-    playItem(next, state.playlist, state.playIndex + 1,
-      state.playlistCourse,
-      sel('playerIcon').textContent,
-      sel('playerCourse').textContent);
+  if (playIdx < playlist.length - 1) {
+    const nxt = playlist[playIdx + 1];
+    playLesson(nxt, playlist, playIdx + 1, nowPK, $('playerIcon').textContent, $('playerCourse').textContent);
   } else {
-    sel('playBtn').textContent = '▶';
+    $('playBtn').textContent = '▶';
   }
 });
 
-audio.addEventListener('pause', () => { sel('playBtn').textContent = '▶'; });
-audio.addEventListener('play',  () => { sel('playBtn').textContent = '⏸'; });
+audio.addEventListener('pause', () => { $('playBtn').textContent = '▶'; });
+audio.addEventListener('play',  () => { $('playBtn').textContent = '⏸'; });
 
-/* ---- PLAYER CONTROLS ---- */
-
-sel('playBtn').addEventListener('click', () => {
+$('playBtn').addEventListener('click', () => {
   if (!audio.src) return;
   audio.paused ? audio.play() : audio.pause();
 });
 
-sel('prevBtn').addEventListener('click', () => {
-  if (state.playIndex > 0) {
-    const p = state.playlist[state.playIndex - 1];
-    playItem(p, state.playlist, state.playIndex - 1,
-      state.playlistCourse, sel('playerIcon').textContent, sel('playerCourse').textContent);
-  } else {
-    audio.currentTime = 0;
+$('prevBtn').addEventListener('click', () => {
+  if (playIdx > 0) {
+    const p = playlist[playIdx - 1];
+    playLesson(p, playlist, playIdx - 1, nowPK, $('playerIcon').textContent, $('playerCourse').textContent);
+  } else { audio.currentTime = 0; }
+});
+
+$('nextBtn').addEventListener('click', () => {
+  if (playIdx < playlist.length - 1) {
+    const n = playlist[playIdx + 1];
+    playLesson(n, playlist, playIdx + 1, nowPK, $('playerIcon').textContent, $('playerCourse').textContent);
   }
 });
 
-sel('nextBtn').addEventListener('click', () => {
-  if (state.playIndex < state.playlist.length - 1) {
-    const n = state.playlist[state.playIndex + 1];
-    playItem(n, state.playlist, state.playIndex + 1,
-      state.playlistCourse, sel('playerIcon').textContent, sel('playerCourse').textContent);
-  }
-});
-
-sel('playerProgress').addEventListener('click', e => {
+$('playerBar').addEventListener('click', e => {
   if (!audio.duration) return;
   const r = e.currentTarget.getBoundingClientRect();
   audio.currentTime = ((e.clientX - r.left) / r.width) * audio.duration;
 });
 
-sel('speedSelect').addEventListener('change', e => { audio.playbackRate = parseFloat(e.target.value); });
-sel('volumeSlider').addEventListener('input', e => { audio.volume = parseFloat(e.target.value); });
+$('speedSelect').addEventListener('change', e => { audio.playbackRate = parseFloat(e.target.value); });
+$('volSlider').addEventListener('input',    e => { audio.volume = parseFloat(e.target.value); });
+
+/* ---- XP POP ---- */
+
+function showXPPop() {
+  const el = $('xpPop');
+  el.classList.remove('show');
+  void el.offsetWidth;
+  el.classList.add('show');
+  setTimeout(() => el.classList.remove('show'), 900);
+}
+
+/* ---- SIDEBAR PROFILE ---- */
+
+function renderSidebarProfile() {
+  const lv  = level();
+  const xpN = xpInLevel();
+  const done = totalDone();
+  $('sidebarProfile').innerHTML = `
+    <div class="sp-row">
+      <div class="sp-avatar">
+        N
+        <div class="sp-lvl">${lv + 1}</div>
+      </div>
+      <div>
+        <div class="sp-name">${levelName()}</div>
+        <div class="sp-title">${done} lições · ${streak()}🔥</div>
+      </div>
+    </div>
+    <div class="sp-xp-bar-wrap">
+      <div class="sp-xp-bar" style="width:${xpN}%"></div>
+    </div>
+    <div class="sp-xp-text">${xp()} XP · Nível ${lv + 1}</div>
+  `;
+}
 
 /* ---- ROUTING ---- */
 
-function navigate(page, opts = {}) {
-  if (page !== state.page) state.tab = 'lessons';
-  if (opts.tab) state.tab = opts.tab;
-  state.page = page;
+let currentPage = 'home';
 
-  document.querySelectorAll('.nav-item[data-page]').forEach(el => {
-    el.classList.toggle('active', el.dataset.page === page);
-  });
-
-  const mc = sel('mainContent');
-
+function nav(page) {
+  currentPage = page;
+  qsa('.nav-item[data-page]').forEach(el => el.classList.toggle('active', el.dataset.page === page));
+  const mc = $('mainContent');
   switch (page) {
-    case 'home':      mc.innerHTML = renderHome(); break;
-    case 'assimil':   mc.innerHTML = renderCourse('assimil'); break;
-    case 'pimsleur':  mc.innerHTML = renderCourse('pimsleur'); break;
-    case 'udemy':     mc.innerHTML = renderUdemy(); break;
-    case 'frases':    mc.innerHTML = renderFullPDF('PDF ENGLISH/1000-frases-mais-usadas-no-ingles.pdf', '1000 Frases Mais Usadas em Inglês'); break;
-    case 'apostilas': mc.innerHTML = renderApostilas(); break;
-    case 'online':    mc.innerHTML = renderOnline(); break;
-    default:          mc.innerHTML = renderHome();
+    case 'home':       mc.innerHTML = renderHome(); break;
+    case 'assimil':    mc.innerHTML = renderCourse('assimil', 'lessons'); break;
+    case 'pimsleur':   mc.innerHTML = renderCourse('pimsleur', 'lessons'); break;
+    case 'textos':     mc.innerHTML = renderTextos(); break;
+    case 'frases':     mc.innerHTML = renderFlashcards(); setupFlashcards(); break;
+    case 'conversas':  mc.innerHTML = renderConversas(); break;
+    case 'conquistas': mc.innerHTML = renderConquistas(); break;
+    default:           mc.innerHTML = renderHome();
   }
-
-  highlightPlaying();
-
-  if (window.innerWidth <= 720) {
-    sel('sidebar').classList.remove('open');
-  }
+  renderSidebarProfile();
+  highlightDot();
+  if (window.innerWidth <= 800) $('sidebar').classList.remove('open');
 }
 
 /* ---- RENDER: HOME ---- */
 
 function renderHome() {
-  const done  = totalDone();
-  const total = 194;
-  const pct   = Math.round((done / total) * 100);
+  const done   = totalDone();
+  const lv     = level();
+  const xpN    = xpInLevel();
+  const str    = streak();
+  const unlocked = ACHIEVEMENTS.filter(isUnlocked).length;
+
+  const lastPlayed = nowId ? `Continuar — ${$('playerTitle')?.textContent || ''}` : 'Começar agora';
 
   return `
-    <div class="page-content">
-      ${fileWarning()}
-      <div class="page-header">
-        <h1>🌍 NgadaLearn</h1>
-        <p>Fluência em inglês com alma, ritmo e tecnologia — gratuito e sem anúncios</p>
+  <div class="page">
+    <div class="home-hero">
+      <div class="hero-top">
+        <div class="hero-avatar">
+          🧑
+          <div class="hero-level-badge">${lv + 1}</div>
+        </div>
+        <div class="hero-info">
+          <h1>${levelName()}</h1>
+          <div class="hero-subtitle">Nível ${lv + 1} — ${done} lições concluídas</div>
+        </div>
       </div>
-      <div class="page-body">
 
-        <div class="stats-grid">
-          <div class="stat-card">
-            <div class="stat-icon">🎯</div>
-            <div><div class="stat-value">${pct}%</div><div class="stat-label">Progresso geral</div></div>
-          </div>
-          <div class="stat-card">
-            <div class="stat-icon">✅</div>
-            <div><div class="stat-value">${done}</div><div class="stat-label">Lições concluídas</div></div>
-          </div>
-          <div class="stat-card">
-            <div class="stat-icon">🎵</div>
-            <div><div class="stat-value">${total}</div><div class="stat-label">Total de lições de áudio</div></div>
-          </div>
-          <div class="stat-card">
-            <div class="stat-icon">📄</div>
-            <div><div class="stat-value">8</div><div class="stat-label">Materiais em PDF</div></div>
-          </div>
+      <div class="hero-xp-wrap">
+        <div class="hero-xp-label">
+          <span>XP: ${xp()}</span>
+          <span>${xpN}/100 para o próximo nível</span>
         </div>
-
-        <div class="section-title">Cursos de Áudio</div>
-        <div class="courses-grid">
-          ${courseCard('assimil')}
-          ${courseCard('pimsleur')}
+        <div class="hero-xp-bar-outer">
+          <div class="hero-xp-bar-inner" style="width:${xpN}%"></div>
         </div>
-
-        <div class="section-title">Materiais e Apostilas</div>
-        <div class="courses-grid">
-          <div class="course-card" data-nav="frases" style="--card-color:#06b6d4">
-            <div class="course-card-header">
-              <div class="course-card-icon">💬</div>
-              <div>
-                <div class="course-card-title">1000 Frases Essenciais</div>
-                <div class="course-card-desc">As frases mais usadas no inglês do dia a dia — guia de referência rápida.</div>
-              </div>
-            </div>
-            <div class="course-card-tags"><span class="tag">📄 PDF</span><span class="tag">💬 Frases</span></div>
-          </div>
-          <div class="course-card" data-nav="udemy" style="--card-color:#22c55e">
-            <div class="course-card-header">
-              <div class="course-card-icon">🎓</div>
-              <div>
-                <div class="course-card-title">Materiais Udemy</div>
-                <div class="course-card-desc">Apostilas, textos e atividades de Vocabulary Boost do curso Udemy.</div>
-              </div>
-            </div>
-            <div class="course-card-tags"><span class="tag">📄 4 PDFs</span><span class="tag">📝 Leitura</span></div>
-          </div>
-        </div>
-
-        <div class="section-title">Recursos Online Gratuitos</div>
-        <div class="resource-grid">
-          ${ONLINE_RESOURCES.slice(0, 3).map(r => resourceCard(r)).join('')}
-        </div>
-        <div style="margin-top:10px">
-          <span class="btn btn-ghost" data-nav="online" style="cursor:pointer">Ver todos os recursos online →</span>
-        </div>
-
       </div>
+
+      <div class="hero-chips">
+        <span class="chip fire">🔥 ${str} dia${str !== 1 ? 's' : ''} de streak</span>
+        <span class="chip xp">⚡ ${xp()} XP total</span>
+        <span class="chip gold">🏆 ${unlocked} / ${ACHIEVEMENTS.length} conquistas</span>
+      </div>
+
+      <button class="continue-btn" data-nav="${nowId ? currentPage : 'assimil'}">
+        ▶ ${lastPlayed}
+      </button>
+    </div>
+
+    <div class="home-body">
+      <div class="section-hd">🌍 Mundos</div>
+      <div class="worlds-grid">
+        ${worldCard('assimil')}
+        ${worldCard('pimsleur')}
+      </div>
+
+      <div class="section-hd">🏆 Conquistas recentes</div>
+      <div class="ach-row">
+        ${ACHIEVEMENTS.map(a => `
+          <div class="ach-mini ${isUnlocked(a) ? 'unlocked' : 'locked'}">
+            <span class="ach-mini-icon">${a.icon}</span>
+            <span class="ach-mini-name">${a.name}</span>
+          </div>`).join('')}
+        <div class="ach-mini" data-nav="conquistas" style="cursor:pointer;min-width:80px;justify-content:center;gap:4px">
+          <span class="ach-mini-icon">→</span>
+          <span class="ach-mini-name">Ver todas</span>
+        </div>
+      </div>
+    </div>
+  </div>`;
+}
+
+function worldCard(cid) {
+  const c    = COURSES[cid];
+  const done = cid === 'assimil' ? assimilDone() : pimsleurDone();
+  const pct  = Math.round((done / c.total) * 100);
+  const stars = done === 0 ? '☆☆☆' : done < c.total / 3 ? '★☆☆' : done < (c.total * 2 / 3) ? '★★☆' : '★★★';
+  return `
+    <div class="world-card ${c.cls}" data-nav="${cid}" style="--wc:${c.wc}">
+      <div class="world-stars">${stars}</div>
+      <span class="world-emoji">${c.icon}</span>
+      <div class="world-name">${c.name}</div>
+      <div class="world-sub">${c.desc}</div>
+      <div class="world-prog-bar">
+        <div class="world-prog-fill" style="width:${pct}%"></div>
+      </div>
+      <div class="world-prog-text">${done} / ${c.total} lições · ${pct}%</div>
     </div>`;
 }
 
 /* ---- RENDER: COURSE ---- */
 
-function renderCourse(cid) {
+let courseTab = 'lessons';
+
+function renderCourse(cid, tab) {
+  if (tab) courseTab = tab;
   const c    = COURSES[cid];
-  const done = courseDone(cid);
-  const pct  = Math.round((done / c.totalAudio) * 100);
-  const tabs = cid === 'pimsleur'
-    ? ['lessons', 'readings', 'pdf']
-    : ['lessons', 'pdf'];
-  const tabLabel = { lessons: 'Lições', readings: 'Leituras', pdf: 'Apostila' };
+  const done = cid === 'assimil' ? assimilDone() : pimsleurDone();
+  const pct  = Math.round((done / c.total) * 100);
+
+  const hasTabs = cid === 'pimsleur';
+  const tabs = hasTabs ? ['lessons','readings'] : ['lessons'];
+  const tabNames = { lessons: `Lições (${c.lessons.length})`, readings: `Leituras (${c.readings?.length || 0})` };
 
   return `
-    <div class="page-content">
-      <div class="course-header">
-        <div class="course-header-icon">${c.icon}</div>
+  <div class="page">
+    <div class="course-hero">
+      <div class="course-hero-top">
+        <div class="course-big-icon">${c.icon}</div>
         <div>
-          <h1>${c.name}</h1>
+          <h1>${c.full}</h1>
           <p>${c.desc}</p>
-          <div class="header-stats">
-            <span class="hstat"><strong>${done}</strong> de <strong>${c.totalAudio}</strong> concluídas</span>
-            <span class="hstat"><strong>${pct}%</strong> completo</span>
+          <div class="course-chips">
+            <span class="c-chip">✅ ${done} feitas</span>
+            <span class="c-chip">🎯 ${pct}% completo</span>
+            <span class="c-chip">⚡ ${done * 10} XP ganho</span>
           </div>
         </div>
       </div>
+    </div>
 
-      <div class="tabs">
-        ${tabs.map(t => `
-          <button class="tab-btn ${state.tab === t ? 'active' : ''}" data-tab="${t}" data-course="${cid}">
-            ${tabLabel[t]}
-          </button>`).join('')}
-      </div>
+    ${hasTabs ? `
+    <div class="tabs">
+      ${tabs.map(t => `
+        <button class="tab-btn ${courseTab === t ? 'active' : ''}" data-tab="${t}" data-cid="${cid}">
+          ${tabNames[t]}
+        </button>`).join('')}
+    </div>` : ''}
 
-      <div id="tabPanel">
-        ${renderTab(cid)}
-      </div>
-    </div>`;
+    <div class="lesson-grid-area" id="lessonArea">
+      ${courseTab === 'readings' && cid === 'pimsleur'
+        ? lessonGrid(c.readings, 'pimsleur_r', c.icon, 'PIMSLEUR Leituras')
+        : lessonGrid(c.lessons, c.pk, c.icon, c.name)}
+    </div>
+  </div>`;
 }
 
-function renderTab(cid) {
-  const c = COURSES[cid];
-  if (state.tab === 'lessons') {
+function lessonGrid(lessons, pk, icon, cname) {
+  const chapters = [];
+  for (let i = 0; i < lessons.length; i += 10) {
+    chapters.push(lessons.slice(i, i + 10));
+  }
+
+  return chapters.map((ch, ci) => {
+    const chStart = ci * 10 + 1;
+    const chEnd   = Math.min(chStart + ch.length - 1, lessons.length);
+    const chDone  = ch.filter(l => isDone(pk, l.id)).length;
+
     return `
-      <div class="lesson-area">
-        <div class="search-wrap">
-          <input class="search-input" id="searchInput" placeholder="Buscar lição..." autocomplete="off">
+      <div class="chapter-block">
+        <div class="chapter-title">Capítulo ${ci + 1} &nbsp;·&nbsp; Lições ${chStart}–${chEnd} &nbsp;·&nbsp; ${chDone}/${ch.length}</div>
+        <div class="lesson-grid">
+          ${ch.map(l => {
+            const done    = isDone(pk, l.id);
+            const playing = nowId === l.id && nowPK === pk;
+            const cls     = playing ? 'playing' : done ? 'done' : 'idle';
+            return `
+              <div class="lesson-dot ${cls}" data-id="${l.id}" data-pk="${pk}"
+                   data-audio="${l.audio}" data-icon="${icon}" data-cname="${cname}"
+                   title="${l.title}">
+                ${playing ? '♫' : l.id}
+              </div>`;
+          }).join('')}
         </div>
-        ${renderLessonList(c.lessons, cid, c.icon, c.short)}
-      </div>`;
-  }
-  if (state.tab === 'readings' && cid === 'pimsleur') {
-    return `
-      <div class="lesson-area">
-        ${renderLessonList(c.readings, 'pimsleur_r', c.icon, 'PIMSLEUR Leituras')}
-      </div>`;
-  }
-  if (state.tab === 'pdf') {
-    if (cid === 'pimsleur') {
-      return `
-        <div class="lesson-area">
-          <div class="section-title" style="margin-bottom:12px">Apostilas PIMSLEUR</div>
-          <div class="materials-grid">
-            ${c.apostilas.map(a => materialItem(a.icon || '📄', a.title, 'Clique para abrir', a.path)).join('')}
-          </div>
-        </div>`;
-    }
-    if (c.pdf) {
-      return `<iframe src="${encodePath(c.pdf)}" class="pdf-frame" style="height:calc(100vh - var(--player-h) - 220px)"></iframe>`;
-    }
-  }
-  return `<div class="empty"><div class="empty-icon">📂</div><p>Nenhum conteúdo nesta aba.</p></div>`;
-}
-
-function renderLessonList(lessons, progressKey, icon, courseName) {
-  return lessons.map((l, i) => {
-    const done    = isDone(progressKey, l.id);
-    const playing = state.lesson?.id === l.id && state.playlistCourse === progressKey;
-    return `
-      <div class="lesson-item ${done ? 'completed' : ''} ${playing ? 'playing' : ''}"
-           data-id="${l.id}" data-pk="${progressKey}" data-i="${i}"
-           data-audio="${l.audio}" data-icon="${icon}" data-cname="${courseName}">
-        <div class="lesson-num-wrap">${playing ? '♫' : (done ? '✓' : l.id)}</div>
-        <div class="lesson-title">${l.title}</div>
-        <button class="mark-btn" data-id="${l.id}" data-pk="${progressKey}">
-          ${done ? '✓ Feito' : 'Marcar'}
-        </button>
-        <span class="play-dot">▶</span>
       </div>`;
   }).join('');
 }
 
-/* ---- RENDER: UDEMY ---- */
+/* ---- RENDER: CONQUISTAS ---- */
 
-function renderUdemy() {
-  const items = MATERIALS.filter(m => m.id.startsWith('udemy'));
+function renderConquistas() {
+  const stats = getStats();
   return `
-    <div class="page-content">
-      <div class="page-header">
-        <h1>🎓 Materiais Udemy</h1>
-        <p>Apostilas e atividades do curso de inglês</p>
-      </div>
-      <div class="page-body">
-        <div class="materials-grid">
-          ${items.map(m => materialItem(m.icon, m.title, m.desc, m.path)).join('')}
-        </div>
-      </div>
-    </div>`;
-}
-
-/* ---- RENDER: APOSTILAS ---- */
-
-function renderApostilas() {
-  return `
-    <div class="page-content">
-      <div class="page-header">
-        <h1>📄 Apostilas e Materiais</h1>
-        <p>Todos os PDFs disponíveis no NgadaLearn</p>
-      </div>
-      <div class="page-body">
-        <div class="materials-grid">
-          ${MATERIALS.map(m => materialItem(m.icon, m.title, m.desc, m.path)).join('')}
-        </div>
-      </div>
-    </div>`;
-}
-
-/* ---- RENDER: FULL PDF PAGE ---- */
-
-function renderFullPDF(path, title) {
-  return `
-    <div class="page-content">
-      <div class="page-header">
-        <h1>💬 ${title}</h1>
-        <p>Use Ctrl+F para buscar frases específicas</p>
-      </div>
-      <iframe src="${encodePath(path)}" class="pdf-frame"
-        style="height:calc(100vh - var(--player-h) - 110px)"></iframe>
-    </div>`;
-}
-
-/* ---- RENDER: ONLINE ---- */
-
-function renderOnline() {
-  return `
-    <div class="page-content">
-      <div class="page-header">
-        <h1>🌐 Aulas de Inglês Grátis Online</h1>
-        <p>Recursos gratuitos de <strong>aulasdeinglesgratis.net</strong> — conteúdo organizado por categoria</p>
-      </div>
-      <div class="page-body">
-
-        <div class="online-section">
-          <div class="section-title">Categorias Principais</div>
-          <div class="resource-grid">
-            ${ONLINE_RESOURCES.map(r => resourceCard(r)).join('')}
-          </div>
-        </div>
-
-        <div class="online-section">
-          <div class="section-title">Navegar no Site Completo</div>
-          <div style="background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;">
-            <div style="padding:10px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;">
-              <span style="font-size:13px;font-weight:600;">aulasdeinglesgratis.net</span>
-              <a href="https://aulasdeinglesgratis.net" target="_blank" rel="noopener" class="btn btn-primary" style="font-size:11px;padding:5px 12px;">↗ Abrir em nova aba</a>
-            </div>
-            <iframe
-              src="https://aulasdeinglesgratis.net"
-              style="width:100%;height:calc(100vh - var(--player-h) - 320px);border:none;min-height:400px;"
-              sandbox="allow-scripts allow-same-origin allow-forms allow-popups"
-              loading="lazy">
-            </iframe>
-          </div>
-        </div>
-
-      </div>
-    </div>`;
-}
-
-/* ---- RENDER HELPERS ---- */
-
-function courseCard(cid) {
-  const c    = COURSES[cid];
-  const done = courseDone(cid);
-  const pct  = Math.round((done / c.totalAudio) * 100);
-  return `
-    <div class="course-card" data-nav="${cid}" style="--card-color:${c.color}">
-      <div class="course-card-header">
-        <div class="course-card-icon">${c.icon}</div>
-        <div>
-          <div class="course-card-title">${c.name}</div>
-          <div class="course-card-desc">${c.desc}</div>
-        </div>
-      </div>
-      <div class="course-card-tags">
-        <span class="tag">🎵 ${c.totalAudio} lições</span>
-        <span class="tag">🎧 Áudio</span>
-      </div>
-      <div class="course-progress-bar-wrap">
-        <div class="course-progress-fill" style="width:${pct}%"></div>
-      </div>
-      <div class="course-progress-text">${done} / ${c.totalAudio} concluídas</div>
-    </div>`;
-}
-
-function materialItem(icon, title, desc, path) {
-  return `
-    <div class="material-card" data-pdf="${path}" data-title="${title}">
-      <div class="material-icon">${icon}</div>
-      <div>
-        <div class="material-title">${title}</div>
-        <div class="material-desc">${desc}</div>
-      </div>
-    </div>`;
-}
-
-function resourceCard(r) {
-  return `
-    <a class="resource-card" href="${r.url}" target="_blank" rel="noopener">
-      <div class="resource-card-header">
-        <span class="resource-emoji">${r.emoji}</span>
-        <span class="resource-label">${r.label}</span>
-      </div>
-      <div class="resource-title">${r.title}</div>
-      <div class="resource-desc">${r.desc}</div>
-      <div class="resource-footer">
-        ${r.tags.map(t => `<span class="tag">${t}</span>`).join('')}
-        <span class="ext-link-badge">↗ abrir</span>
-      </div>
-    </a>`;
-}
-
-function courseDone(cid) {
-  if (cid === 'assimil')  return getCompleted('assimil').length;
-  if (cid === 'pimsleur') return getCompleted('pimsleur').length + getCompleted('pimsleur_r').length;
-  return 0;
-}
-
-function fileWarning() {
-  if (location.protocol !== 'file:') return '';
-  return `
-    <div class="notice-banner">
-      ⚠️ <strong>Dica:</strong> Para reproduzir os áudios, abra este arquivo com um servidor local.
-      Execute no terminal: <code style="background:rgba(0,0,0,.3);padding:1px 6px;border-radius:4px;">npx serve .</code>
-      ou <code style="background:rgba(0,0,0,.3);padding:1px 6px;border-radius:4px;">python -m http.server</code>
-    </div>`;
-}
-
-/* ---- PDF MODAL ---- */
-
-function openPDF(path, title) {
-  closePDF();
-  const m = document.createElement('div');
-  m.id = 'pdfModal';
-  m.className = 'pdf-modal';
-  m.innerHTML = `
-    <div class="pdf-modal-bar">
-      <span class="pdf-modal-title">📄 ${title}</span>
-      <div class="pdf-modal-actions">
-        <a href="${encodePath(path)}" target="_blank" class="btn btn-primary">↗ Nova aba</a>
-        <button class="btn btn-ghost" onclick="closePDF()">✕ Fechar</button>
+  <div class="page">
+    <div class="page-hd">
+      <h1>🏆 Conquistas</h1>
+      <p>${ACHIEVEMENTS.filter(isUnlocked).length} de ${ACHIEVEMENTS.length} desbloqueadas</p>
+    </div>
+    <div class="ach-page">
+      <div class="ach-grid">
+        ${ACHIEVEMENTS.map(a => {
+          const ok = isUnlocked(a);
+          return `
+            <div class="ach-card ${ok ? 'unlocked' : 'locked'}">
+              ${ok ? '<div class="ach-badge">✓</div>' : ''}
+              <span class="ach-icon">${a.icon}</span>
+              <div class="ach-name">${a.name}</div>
+              <div class="ach-desc">${a.desc}</div>
+            </div>`;
+        }).join('')}
       </div>
     </div>
-    <iframe src="${encodePath(path)}" class="pdf-frame" style="flex:1;height:0;min-height:0"></iframe>`;
-  document.body.appendChild(m);
+  </div>`;
 }
 
-function closePDF() {
-  const m = document.getElementById('pdfModal');
-  if (m) m.remove();
+/* ---- RENDER: TEXTOS ---- */
+
+function renderTextos() {
+  return `
+  <div class="page">
+    <div class="page-hd">
+      <h1>📖 Textos</h1>
+      <p>Pratique leitura com textos do iniciante ao avançado.</p>
+    </div>
+    <div class="textos-grid">
+      ${TEXTOS.map(t => {
+        const read = isDone('textos', t.id);
+        return `
+          <div class="texto-card ${read ? 'read' : ''}" data-tid="${t.id}">
+            <div class="texto-level ${t.level}">${t.level}</div>
+            <div class="texto-title">${t.title}</div>
+            <div class="texto-preview">${t.preview}</div>
+          </div>
+        `;
+      }).join('')}
+    </div>
+  </div>`;
+}
+
+/* ---- RENDER: CONVERSAS ---- */
+
+function renderConversas() {
+  return `
+  <div class="page">
+    <div class="page-hd">
+      <h1>🗣️ Conversas</h1>
+      <p>Diálogos do dia a dia para praticar o inglês falado.</p>
+    </div>
+    <div class="conversas-list">
+      ${CONVERSAS.map(c => {
+        const done = isDone('conversas', c.id);
+        return `
+          <div class="conversa-card ${done ? 'done' : ''}" data-cid="${c.id}">
+            <div class="conversa-num">${c.id}</div>
+            <div style="flex:1">
+              <div class="conversa-title">${c.title}</div>
+              <div class="conversa-sub">${c.sub}</div>
+            </div>
+            ${done ? '<div class="conversa-done">✓ Concluído</div>' : ''}
+          </div>
+        `;
+      }).join('')}
+    </div>
+  </div>`;
+}
+
+/* ---- FLASHCARDS LOGIC ---- */
+
+let fcIndex = 0;
+let fcCurrent = null;
+
+function renderFlashcards() {
+  return `
+  <div class="page">
+    <div class="page-hd">
+      <h1>⚡ Flashcards</h1>
+      <p>Treine frases e expressões comuns em inglês.</p>
+    </div>
+    <div class="fc-arena" id="fcArena"></div>
+  </div>`;
+}
+
+function setupFlashcards() {
+  fcIndex = 0;
+  nextFlashcard();
+}
+
+function nextFlashcard() {
+  if (fcIndex >= FRASES.length) fcIndex = 0;
+  fcCurrent = FRASES[fcIndex];
+  
+  const total = FRASES.length;
+  const pct = ((fcIndex) / total) * 100;
+
+  $('fcArena').innerHTML = `
+    <div class="fc-progress">
+      <div class="fc-count">${fcIndex + 1} / ${total}</div>
+      <div class="fc-pb-wrap"><div class="fc-pb" style="width:${pct}%"></div></div>
+    </div>
+    <div class="flashcard-wrap" id="fcCard" onclick="this.classList.toggle('flipped')">
+      <div class="flashcard-inner">
+        <div class="fc-face fc-front">
+          <div class="fc-label">FRENTE (INGLÊS)</div>
+          <div class="fc-phrase">${fcCurrent.en}</div>
+          ${fcCurrent.pron ? `<div class="fc-pron">${fcCurrent.pron}</div>` : ''}
+          <div class="fc-hint">Clique no card para revelar a tradução</div>
+        </div>
+        <div class="fc-face fc-back">
+          <div class="fc-label">VERSO (PORTUGUÊS)</div>
+          <div class="fc-phrase">${fcCurrent.pt}</div>
+          <div class="fc-hint">Clique para voltar</div>
+        </div>
+      </div>
+    </div>
+    <div class="fc-actions">
+      <button class="btn btn-primary" style="padding:12px 24px; font-size:14px" onclick="goNextFC()">Próximo ➔</button>
+    </div>
+  `;
+}
+
+window.goNextFC = function() {
+  if (!isDone('frases', fcCurrent.id)) {
+    toggleDone('frases', fcCurrent.id);
+  }
+  fcIndex++;
+  if (fcIndex >= FRASES.length) {
+    $('fcArena').innerHTML = `
+      <div class="fc-done">
+        <div class="fc-done-icon">🎉</div>
+        <h2>Parabéns!</h2>
+        <p>Você revisou todos os flashcards disponíveis hoje.</p>
+        <button class="btn btn-primary" onclick="setupFlashcards()">Recomeçar</button>
+      </div>`;
+    showXPPop();
+  } else {
+    nextFlashcard();
+  }
+}
+
+/* ---- MODALS ---- */
+
+function openModalTexto(id) {
+  const t = TEXTOS.find(x => x.id === id);
+  if (!t) return;
+  $('modal').innerHTML = `
+    <div class="modal-header">
+      <div class="modal-title">${t.title}</div>
+      <button class="modal-close" onclick="closeModal()">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="modal-text">
+        ${t.content.map(p => `
+          <p style="margin-bottom:16px;">
+            <strong style="color:var(--text);font-size:15px">${p.en}</strong><br>
+            <span style="color:var(--text2);font-size:13px">${p.pt}</span>
+          </p>
+        `).join('')}
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-primary" onclick="markDoneAndClose('textos', ${t.id})" style="width:100%">✓ Marcar como Lido</button>
+    </div>
+  `;
+  $('overlay').classList.add('show');
+  $('modal').classList.add('show');
+}
+
+function openModalConversa(id) {
+  const c = CONVERSAS.find(x => x.id === id);
+  if (!c) return;
+  $('modal').innerHTML = `
+    <div class="modal-header">
+      <div class="modal-title">${c.title}</div>
+      <button class="modal-close" onclick="closeModal()">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="dialogue">
+        ${c.dialogue.map(l => `
+          <div class="dialog-line">
+            <div class="dl-speaker">${l.speaker}</div>
+            <div class="dl-content">
+              <div class="dl-en">${l.en}</div>
+              <div class="dl-pt">${l.pt}</div>
+            </div>
+          </div>
+        `).join('')}
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-primary" onclick="markDoneAndClose('conversas', ${c.id})" style="width:100%">✓ Marcar como Concluído</button>
+    </div>
+  `;
+  $('overlay').classList.add('show');
+  $('modal').classList.add('show');
+}
+
+window.closeModal = function() {
+  $('overlay').classList.remove('show');
+  $('modal').classList.remove('show');
+}
+
+window.markDoneAndClose = function(pk, id) {
+  if (!isDone(pk, id)) {
+    toggleDone(pk, id);
+    showXPPop();
+  }
+  closeModal();
+  nav(currentPage); // refresh view
 }
 
 /* ---- EVENT DELEGATION ---- */
 
-sel('mainContent').addEventListener('click', e => {
-  // Tab button
-  const tab = e.target.closest('.tab-btn');
+$('mainContent').addEventListener('click', e => {
+  // Tab
+  const tab = e.target.closest('.tab-btn[data-tab]');
   if (tab) {
-    state.tab = tab.dataset.tab;
-    navigate(state.page);
+    courseTab = tab.dataset.tab;
+    const cid = tab.dataset.cid;
+    $('mainContent').innerHTML = renderCourse(cid);
+    highlightDot();
     return;
   }
 
-  // Mark done button
-  const mark = e.target.closest('.mark-btn');
-  if (mark) {
-    e.stopPropagation();
-    const id = parseInt(mark.dataset.id);
-    const pk = mark.dataset.pk;
-    toggleDone(pk, id);
-    const item = mark.closest('.lesson-item');
-    if (item) {
-      item.classList.toggle('completed', isDone(pk, id));
-      mark.textContent = isDone(pk, id) ? '✓ Feito' : 'Marcar';
-      const numWrap = item.querySelector('.lesson-num-wrap');
-      if (numWrap && !item.classList.contains('playing')) {
-        numWrap.textContent = isDone(pk, id) ? '✓' : parseInt(item.dataset.id);
-      }
-    }
+  // Texto card
+  const txtCard = e.target.closest('.texto-card');
+  if (txtCard) {
+    openModalTexto(parseInt(txtCard.dataset.tid));
     return;
   }
 
-  // Lesson item → play
-  const lessonEl = e.target.closest('.lesson-item');
-  if (lessonEl) {
-    const id    = parseInt(lessonEl.dataset.id);
-    const pk    = lessonEl.dataset.pk;
-    const audio = lessonEl.dataset.audio;
-    const icon  = lessonEl.dataset.icon;
-    const cname = lessonEl.dataset.cname;
+  // Conversa card
+  const convCard = e.target.closest('.conversa-card');
+  if (convCard) {
+    openModalConversa(parseInt(convCard.dataset.cid));
+    return;
+  }
 
-    const allItems = [...document.querySelectorAll(`.lesson-item[data-pk="${pk}"]`)];
-    const playlist = allItems.map(el => ({
+  // nav card / button
+  const navEl = e.target.closest('[data-nav]');
+  if (navEl) { nav(navEl.dataset.nav); return; }
+
+  // lesson dot
+  const dot = e.target.closest('.lesson-dot');
+  if (dot) {
+    const id    = parseInt(dot.dataset.id);
+    const pk    = dot.dataset.pk;
+    const apath = dot.dataset.audio;
+    const icon  = dot.dataset.icon;
+    const cname = dot.dataset.cname;
+
+    const allDots = qsa(`.lesson-dot[data-pk="${pk}"]`);
+    const pl = allDots.map(el => ({
       id:    parseInt(el.dataset.id),
-      title: el.querySelector('.lesson-title').textContent,
+      title: `Lição ${el.dataset.id}`,
       audio: el.dataset.audio
     }));
-    const playIdx = allItems.findIndex(el => parseInt(el.dataset.id) === id);
+    const idx = allDots.findIndex(el => parseInt(el.dataset.id) === id);
 
-    playItem({ id, title: lessonEl.querySelector('.lesson-title').textContent, audio }, playlist, playIdx, pk, icon, cname);
-    return;
-  }
+    // right-click or long-press: toggle done
+    if (e.target.closest('.lesson-dot.done') && e.shiftKey) {
+      toggleDone(pk, id);
+      refreshDot(dot, pk, id);
+      renderSidebarProfile();
+      return;
+    }
 
-  // Nav card (course-card or resource card with data-nav)
-  const navEl = e.target.closest('[data-nav]');
-  if (navEl) {
-    navigate(navEl.dataset.nav);
-    return;
-  }
-
-  // Material card → open PDF modal
-  const matCard = e.target.closest('.material-card[data-pdf]');
-  if (matCard) {
-    openPDF(matCard.dataset.pdf, matCard.dataset.title);
+    playLesson({ id, title: `Lição ${id}`, audio: apath }, pl, idx, pk, icon, cname);
     return;
   }
 });
 
-// Search filter
-sel('mainContent').addEventListener('input', e => {
-  if (e.target.id !== 'searchInput') return;
-  const q = e.target.value.toLowerCase();
-  document.querySelectorAll('.lesson-item').forEach(el => {
-    const match = el.querySelector('.lesson-title').textContent.toLowerCase().includes(q);
-    el.style.display = match ? '' : 'none';
-  });
+// Double-click dot = mark done
+$('mainContent').addEventListener('dblclick', e => {
+  const dot = e.target.closest('.lesson-dot');
+  if (!dot) return;
+  const id = parseInt(dot.dataset.id);
+  const pk = dot.dataset.pk;
+  toggleDone(pk, id);
+  refreshDot(dot, pk, id);
+  renderSidebarProfile();
+  if (isDone(pk, id)) showXPPop();
 });
+
+function refreshDot(dot, pk, id) {
+  const done    = isDone(pk, id);
+  const playing = nowId === id && nowPK === pk;
+  dot.className = `lesson-dot ${playing ? 'playing' : done ? 'done' : 'idle'}`;
+  if (!playing) dot.textContent = id;
+}
 
 /* ---- SIDEBAR NAV ---- */
 
-document.querySelectorAll('.nav-item[data-page]').forEach(el => {
-  el.addEventListener('click', e => { e.preventDefault(); navigate(el.dataset.page); });
+qsa('.nav-item[data-page]').forEach(el => {
+  el.addEventListener('click', e => { e.preventDefault(); nav(el.dataset.page); });
 });
 
-sel('sidebarToggle').addEventListener('click', () => {
-  sel('sidebar').classList.toggle('open');
+$('sidebarToggle').addEventListener('click', () => {
+  $('sidebar').classList.toggle('open');
 });
 
-/* ---- UTILITY ---- */
-
-function sel(id) { return document.getElementById(id); }
+function updateNavBadges() {
+  if($('badgeTextos')) $('badgeTextos').textContent = TEXTOS.length;
+  if($('badgeFrases')) $('badgeFrases').textContent = FRASES.length;
+  if($('badgeConversas')) $('badgeConversas').textContent = CONVERSAS.length;
+}
 
 /* ---- BOOT ---- */
 
-refreshGlobalBar();
-navigate('home');
+updateStreak();
+updateNavBadges();
+renderSidebarProfile();
+nav('home');

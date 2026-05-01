@@ -746,6 +746,23 @@ const CONVERSAS = [
       { speaker: 'A', en: 'I only see “Motel” and not “Hotel”.', pt: 'Eu apenas vejo “Motel” e não “Hotel”.' },
       { speaker: 'B', en: "Heheheh, yeah, it’s almost the same. Don’t worry. I’ll show you.", pt: 'Heheheh, sim, é quase o mesmo. Não se preocupe. Eu vou te mostrar.' }
     ]
+  },
+  {
+    id: 10,
+    title: 'Graduated',
+    sub: 'Formado e procurando emprego',
+    dialogue: [
+      { speaker: 'A', en: 'Thank God!', pt: 'Graças a Deus!' },
+      { speaker: 'B', en: 'Why are you so excited?', pt: 'Por que você está tão animado?' },
+      { speaker: 'A', en: 'Finally, I graduated!', pt: 'Finalmente, eu me formei!' },
+      { speaker: 'B', en: 'Wow! Congrats!', pt: 'Uau! Parabéns!' },
+      { speaker: 'A', en: 'Thank you.', pt: 'Obrigado.' },
+      { speaker: 'B', en: 'Are you already working in your area?', pt: 'Você já está trabalhando em sua área?' },
+      { speaker: 'A', en: "No, I’m looking for a job.", pt: 'Não, estou procurando um emprego.' },
+      { speaker: 'B', en: 'You will find one. This city needs engineers.', pt: 'Você vai encontrar um. Esta cidade precisa de engenheiros.' },
+      { speaker: 'A', en: 'Yeah, this city is increasing every year.', pt: 'Sim, esta cidade está aumentando a cada ano.' },
+      { speaker: 'B', en: 'You’re right.', pt: 'Você está certo.' }
+    ]
   }
 ];
 

@@ -10,33 +10,38 @@
 </head>
 <body>
 <div class="app" id="app">
+  <header class="topbar">
+    <div class="topbar-inner">
+      <a href="#" class="brand" data-nav="home">
+        <span class="brand-icon">🎓</span>
+        <span class="brand-text">NgadaLearn</span>
+      </a>
 
-  <aside class="sidebar" id="sidebar">
-    <div class="sidebar-header">
-      <div class="logo"><span class="logo-icon">🎓</span><span class="logo-text">NgadaLearn</span></div>
-      <button class="sidebar-toggle" id="sidebarToggle">☰</button>
+      <button class="menu-btn" id="sidebarToggle" aria-label="Menu">☰</button>
+
+      <nav class="topnav" id="sidebar">
+        <a href="#" class="nav-item active" data-page="home"><span class="nav-label">Início</span></a>
+        <a href="#" class="nav-item" data-page="assimil"><span class="nav-label">Assimil</span><span class="nav-badge">146</span></a>
+        <a href="#" class="nav-item" data-page="pimsleur"><span class="nav-label">PIMSLEUR</span><span class="nav-badge">48</span></a>
+        <a href="#" class="nav-item" data-page="textos"><span class="nav-label">Textos</span><span class="nav-badge" id="badgeTextos">5</span></a>
+        <a href="#" class="nav-item" data-page="frases"><span class="nav-label">Flashcards</span><span class="nav-badge new" id="badgeFrases">15</span></a>
+        <a href="#" class="nav-item" data-page="conversas"><span class="nav-label">Conversas</span><span class="nav-badge" id="badgeConversas">4</span></a>
+        <a href="#" class="nav-item" data-page="conquistas"><span class="nav-label">Conquistas</span></a>
+      </nav>
+
+      <div class="topbar-actions">
+        <div class="top-profile" id="sidebarProfile"></div>
+      </div>
     </div>
+  </header>
 
-    <div class="sidebar-profile" id="sidebarProfile"></div>
+  <main class="main-content container" id="mainContent"></main>
 
-    <nav class="sidebar-nav">
-      <a href="#" class="nav-item active" data-page="home"><span class="nav-icon">🏠</span><span class="nav-label">Início</span></a>
-
-      <div class="nav-section">ÁUDIO</div>
-      <a href="#" class="nav-item" data-page="assimil"><span class="nav-icon">📚</span><span class="nav-label">Assimil</span><span class="nav-badge">146</span></a>
-      <a href="#" class="nav-item" data-page="pimsleur"><span class="nav-icon">🎧</span><span class="nav-label">PIMSLEUR</span><span class="nav-badge">48</span></a>
-
-      <div class="nav-section">APRENDER</div>
-      <a href="#" class="nav-item" data-page="textos"><span class="nav-icon">📖</span><span class="nav-label">Textos</span><span class="nav-badge" id="badgeTextos">5</span></a>
-      <a href="#" class="nav-item" data-page="frases"><span class="nav-icon">⚡</span><span class="nav-label">Flashcards</span><span class="nav-badge new" id="badgeFrases">15</span></a>
-      <a href="#" class="nav-item" data-page="conversas"><span class="nav-icon">🗣️</span><span class="nav-label">Conversas</span><span class="nav-badge" id="badgeConversas">4</span></a>
-
-      <div class="nav-section">EXTRA</div>
-      <a href="#" class="nav-item" data-page="conquistas"><span class="nav-icon">🏆</span><span class="nav-label">Conquistas</span></a>
-    </nav>
-  </aside>
-
-  <main class="main-content" id="mainContent"></main>
+  <footer class="footer">
+    <div class="container footer-inner">
+      <div class="footer-text">© 2026 NgadaLearn. Fluência em Inglês Acessível com Alma, Ritmo e Tecnologia.</div>
+    </div>
+  </footer>
 
   <div class="player" id="player">
     <div class="player-info">

@@ -801,34 +801,67 @@ if (window.speechSynthesis) {
   window.speechSynthesis.onvoiceschanged = refreshTTSVoices;
 }
 
-function pickVoice(lang) {
-  const target = lang.toLowerCase();
-  const exact = ttsVoices.find(v => (v.lang || '').toLowerCase() === target);
-  if (exact) return exact;
+const TTS_SETTINGS = {
+  en: { langs: ['en-US', 'en-GB', 'en'], rate: 0.95, pitch: 1 },
+  pt: { langs: ['pt-BR', 'pt-PT', 'pt'], rate: 1, pitch: 1 }
+};
 
-  const base = target.split('-')[0];
-  const prefix = ttsVoices.find(v => (v.lang || '').toLowerCase().startsWith(base));
-  return prefix || null;
+function normalizeTTSText(t) {
+  return String(t || '')
+    .replace(/[“”]/g, '"')
+    .replace(/[’]/g, "'")
+    .replace(/[–—]/g, '-')
+    .replace(/\s+/g, ' ')
+    .trim();
 }
 
-function speakText(text, lang) {
+function voiceScore(v, lang) {
+  const vlang = (v.lang || '').toLowerCase();
+  const target = lang.toLowerCase();
+  const base = target.split('-')[0];
+  const name = (v.name || '').toLowerCase();
+  let s = 0;
+
+  if (vlang === target) s += 120;
+  else if (vlang.startsWith(base)) s += 70;
+  else return 0;
+
+  if (name.includes('neural') || name.includes('natural')) s += 45;
+  if (name.includes('enhanced')) s += 25;
+  if (name.includes('google')) s += 30;
+  if (name.includes('microsoft')) s += 25;
+  if (name.includes('online')) s += 15;
+
+  if (v.localService === false) s += 8;
+  return s;
+}
+
+function pickBestVoice(langs) {
+  if (!ttsVoices.length) return null;
+  const candidates = langs.flatMap(l => ttsVoices.map(v => ({ v, score: voiceScore(v, l) })));
+  candidates.sort((a, b) => b.score - a.score);
+  return candidates[0]?.score > 0 ? candidates[0].v : null;
+}
+
+function speakText(text, tag) {
   if (!window.speechSynthesis || !window.SpeechSynthesisUtterance) return;
-  const t = String(text || '').trim();
+  const t = normalizeTTSText(text);
   if (!t) return;
 
   window.speechSynthesis.cancel();
   const u = new SpeechSynthesisUtterance(t);
-  u.lang = lang;
-  const v = pickVoice(lang);
+  const cfg = TTS_SETTINGS[tag] || TTS_SETTINGS.en;
+  const v = pickBestVoice(cfg.langs);
+  u.lang = (v?.lang) || cfg.langs[0];
   if (v) u.voice = v;
-  u.rate = 1;
-  u.pitch = 1;
+  u.rate = cfg.rate;
+  u.pitch = cfg.pitch;
   u.volume = 1;
   window.speechSynthesis.speak(u);
 }
 
 function ttsLang(tag) {
-  return tag === 'pt' ? 'pt-BR' : 'en-US';
+  return tag === 'pt' ? 'pt' : 'en';
 }
 
 function resolveTTSText(scope, id, idx, field) {

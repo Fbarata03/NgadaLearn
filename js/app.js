@@ -695,6 +695,40 @@ const CONVERSAS = [
       { speaker: 'A', en: 'A moment, please.', pt: 'Um momento, por favor.' },
       { speaker: 'B', en: 'Thanks!', pt: 'Obrigado!' }
     ]
+  },
+  {
+    id: 7,
+    title: 'Renting a car',
+    sub: 'Alugando um carro',
+    dialogue: [
+      { speaker: 'A', en: 'Hello!', pt: 'Olá!' },
+      { speaker: 'B', en: 'Hi, can I help you?', pt: 'Olá, posso ajudá-lo?' },
+      { speaker: 'A', en: 'Sure, I’d like to go to San Francisco. And I need to rent a car.', pt: 'Claro, eu gostaria de ir para São Francisco. E eu preciso alugar um carro.' },
+      { speaker: 'B', en: 'Sure, what’s your full name?', pt: 'Claro, qual é o seu nome completo?' },
+      { speaker: 'A', en: 'Johnson Smith.', pt: 'Johnson Smith.' },
+      { speaker: 'B', en: 'What’s your address?', pt: 'Qual é o seu endereço?' },
+      { speaker: 'A', en: 'Ritch Main Street, 41, Florida.', pt: 'Rua Ritch Main, 41, Flórida' },
+      { speaker: 'B', en: 'How many days?', pt: 'Quantos dias?' },
+      { speaker: 'A', en: '2 weeks.', pt: '2 semanas' },
+      { speaker: 'B', en: '$2,000 dollars.', pt: '$ 2.000 Dolares.' }
+    ]
+  },
+  {
+    id: 8,
+    title: 'Demotivated at work',
+    sub: 'Desmotivado no trabalho',
+    dialogue: [
+      { speaker: 'A', en: "I don’t like to work here.", pt: 'Eu não gosto de trabalhar aqui.' },
+      { speaker: 'B', en: 'Sorry, what do you mean?', pt: 'Desculpe, o que você quer dizer?' },
+      { speaker: 'A', en: 'I don’t like to work here in this company!', pt: 'Eu não gosto de trabalhar aqui nesta empresa!' },
+      { speaker: 'B', en: "Why not? What’s bothering you?", pt: 'Por que não? O que está te incomodando?' },
+      { speaker: 'A', en: 'They pay us a very small salary.', pt: 'Eles nos pagam um salário muito pequeno.' },
+      { speaker: 'B', en: 'Is this why you are demotivated?', pt: 'É por isso que você está desmotivado?' },
+      { speaker: 'A', en: "Yeah, I don’t know what to do.", pt: 'Sim, eu não sei o que fazer.' },
+      { speaker: 'B', en: 'Why don’t you get out of here?', pt: 'Por que você não sai daqui?' },
+      { speaker: 'A', en: "I’m really thinking about that.", pt: 'Eu realmente estou pensando nisso.' },
+      { speaker: 'B', en: 'I think you should work with what you like to do.', pt: 'Eu acho que você deve trabalhar com o que você gosta de fazer.' }
+    ]
   }
 ];
 

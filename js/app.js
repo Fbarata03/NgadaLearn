@@ -807,26 +807,53 @@ const TTS_SETTINGS = {
   pt: { langs: ['pt-BR', 'pt-PT', 'pt'], rate: 1, pitch: 1 }
 };
 
-const TTS_PREFERRED_VOICE_NAMES = {
+const TTS_PREFERRED_VOICE_PATTERNS = {
   en: [
-    'Google US English',
-    'Google UK English Female',
-    'Google UK English Male'
+    'google us english',
+    'google uk english female',
+    'google uk english male',
+    'microsoft aria online',
+    'microsoft jenny online',
+    'microsoft guy online',
+    'microsoft ryan online',
+    'microsoft',
+    'online (natural)',
+    'neural'
   ],
   pt: [
-    'Google português do Brasil',
-    'Google Portuguese (Brazil)',
-    'Google português',
-    'Google Portuguese'
+    'google português do brasil',
+    'google portuguese (brazil)',
+    'google português',
+    'google portuguese',
+    'microsoft francisca online',
+    'microsoft antonio online',
+    'microsoft',
+    'online (natural)',
+    'neural'
   ]
 };
 
-function findVoiceByName(preferredNames) {
+function voiceLangMatches(v, langs) {
+  const vl = String(v?.lang || '').toLowerCase();
+  return (langs || []).some(l => {
+    const t = String(l || '').toLowerCase();
+    if (!t) return false;
+    if (vl === t) return true;
+    const base = t.split('-')[0];
+    return base && vl.startsWith(base);
+  });
+}
+
+function findPreferredVoice(tag, langs) {
   if (!ttsVoices.length) return null;
-  const names = (preferredNames || []).map(n => String(n).toLowerCase());
-  if (!names.length) return null;
-  for (const target of names) {
-    const v = ttsVoices.find(x => String(x.name || '').toLowerCase() === target);
+  const patterns = TTS_PREFERRED_VOICE_PATTERNS[tag] || [];
+  const pool = ttsVoices.filter(v => voiceLangMatches(v, langs));
+  if (!pool.length) return null;
+
+  for (const p of patterns) {
+    const target = String(p || '').toLowerCase().trim();
+    if (!target) continue;
+    const v = pool.find(x => String(x.name || '').toLowerCase().includes(target));
     if (v) return v;
   }
   return null;
@@ -919,8 +946,8 @@ function voiceScore(v, lang) {
   if (name.includes('neural') || name.includes('natural')) s += 45;
   if (name.includes('enhanced')) s += 25;
   if (name.includes('google')) s += 90;
-  if (name.includes('microsoft')) s += 25;
-  if (name.includes('online')) s += 15;
+  if (name.includes('microsoft')) s += 70;
+  if (name.includes('online')) s += 35;
 
   if (v.localService === false) s += 8;
   return s;
@@ -946,7 +973,7 @@ async function speakText(text, tag) {
   await ensureTTSVoicesLoaded(900);
   if (myToken !== ttsToken) return;
 
-  const v = findVoiceByName(TTS_PREFERRED_VOICE_NAMES[tag]) || pickBestVoice(cfg.langs);
+  const v = findPreferredVoice(tag, cfg.langs) || pickBestVoice(cfg.langs);
   const lang = (v?.lang) || cfg.langs[0];
 
   const speakNext = (i) => {

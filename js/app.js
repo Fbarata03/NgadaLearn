@@ -787,6 +787,7 @@ function fmt(s) {
 }
 
 let ttsVoices = [];
+let ttsToken = 0;
 
 function refreshTTSVoices() {
   try {
@@ -806,6 +807,33 @@ const TTS_SETTINGS = {
   pt: { langs: ['pt-BR', 'pt-PT', 'pt'], rate: 1, pitch: 1 }
 };
 
+function ensureTTSVoicesLoaded(waitMs = 900) {
+  if (!window.speechSynthesis) return Promise.resolve();
+  refreshTTSVoices();
+  if (ttsVoices.length) return Promise.resolve();
+
+  return new Promise(resolve => {
+    let done = false;
+    const finish = () => {
+      if (done) return;
+      done = true;
+      resolve();
+    };
+
+    const prev = window.speechSynthesis.onvoiceschanged;
+    window.speechSynthesis.onvoiceschanged = () => {
+      try { prev?.(); } catch {}
+      refreshTTSVoices();
+      if (ttsVoices.length) finish();
+    };
+
+    setTimeout(() => {
+      refreshTTSVoices();
+      finish();
+    }, waitMs);
+  });
+}
+
 function normalizeTTSText(t) {
   return String(t || '')
     .replace(/[“”]/g, '"')
@@ -813,6 +841,43 @@ function normalizeTTSText(t) {
     .replace(/[–—]/g, '-')
     .replace(/\s+/g, ' ')
     .trim();
+}
+
+function splitTTSChunks(text, maxLen = 160) {
+  const t = normalizeTTSText(text);
+  if (!t) return [];
+  if (t.length <= maxLen) return [t];
+
+  const parts = t
+    .replace(/([.!?;:])\s+/g, '$1|')
+    .replace(/,\s+/g, ',|')
+    .split('|')
+    .map(x => x.trim())
+    .filter(Boolean);
+
+  const out = [];
+  let cur = '';
+  for (const p of parts) {
+    if (!cur) {
+      cur = p;
+      continue;
+    }
+    if ((cur + ' ' + p).length <= maxLen) cur = cur + ' ' + p;
+    else {
+      out.push(cur);
+      cur = p;
+    }
+  }
+  if (cur) out.push(cur);
+
+  const final = [];
+  for (const c of out) {
+    if (c.length <= maxLen) final.push(c);
+    else {
+      for (let i = 0; i < c.length; i += maxLen) final.push(c.slice(i, i + maxLen));
+    }
+  }
+  return final;
 }
 
 function voiceScore(v, lang) {
@@ -843,21 +908,38 @@ function pickBestVoice(langs) {
   return candidates[0]?.score > 0 ? candidates[0].v : null;
 }
 
-function speakText(text, tag) {
+async function speakText(text, tag) {
   if (!window.speechSynthesis || !window.SpeechSynthesisUtterance) return;
-  const t = normalizeTTSText(text);
-  if (!t) return;
-
-  window.speechSynthesis.cancel();
-  const u = new SpeechSynthesisUtterance(t);
   const cfg = TTS_SETTINGS[tag] || TTS_SETTINGS.en;
+  const chunks = splitTTSChunks(text);
+  if (!chunks.length) return;
+
+  ttsToken += 1;
+  const myToken = ttsToken;
+  window.speechSynthesis.cancel();
+
+  await ensureTTSVoicesLoaded(900);
+  if (myToken !== ttsToken) return;
+
   const v = pickBestVoice(cfg.langs);
-  u.lang = (v?.lang) || cfg.langs[0];
-  if (v) u.voice = v;
-  u.rate = cfg.rate;
-  u.pitch = cfg.pitch;
-  u.volume = 1;
-  window.speechSynthesis.speak(u);
+  const lang = (v?.lang) || cfg.langs[0];
+
+  const speakNext = (i) => {
+    if (myToken !== ttsToken) return;
+    const part = chunks[i];
+    if (!part) return;
+
+    const u = new SpeechSynthesisUtterance(part);
+    u.lang = lang;
+    if (v) u.voice = v;
+    u.rate = cfg.rate;
+    u.pitch = cfg.pitch;
+    u.volume = 1;
+    u.onend = () => speakNext(i + 1);
+    window.speechSynthesis.speak(u);
+  };
+
+  speakNext(0);
 }
 
 function ttsLang(tag) {

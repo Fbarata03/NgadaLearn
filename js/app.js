@@ -803,9 +803,34 @@ if (window.speechSynthesis) {
 }
 
 const TTS_SETTINGS = {
-  en: { langs: ['en-US', 'en-GB', 'en'], rate: 0.95, pitch: 1 },
+  en: { langs: ['en-US', 'en-GB', 'en'], rate: 1, pitch: 1 },
   pt: { langs: ['pt-BR', 'pt-PT', 'pt'], rate: 1, pitch: 1 }
 };
+
+const TTS_PREFERRED_VOICE_NAMES = {
+  en: [
+    'Google US English',
+    'Google UK English Female',
+    'Google UK English Male'
+  ],
+  pt: [
+    'Google português do Brasil',
+    'Google Portuguese (Brazil)',
+    'Google português',
+    'Google Portuguese'
+  ]
+};
+
+function findVoiceByName(preferredNames) {
+  if (!ttsVoices.length) return null;
+  const names = (preferredNames || []).map(n => String(n).toLowerCase());
+  if (!names.length) return null;
+  for (const target of names) {
+    const v = ttsVoices.find(x => String(x.name || '').toLowerCase() === target);
+    if (v) return v;
+  }
+  return null;
+}
 
 function ensureTTSVoicesLoaded(waitMs = 900) {
   if (!window.speechSynthesis) return Promise.resolve();
@@ -893,7 +918,7 @@ function voiceScore(v, lang) {
 
   if (name.includes('neural') || name.includes('natural')) s += 45;
   if (name.includes('enhanced')) s += 25;
-  if (name.includes('google')) s += 30;
+  if (name.includes('google')) s += 90;
   if (name.includes('microsoft')) s += 25;
   if (name.includes('online')) s += 15;
 
@@ -921,7 +946,7 @@ async function speakText(text, tag) {
   await ensureTTSVoicesLoaded(900);
   if (myToken !== ttsToken) return;
 
-  const v = pickBestVoice(cfg.langs);
+  const v = findVoiceByName(TTS_PREFERRED_VOICE_NAMES[tag]) || pickBestVoice(cfg.langs);
   const lang = (v?.lang) || cfg.langs[0];
 
   const speakNext = (i) => {

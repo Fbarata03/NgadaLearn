@@ -14,7 +14,7 @@ const COURSES = {
     lessons: range(146, n => ({
       id: n,
       title: `Lição ${n}`,
-      audio: `Assimil/Assimil - O Novo Inglês Sem Esforço - Audio/Lição (${n}).mp3`
+      audio: `Assimil/Assimil - O Novo Inglês Sem Esforço - Audio/Lição  (${n}).mp3`
     }))
   },
   pimsleur: {
@@ -1261,6 +1261,26 @@ function renderHome() {
     </div>
 
     <div class="home-body">
+      <div class="section-hd">📊 Progresso</div>
+      <div class="home-stats">
+        <div class="stat-card">
+          <div class="stat-val">${assimilDone()}</div>
+          <div class="stat-label">📚 Assimil</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-val">${pimsleurDone()}</div>
+          <div class="stat-label">🎧 PIMSLEUR</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-val">${frasesDone()}</div>
+          <div class="stat-label">⚡ Flashcards</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-val">${conversasDone()}</div>
+          <div class="stat-label">🗣️ Conversas</div>
+        </div>
+      </div>
+
       <div class="section-hd">🌍 Mundos</div>
       <div class="worlds-grid">
         ${worldCard('assimil')}
@@ -1328,6 +1348,9 @@ function renderCourse(cid, tab) {
             <span class="c-chip">🎯 ${pct}% completo</span>
             <span class="c-chip">⚡ ${done * 10} XP ganho</span>
           </div>
+          <div class="course-hero-prog">
+            <div class="course-hero-prog-fill" style="width:${pct}%"></div>
+          </div>
         </div>
       </div>
     </div>
@@ -1382,7 +1405,6 @@ function lessonGrid(lessons, pk, icon, cname) {
 /* ---- RENDER: CONQUISTAS ---- */
 
 function renderConquistas() {
-  const stats = getStats();
   return `
   <div class="page">
     <div class="page-hd">
@@ -1512,6 +1534,11 @@ function nextFlashcard() {
     <div class="fc-actions">
       <button class="btn btn-primary" style="padding:12px 24px; font-size:14px" onclick="goNextFC()">Próximo ➔</button>
     </div>
+    <div class="fc-shortcuts">
+      <span class="fc-shortcut-item"><span class="kbd">Space</span> virar</span>
+      <span class="fc-shortcut-item"><span class="kbd">→</span> próximo</span>
+      <span class="fc-shortcut-item"><span class="kbd">←</span> anterior</span>
+    </div>
   `;
 }
 
@@ -1569,26 +1596,32 @@ function openModalTexto(id) {
 function openModalConversa(id) {
   const c = CONVERSAS.find(x => x.id === id);
   if (!c) return;
+  const speakers = [...new Set(c.dialogue.map(l => l.speaker))];
   $('modal').innerHTML = `
     <div class="modal-header">
-      <div class="modal-title">${c.title}</div>
+      <div>
+        <div class="modal-title">${c.title}</div>
+        <div style="font-size:12px;color:var(--text2);margin-top:2px">${c.sub}</div>
+      </div>
       <button class="modal-close" onclick="closeModal()">✕</button>
     </div>
     <div class="modal-body">
-      <div class="dialogue">
-        ${c.dialogue.map((l, idx) => `
-          <div class="dialog-line">
-            <div class="dl-speaker">${l.speaker}</div>
-            <div class="dl-content">
-              <div class="dl-en">${l.en}</div>
-              <div class="dl-pt">${l.pt}</div>
-              <div class="tts-row">
+      <div class="dialogue" style="gap:14px">
+        ${c.dialogue.map((l, idx) => {
+          const side = l.speaker === speakers[0] ? 'left' : 'right';
+          return `
+          <div class="chat-msg ${side}">
+            <div class="chat-speaker">${l.speaker}</div>
+            <div class="chat-bubble">
+              <div class="chat-en">${l.en}</div>
+              <div class="chat-pt">${l.pt}</div>
+              <div class="chat-tts">
                 <button class="tts-btn" data-tts="1" data-scope="conversa" data-id="${c.id}" data-idx="${idx}" data-lang="en" data-field="en">🔊 EN</button>
                 <button class="tts-btn" data-tts="1" data-scope="conversa" data-id="${c.id}" data-idx="${idx}" data-lang="pt" data-field="pt">🔊 PT</button>
               </div>
             </div>
-          </div>
-        `).join('')}
+          </div>`;
+        }).join('')}
       </div>
     </div>
     <div class="modal-footer">
@@ -1740,9 +1773,52 @@ function updateNavBadges() {
   if($('badgeConversas')) $('badgeConversas').textContent = CONVERSAS.length;
 }
 
+/* ---- DARK MODE ---- */
+
+function applyTheme(mode) {
+  document.documentElement.setAttribute('data-theme', mode === 'dark' ? 'dark' : '');
+  const btn = $('themeToggle');
+  if (btn) btn.textContent = mode === 'dark' ? '☀️' : '🌙';
+  localStorage.setItem('nga_theme', mode);
+}
+
+function initTheme() {
+  const saved = localStorage.getItem('nga_theme');
+  if (saved === 'dark') applyTheme('dark');
+}
+
+$('themeToggle')?.addEventListener('click', () => {
+  const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+  applyTheme(isDark ? 'light' : 'dark');
+});
+
+/* ---- KEYBOARD SHORTCUTS (Flashcards) ---- */
+
+document.addEventListener('keydown', e => {
+  if (currentPage !== 'frases') return;
+  if (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT') return;
+
+  if (e.code === 'Space' || e.key === ' ') {
+    e.preventDefault();
+    $('fcCard')?.classList.toggle('flipped');
+    return;
+  }
+  if (e.key === 'ArrowRight' || e.key === 'Enter') {
+    e.preventDefault();
+    window.goNextFC?.();
+    return;
+  }
+  if (e.key === 'ArrowLeft') {
+    e.preventDefault();
+    if (fcIndex > 1) { fcIndex -= 2; nextFlashcard(); }
+    return;
+  }
+});
+
 /* ---- BOOT ---- */
 
 updateStreak();
 updateNavBadges();
 renderSidebarProfile();
+initTheme();
 nav('home');

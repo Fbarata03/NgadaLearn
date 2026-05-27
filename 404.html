@@ -4,18 +4,11 @@
   <meta charset="utf-8">
   <title>NgadaLearn</title>
   <script>
-    /*
-     * GitHub Pages SPA redirect
-     * Guarda o caminho actual na query string e redireciona para index.html
-     * O script em index.html restaura o caminho via history.replaceState
-     */
+    /* GitHub Pages SPA redirect — domínio raiz (ngadalearn.pt) */
     var l = window.location;
-    var base = '/NgadaLearn';
     l.replace(
       l.protocol + '//' + l.hostname + (l.port ? ':' + l.port : '') +
-      base + '/?p=' +
-      encodeURIComponent(l.pathname.slice(base.length) + l.search) +
-      (l.hash || '')
+      '/?p=' + encodeURIComponent(l.pathname + l.search) + (l.hash || '')
     );
   </script>
 </head>

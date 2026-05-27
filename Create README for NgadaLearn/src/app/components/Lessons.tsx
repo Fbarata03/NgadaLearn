@@ -10,20 +10,27 @@ import {
 } from "../data/lessonsData";
 import { CONVERSATIONS } from "../data/conversationsData";
 import { TEXTS } from "../data/textsData";
+import { GRAMMAR_LESSONS } from "../data/grammarData";
+import { PHRASE_CATEGORIES, TOTAL_PHRASES } from "../data/phrasesData";
+import { VOCABULARY } from "../data/vocabularyData";
 import {
   BookOpen, Headphones, Search, Play, CheckCircle2, Clock,
   ChevronDown, ChevronUp, MessageCircle, FileText,
+  BookMarked, MessageSquare, List,
 } from "lucide-react";
 
 const TABS = [
-  { id: "assimil",       label: "Assimil",       icon: BookOpen,        color: "bg-purple-600", desc: "146 lições · Método natural · Progressão gradual" },
-  { id: "pimsleur",      label: "Pimsleur",      icon: Headphones,      color: "bg-blue-600",   desc: "30 lições de áudio · Fala e compreensão oral" },
-  { id: "leituras",      label: "Leituras",      icon: BookOpen,        color: "bg-green-600",  desc: "18 leituras em áudio · Vocabulário em contexto" },
-  { id: "conversacoes",  label: "Conversações",  icon: MessageCircle,   color: "bg-orange-500", desc: "30 diálogos reais · Inglês do dia a dia com áudio TTS" },
-  { id: "textos",        label: "Textos",        icon: FileText,        color: "bg-teal-600",   desc: "14 textos com tradução · Do iniciante ao avançado" },
+  { id: "assimil",      label: "Assimil",      icon: BookOpen,       color: "bg-purple-600", desc: "146 lições · Método natural · Progressão gradual" },
+  { id: "pimsleur",     label: "Pimsleur",     icon: Headphones,     color: "bg-blue-600",   desc: "30 lições de áudio · Fala e compreensão oral" },
+  { id: "leituras",     label: "Leituras",     icon: BookOpen,       color: "bg-green-600",  desc: "18 leituras em áudio · Vocabulário em contexto" },
+  { id: "conversacoes", label: "Conversações", icon: MessageCircle,  color: "bg-orange-500", desc: "30 diálogos reais · Inglês do dia a dia com áudio TTS" },
+  { id: "textos",       label: "Textos",       icon: FileText,       color: "bg-teal-600",   desc: "14 textos com tradução · Do iniciante ao avançado" },
+  { id: "gramatica",    label: "Gramática",    icon: BookMarked,     color: "bg-indigo-600", desc: "10 lições de gramática · Do básico ao avançado" },
+  { id: "frases",       label: "Frases",       icon: MessageSquare,  color: "bg-pink-500",   desc: "150+ frases do dia a dia · 7 categorias" },
+  { id: "vocabulario",  label: "Vocabulário",  icon: List,           color: "bg-rose-600",   desc: "Adjectivos, verbos, expressões idiomáticas" },
 ] as const;
 
-type TabId = "assimil" | "pimsleur" | "leituras" | "conversacoes" | "textos";
+type TabId = "assimil" | "pimsleur" | "leituras" | "conversacoes" | "textos" | "gramatica" | "frases" | "vocabulario";
 
 const LEVEL_COLOR: Record<LessonLevel, string> = {
   "Iniciante":     "bg-green-100 text-green-700",
@@ -261,6 +268,161 @@ function ConversationsList({ search }: { search: string }) {
   );
 }
 
+/* ── Lista de Gramática ── */
+function GrammarList({ search }: { search: string }) {
+  const LEVEL_STYLE: Record<string, string> = {
+    "Iniciante":     "bg-green-100 text-green-700",
+    "Intermediário": "bg-blue-100 text-blue-700",
+    "Avançado":      "bg-purple-100 text-purple-700",
+  };
+
+  const filtered = search
+    ? GRAMMAR_LESSONS.filter(
+        g =>
+          g.title.toLowerCase().includes(search) ||
+          g.titlePt.toLowerCase().includes(search) ||
+          g.topic.toLowerCase().includes(search)
+      )
+    : GRAMMAR_LESSONS;
+
+  if (filtered.length === 0) {
+    return <p className="text-center text-gray-400 py-10">Nenhuma lição encontrada.</p>;
+  }
+
+  return (
+    <div className="space-y-2">
+      {filtered.map((g) => (
+        <Link key={g.id} to={`/grammar/${g.id}`}>
+          <div className="flex items-center gap-4 p-4 bg-white border rounded-xl hover:border-indigo-300 hover:shadow-md transition-all cursor-pointer group">
+            <div className="w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0 text-xl bg-indigo-50 group-hover:bg-indigo-100">
+              {g.icon}
+            </div>
+            <div className="flex-1 min-w-0">
+              <div className="flex flex-wrap items-center gap-2 mb-0.5">
+                <span className="font-bold text-gray-900 text-sm">{g.title}</span>
+                <span className={`px-2 py-0.5 rounded-full text-xs font-semibold ${LEVEL_STYLE[g.level]}`}>
+                  {g.level}
+                </span>
+                <span className="px-2 py-0.5 rounded-full text-xs font-semibold bg-indigo-100 text-indigo-700">
+                  {g.topic}
+                </span>
+              </div>
+              <p className="text-xs text-gray-500 truncate">{g.titlePt}</p>
+            </div>
+            <div className="flex items-center gap-1.5 text-xs text-gray-400 flex-shrink-0">
+              <BookMarked className="w-3.5 h-3.5" />
+              {g.rules.length} regras
+            </div>
+          </div>
+        </Link>
+      ))}
+    </div>
+  );
+}
+
+/* ── Lista de Frases por Categoria ── */
+function PhrasesCategoryList({ search }: { search: string }) {
+  const filtered = search
+    ? PHRASE_CATEGORIES.filter(
+        c =>
+          c.title.toLowerCase().includes(search) ||
+          c.titlePt.toLowerCase().includes(search)
+      )
+    : PHRASE_CATEGORIES;
+
+  if (filtered.length === 0) {
+    return <p className="text-center text-gray-400 py-10">Nenhuma categoria encontrada.</p>;
+  }
+
+  return (
+    <div className="space-y-2">
+      {filtered.map((cat) => (
+        <Link key={cat.id} to="/phrases">
+          <div className="flex items-center gap-4 p-4 bg-white border rounded-xl hover:border-pink-300 hover:shadow-md transition-all cursor-pointer group">
+            <div className={`w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0 text-xl ${cat.color}`}>
+              {cat.icon}
+            </div>
+            <div className="flex-1 min-w-0">
+              <div className="flex flex-wrap items-center gap-2 mb-0.5">
+                <span className="font-bold text-gray-900 text-sm">{cat.title}</span>
+              </div>
+              <p className="text-xs text-gray-500 truncate">{cat.titlePt}</p>
+            </div>
+            <div className="flex items-center gap-1.5 text-xs text-gray-400 flex-shrink-0">
+              <MessageSquare className="w-3.5 h-3.5" />
+              {cat.phrases.length} frases
+            </div>
+          </div>
+        </Link>
+      ))}
+    </div>
+  );
+}
+
+/* ── Lista de Vocabulário ── */
+function VocabList({ search }: { search: string }) {
+  const totalWords =
+    VOCABULARY.adjectives.words.length +
+    VOCABULARY.adverbs.words.length +
+    VOCABULARY.irregularVerbs.length +
+    VOCABULARY.regularVerbs.words.length +
+    VOCABULARY.idioms.length;
+
+  const sections = [
+    { id: "adjectives", title: VOCABULARY.adjectives.title, titlePt: VOCABULARY.adjectives.titlePt, icon: VOCABULARY.adjectives.icon, color: VOCABULARY.adjectives.color, count: VOCABULARY.adjectives.words.length },
+    { id: "adverbs", title: VOCABULARY.adverbs.title, titlePt: VOCABULARY.adverbs.titlePt, icon: VOCABULARY.adverbs.icon, color: VOCABULARY.adverbs.color, count: VOCABULARY.adverbs.words.length },
+    { id: "irregular", title: "Verbos Irregulares", titlePt: "Irregular Verbs", icon: "⚙️", color: "bg-red-600", count: VOCABULARY.irregularVerbs.length },
+    { id: "regular", title: VOCABULARY.regularVerbs.title, titlePt: VOCABULARY.regularVerbs.titlePt, icon: VOCABULARY.regularVerbs.icon, color: VOCABULARY.regularVerbs.color, count: VOCABULARY.regularVerbs.words.length },
+    { id: "idioms", title: "Expressões Idiomáticas", titlePt: "Idioms", icon: "💬", color: "bg-rose-500", count: VOCABULARY.idioms.length },
+  ];
+
+  const filtered = search
+    ? sections.filter(s => s.title.toLowerCase().includes(search) || s.titlePt.toLowerCase().includes(search))
+    : sections;
+
+  if (filtered.length === 0) {
+    return <p className="text-center text-gray-400 py-10">Nenhuma secção encontrada.</p>;
+  }
+
+  return (
+    <div className="space-y-2">
+      {/* Card de destaque total */}
+      {!search && (
+        <Link to="/vocabulary">
+          <div className="flex items-center gap-4 p-4 bg-gradient-to-r from-rose-600 to-rose-700 rounded-xl hover:from-rose-700 hover:to-rose-800 transition-all cursor-pointer mb-4">
+            <div className="w-12 h-12 rounded-xl bg-white/20 flex items-center justify-center text-white font-black text-lg">
+              {totalWords}
+            </div>
+            <div>
+              <p className="font-black text-white">Ver Todo o Vocabulário</p>
+              <p className="text-rose-200 text-xs">{totalWords} entradas · 5 categorias</p>
+            </div>
+          </div>
+        </Link>
+      )}
+      {filtered.map((section) => (
+        <Link key={section.id} to="/vocabulary">
+          <div className="flex items-center gap-4 p-4 bg-white border rounded-xl hover:border-rose-300 hover:shadow-md transition-all cursor-pointer group">
+            <div className={`w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0 text-xl ${section.color} text-white`}>
+              {section.icon}
+            </div>
+            <div className="flex-1 min-w-0">
+              <div className="flex flex-wrap items-center gap-2 mb-0.5">
+                <span className="font-bold text-gray-900 text-sm">{section.title}</span>
+              </div>
+              <p className="text-xs text-gray-500 truncate">{section.titlePt}</p>
+            </div>
+            <div className="flex items-center gap-1.5 text-xs text-gray-400 flex-shrink-0">
+              <List className="w-3.5 h-3.5" />
+              {section.count} entradas
+            </div>
+          </div>
+        </Link>
+      ))}
+    </div>
+  );
+}
+
 /* ══════════════════════════════
    PÁGINA PRINCIPAL
    ══════════════════════════════ */
@@ -269,13 +431,28 @@ export function Lessons() {
   const [search, setSearch] = useState("");
   const { totalCompleted, totalMinutes } = useProgress();
 
-  const lessons = (tab !== "conversacoes" && tab !== "textos")
+  const lessons = (tab !== "conversacoes" && tab !== "textos" && tab !== "gramatica" && tab !== "frases" && tab !== "vocabulario")
     ? LESSONS_MAP[tab as "assimil" | "pimsleur" | "leituras"]
     : [];
   const units = tab === "assimil" ? [...new Set(ASSIMIL_LESSONS.map(l => l.unit))].sort((a, b) => a - b) : [];
   const q = search.toLowerCase();
 
-  const totalAll = ASSIMIL_LESSONS.length + PIMSLEUR_LESSONS_LIST.length + LEITURAS_LIST.length + CONVERSATIONS.length + TEXTS.length;
+  const vocabTotal =
+    VOCABULARY.adjectives.words.length +
+    VOCABULARY.adverbs.words.length +
+    VOCABULARY.irregularVerbs.length +
+    VOCABULARY.regularVerbs.words.length +
+    VOCABULARY.idioms.length;
+
+  const totalAll =
+    ASSIMIL_LESSONS.length +
+    PIMSLEUR_LESSONS_LIST.length +
+    LEITURAS_LIST.length +
+    CONVERSATIONS.length +
+    TEXTS.length +
+    GRAMMAR_LESSONS.length +
+    TOTAL_PHRASES +
+    vocabTotal;
 
   return (
     <div className="bg-gray-50 min-h-screen">
@@ -285,12 +462,12 @@ export function Lessons() {
         <div className="mb-6">
           <h1 className="text-3xl font-black text-gray-900 mb-1">Seu Plano de Estudos</h1>
           <p className="text-gray-600">
-            {totalAll} aulas disponíveis · {totalCompleted} concluídas · {totalMinutes} min estudados
+            {totalAll} conteúdos disponíveis · {totalCompleted} concluídos · {totalMinutes} min estudados
           </p>
         </div>
 
         {/* Estatísticas rápidas */}
-        <div className="grid grid-cols-2 md:grid-cols-5 gap-3 mb-6">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-3">
           <Card className="p-4 bg-purple-600 text-white border-0 rounded-xl text-center">
             <p className="text-2xl font-black">{ASSIMIL_LESSONS.length}</p>
             <p className="text-xs text-purple-200">Assimil</p>
@@ -307,9 +484,23 @@ export function Lessons() {
             <p className="text-2xl font-black">{CONVERSATIONS.length}</p>
             <p className="text-xs text-orange-100">Conversações</p>
           </Card>
+        </div>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
           <Card className="p-4 bg-teal-600 text-white border-0 rounded-xl text-center">
             <p className="text-2xl font-black">{TEXTS.length}</p>
             <p className="text-xs text-teal-100">Textos</p>
+          </Card>
+          <Card className="p-4 bg-indigo-600 text-white border-0 rounded-xl text-center">
+            <p className="text-2xl font-black">{GRAMMAR_LESSONS.length}</p>
+            <p className="text-xs text-indigo-200">Gramática</p>
+          </Card>
+          <Card className="p-4 bg-pink-500 text-white border-0 rounded-xl text-center">
+            <p className="text-2xl font-black">{TOTAL_PHRASES}</p>
+            <p className="text-xs text-pink-100">Frases</p>
+          </Card>
+          <Card className="p-4 bg-rose-600 text-white border-0 rounded-xl text-center">
+            <p className="text-2xl font-black">{vocabTotal}</p>
+            <p className="text-xs text-rose-200">Vocabulário</p>
           </Card>
         </div>
 
@@ -318,7 +509,7 @@ export function Lessons() {
           {TABS.map((t) => (
             <button
               key={t.id}
-              onClick={() => setTab(t.id)}
+              onClick={() => { setTab(t.id); setSearch(""); }}
               className={`flex items-center gap-2 px-4 py-2.5 rounded-xl font-semibold text-sm transition-all ${
                 tab === t.id
                   ? `${t.color} text-white shadow-md`
@@ -340,7 +531,13 @@ export function Lessons() {
         <div className="relative mb-5">
           <Search className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
           <Input
-            placeholder={tab === "conversacoes" ? "Pesquisar conversa..." : "Pesquisar lição..."}
+            placeholder={
+              tab === "conversacoes" ? "Pesquisar conversa..." :
+              tab === "gramatica" ? "Pesquisar tópico de gramática..." :
+              tab === "frases" ? "Pesquisar categoria..." :
+              tab === "vocabulario" ? "Pesquisar secção..." :
+              "Pesquisar lição..."
+            }
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             className="pl-9 bg-white"
@@ -363,6 +560,12 @@ export function Lessons() {
           <ConversationsList search={q} />
         ) : tab === "textos" ? (
           <TextsList search={q} />
+        ) : tab === "gramatica" ? (
+          <GrammarList search={q} />
+        ) : tab === "frases" ? (
+          <PhrasesCategoryList search={q} />
+        ) : tab === "vocabulario" ? (
+          <VocabList search={q} />
         ) : (
           <FlatList lessons={lessons} search={q} />
         )}

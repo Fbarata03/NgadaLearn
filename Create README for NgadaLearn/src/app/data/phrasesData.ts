@@ -1,0 +1,251 @@
+/* ════════════════════════════════════════════════════════════════════
+   NgadaLearn — Frases Essenciais por Categoria
+   150+ frases organizadas em 7 categorias
+   ════════════════════════════════════════════════════════════════════ */
+
+export interface Phrase {
+  en: string;
+  pt: string;
+}
+
+export interface PhraseCategory {
+  id: string;
+  title: string;
+  titlePt: string;
+  icon: string;
+  color: string;
+  phrases: Phrase[];
+}
+
+export const PHRASE_CATEGORIES: PhraseCategory[] = [
+  {
+    id: "greetings",
+    title: "Greetings & Introductions",
+    titlePt: "Saudações e Apresentações",
+    icon: "👋",
+    color: "bg-yellow-500",
+    phrases: [
+      { en: "Hello! How are you?", pt: "Olá! Como estás?" },
+      { en: "I'm fine, thank you. And you?", pt: "Estou bem, obrigado. E tu?" },
+      { en: "Nice to meet you.", pt: "Prazer em conhecer-te." },
+      { en: "What is your name?", pt: "Qual é o teu nome?" },
+      { en: "My name is João.", pt: "O meu nome é João." },
+      { en: "Where are you from?", pt: "De onde és?" },
+      { en: "I'm from Portugal.", pt: "Sou de Portugal." },
+      { en: "How old are you?", pt: "Quantos anos tens?" },
+      { en: "I'm twenty-five years old.", pt: "Tenho vinte e cinco anos." },
+      { en: "What do you do for a living?", pt: "O que fazes para ganhar a vida?" },
+      { en: "Good morning!", pt: "Bom dia!" },
+      { en: "Good afternoon!", pt: "Boa tarde!" },
+      { en: "Good evening!", pt: "Boa noite!" },
+      { en: "Goodbye! Take care.", pt: "Adeus! Cuida-te." },
+      { en: "See you later!", pt: "Até logo!" },
+      { en: "See you tomorrow.", pt: "Até amanhã." },
+      { en: "Have a great day!", pt: "Tem um óptimo dia!" },
+      { en: "It was nice talking to you.", pt: "Foi um prazer falar contigo." },
+      { en: "This is my friend, Ana.", pt: "Esta é a minha amiga, Ana." },
+      { en: "Do you speak English?", pt: "Falas inglês?" },
+      { en: "I speak a little English.", pt: "Falo um pouco de inglês." },
+      { en: "Please speak slowly.", pt: "Fala devagar, por favor." },
+      { en: "Can you repeat that, please?", pt: "Podes repetir isso, por favor?" },
+    ],
+  },
+  {
+    id: "travel",
+    title: "Travel & Transport",
+    titlePt: "Viagens e Transportes",
+    icon: "✈️",
+    color: "bg-sky-500",
+    phrases: [
+      { en: "Where is the nearest train station?", pt: "Onde fica a estação de comboio mais próxima?" },
+      { en: "How much is a ticket to London?", pt: "Quanto custa um bilhete para Londres?" },
+      { en: "What time does the bus leave?", pt: "A que horas parte o autocarro?" },
+      { en: "Is this seat taken?", pt: "Este lugar está ocupado?" },
+      { en: "I have a reservation.", pt: "Tenho uma reserva." },
+      { en: "Can I check in my luggage, please?", pt: "Posso fazer o check-in da bagagem, por favor?" },
+      { en: "My flight has been delayed.", pt: "O meu voo foi atrasado." },
+      { en: "Which platform does the train leave from?", pt: "De que plataforma parte o comboio?" },
+      { en: "How long is the journey?", pt: "Qual é a duração da viagem?" },
+      { en: "Is there a direct flight?", pt: "Há um voo directo?" },
+      { en: "Where can I rent a car?", pt: "Onde posso alugar um carro?" },
+      { en: "Can you call me a taxi, please?", pt: "Pode chamar-me um táxi, por favor?" },
+      { en: "Take me to this address, please.", pt: "Leve-me a esta morada, por favor." },
+      { en: "How far is the city centre?", pt: "A que distância fica o centro da cidade?" },
+      { en: "Excuse me, is this the right way to the museum?", pt: "Com licença, este é o caminho certo para o museu?" },
+      { en: "Turn left at the traffic lights.", pt: "Vira à esquerda nos semáforos." },
+      { en: "Go straight ahead for two blocks.", pt: "Vai em frente durante dois quarteirões." },
+      { en: "I'm lost. Can you help me?", pt: "Estou perdido. Pode ajudar-me?" },
+      { en: "I'd like a window seat, please.", pt: "Queria um lugar à janela, por favor." },
+      { en: "My luggage is missing.", pt: "A minha bagagem está desaparecida." },
+      { en: "Is there a metro station nearby?", pt: "Há uma estação de metro aqui perto?" },
+      { en: "Where do I buy a metro card?", pt: "Onde compro um cartão de metro?" },
+    ],
+  },
+  {
+    id: "restaurant",
+    title: "Restaurant & Food",
+    titlePt: "Restaurante e Comida",
+    icon: "🍽️",
+    color: "bg-orange-500",
+    phrases: [
+      { en: "A table for two, please.", pt: "Uma mesa para dois, por favor." },
+      { en: "Can I see the menu, please?", pt: "Posso ver a ementa, por favor?" },
+      { en: "What do you recommend?", pt: "O que recomenda?" },
+      { en: "I'm allergic to nuts.", pt: "Sou alérgico a frutos secos." },
+      { en: "I'm vegetarian.", pt: "Sou vegetariano." },
+      { en: "I'd like the steak, please.", pt: "Queria o bife, por favor." },
+      { en: "How would you like your steak?", pt: "Como prefere o bife?" },
+      { en: "Medium rare, please.", pt: "Mal passado, por favor." },
+      { en: "Can I have the bill, please?", pt: "Pode trazer a conta, por favor?" },
+      { en: "Is service included?", pt: "O serviço está incluído?" },
+      { en: "This dish is delicious!", pt: "Este prato está delicioso!" },
+      { en: "Could we have some more bread?", pt: "Podíamos ter mais pão?" },
+      { en: "What is today's special?", pt: "Qual é o prato do dia?" },
+      { en: "I'll have the same.", pt: "O mesmo para mim." },
+      { en: "Can I order, please?", pt: "Posso pedir, por favor?" },
+      { en: "I'd like a glass of red wine.", pt: "Queria um copo de vinho tinto." },
+      { en: "Still or sparkling water?", pt: "Água com ou sem gás?" },
+      { en: "This is not what I ordered.", pt: "Isto não foi o que eu pedi." },
+      { en: "We'd like to share the dessert.", pt: "Gostaríamos de partilhar a sobremesa." },
+      { en: "Can we pay separately?", pt: "Podemos pagar separado?" },
+      { en: "I'd like to make a reservation for Saturday.", pt: "Queria fazer uma reserva para sábado." },
+      { en: "Do you have a gluten-free option?", pt: "Tem opção sem glúten?" },
+    ],
+  },
+  {
+    id: "shopping",
+    title: "Shopping",
+    titlePt: "Compras",
+    icon: "🛍️",
+    color: "bg-pink-500",
+    phrases: [
+      { en: "How much does this cost?", pt: "Quanto custa isto?" },
+      { en: "Do you have this in a different size?", pt: "Tem isto num tamanho diferente?" },
+      { en: "Do you have this in blue?", pt: "Tem isto em azul?" },
+      { en: "Can I try this on?", pt: "Posso experimentar isto?" },
+      { en: "Where is the changing room?", pt: "Onde é o vestiário?" },
+      { en: "I'm just looking, thank you.", pt: "Estou só a ver, obrigado." },
+      { en: "Do you accept credit cards?", pt: "Aceita cartões de crédito?" },
+      { en: "Can I have a receipt, please?", pt: "Posso ter um recibo, por favor?" },
+      { en: "I'd like to return this item.", pt: "Queria devolver este artigo." },
+      { en: "It doesn't fit.", pt: "Não me serve." },
+      { en: "It's too big / too small.", pt: "É demasiado grande / demasiado pequeno." },
+      { en: "Is there a sale on?", pt: "Há promoções?" },
+      { en: "This is on sale. It's 30% off.", pt: "Isto está em promoção. Tem 30% de desconto." },
+      { en: "I'll take it.", pt: "Fico com ele." },
+      { en: "Do you have a loyalty card?", pt: "Tem cartão de fidelização?" },
+      { en: "Where can I find the electronics section?", pt: "Onde posso encontrar a secção de electrónica?" },
+      { en: "Can you gift wrap this, please?", pt: "Pode embrulhar isto para oferta, por favor?" },
+      { en: "I'm looking for a gift for my mother.", pt: "Estou à procura de uma prenda para a minha mãe." },
+      { en: "What's the return policy?", pt: "Qual é a política de devoluções?" },
+      { en: "Do you deliver to Portugal?", pt: "Entregam em Portugal?" },
+    ],
+  },
+  {
+    id: "health",
+    title: "Health & Emergency",
+    titlePt: "Saúde e Emergência",
+    icon: "🏥",
+    color: "bg-red-500",
+    phrases: [
+      { en: "I don't feel well.", pt: "Não me sinto bem." },
+      { en: "I have a headache.", pt: "Tenho dores de cabeça." },
+      { en: "I have a fever.", pt: "Tenho febre." },
+      { en: "I need to see a doctor.", pt: "Preciso de ver um médico." },
+      { en: "Where is the nearest hospital?", pt: "Onde fica o hospital mais próximo?" },
+      { en: "Call an ambulance, please!", pt: "Chame uma ambulância, por favor!" },
+      { en: "I have a pain in my chest.", pt: "Tenho dores no peito." },
+      { en: "I'm having trouble breathing.", pt: "Estou com dificuldade em respirar." },
+      { en: "I'm allergic to penicillin.", pt: "Sou alérgico à penicilina." },
+      { en: "I take blood pressure medication.", pt: "Tomo medicação para a tensão arterial." },
+      { en: "Can you give me something for the pain?", pt: "Pode dar-me algo para a dor?" },
+      { en: "I have a prescription.", pt: "Tenho uma receita médica." },
+      { en: "Where is the pharmacy?", pt: "Onde fica a farmácia?" },
+      { en: "I hurt my ankle.", pt: "Machuquei o tornozelo." },
+      { en: "I think I've broken my arm.", pt: "Acho que parti o braço." },
+      { en: "I feel dizzy.", pt: "Estou com tonturas." },
+      { en: "I have a sore throat.", pt: "Tenho dores de garganta." },
+      { en: "Help! There's been an accident!", pt: "Ajuda! Houve um acidente!" },
+      { en: "Please call the police!", pt: "Por favor chame a polícia!" },
+      { en: "I've lost my passport.", pt: "Perdi o meu passaporte." },
+      { en: "My bag has been stolen.", pt: "A minha mala foi roubada." },
+      { en: "I need to go to the emergency room.", pt: "Preciso de ir às urgências." },
+    ],
+  },
+  {
+    id: "work",
+    title: "Work & Business",
+    titlePt: "Trabalho e Negócios",
+    icon: "💼",
+    color: "bg-indigo-600",
+    phrases: [
+      { en: "I have a meeting at 10 o'clock.", pt: "Tenho uma reunião às 10 horas." },
+      { en: "Can we schedule a call for tomorrow?", pt: "Podemos marcar uma chamada para amanhã?" },
+      { en: "I'll send you the report by email.", pt: "Vou enviar-te o relatório por email." },
+      { en: "Could you give me more details?", pt: "Poderia dar-me mais detalhes?" },
+      { en: "Let's set a deadline.", pt: "Vamos definir um prazo." },
+      { en: "I'm working on it.", pt: "Estou a trabalhar nisso." },
+      { en: "I'll get back to you shortly.", pt: "Respondo-te em breve." },
+      { en: "We need to discuss this further.", pt: "Precisamos de discutir isto mais aprofundadamente." },
+      { en: "The project is on track.", pt: "O projecto está a correr bem." },
+      { en: "We're behind schedule.", pt: "Estamos atrasados em relação ao planeado." },
+      { en: "What's the budget for this project?", pt: "Qual é o orçamento para este projecto?" },
+      { en: "I'd like to apply for this position.", pt: "Gostaria de me candidatar a este cargo." },
+      { en: "Do you have experience in this field?", pt: "Tem experiência nesta área?" },
+      { en: "What are the working hours?", pt: "Quais são os horários de trabalho?" },
+      { en: "Is there a possibility of remote work?", pt: "Existe possibilidade de trabalho remoto?" },
+      { en: "Could you speak up? I can't hear you well.", pt: "Pode falar mais alto? Não o ouço bem." },
+      { en: "Could you share your screen?", pt: "Pode partilhar o seu ecrã?" },
+      { en: "Let me check my calendar.", pt: "Deixa-me verificar o meu calendário." },
+      { en: "I'll loop you in on the email.", pt: "Vou incluir-te no email." },
+      { en: "Can you cover for me tomorrow?", pt: "Podes substituir-me amanhã?" },
+    ],
+  },
+  {
+    id: "daily",
+    title: "Daily Life",
+    titlePt: "Vida Quotidiana",
+    icon: "🌅",
+    color: "bg-teal-500",
+    phrases: [
+      { en: "What time is it?", pt: "Que horas são?" },
+      { en: "It's half past three.", pt: "São três e meia." },
+      { en: "What's the weather like today?", pt: "Como está o tempo hoje?" },
+      { en: "It's going to rain.", pt: "Vai chover." },
+      { en: "Can you help me?", pt: "Podes ajudar-me?" },
+      { en: "I need some help.", pt: "Preciso de ajuda." },
+      { en: "Excuse me, sorry to bother you.", pt: "Com licença, desculpe incomodar." },
+      { en: "No problem at all.", pt: "Não há problema nenhum." },
+      { en: "I'm sorry, I didn't understand.", pt: "Desculpe, não percebi." },
+      { en: "Could you write that down?", pt: "Poderia escrever isso?" },
+      { en: "What does this word mean?", pt: "O que significa esta palavra?" },
+      { en: "I don't know.", pt: "Não sei." },
+      { en: "I'm not sure about that.", pt: "Não tenho a certeza disso." },
+      { en: "That's a good idea!", pt: "É uma boa ideia!" },
+      { en: "I agree with you.", pt: "Concordo contigo." },
+      { en: "I'm afraid I disagree.", pt: "Receio que não concordo." },
+      { en: "That's fine by me.", pt: "Está bem para mim." },
+      { en: "Can I use your phone?", pt: "Posso usar o teu telemóvel?" },
+      { en: "Is there a Wi-Fi password?", pt: "Há password para o Wi-Fi?" },
+      { en: "What are your plans for the weekend?", pt: "Quais são os teus planos para o fim de semana?" },
+      { en: "I'd love to, but I'm busy.", pt: "Adorava, mas estou ocupado." },
+      { en: "Would you like to go for a coffee?", pt: "Gostarias de tomar um café?" },
+      { en: "I'll pay this time.", pt: "Eu pago desta vez." },
+    ],
+  },
+];
+
+export function getPhrasesByCategory(id: string): PhraseCategory | undefined {
+  return PHRASE_CATEGORIES.find((cat) => cat.id === id);
+}
+
+export function getAllPhrases(): { phrase: Phrase; category: PhraseCategory }[] {
+  return PHRASE_CATEGORIES.flatMap((cat) =>
+    cat.phrases.map((phrase) => ({ phrase, category: cat }))
+  );
+}
+
+export const TOTAL_PHRASES = PHRASE_CATEGORIES.reduce(
+  (sum, cat) => sum + cat.phrases.length,
+  0
+);

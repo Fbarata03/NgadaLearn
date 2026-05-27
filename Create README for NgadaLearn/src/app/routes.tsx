@@ -1,4 +1,4 @@
-import { createBrowserRouter } from "react-router";
+import { createBrowserRouter, Navigate } from "react-router";
 import { RootLayout } from "./components/RootLayout";
 import { LandingPage } from "./components/LandingPage";
 import { Dashboard } from "./components/Dashboard";
@@ -6,11 +6,15 @@ import { Lessons } from "./components/Lessons";
 import { LessonPlayer } from "./components/LessonPlayer";
 import { ConversationPlayer } from "./components/ConversationPlayer";
 import { TextPlayer } from "./components/TextPlayer";
+import { GrammarPlayer } from "./components/GrammarPlayer";
+import { PhrasesViewer } from "./components/PhrasesViewer";
+import { VocabularyViewer } from "./components/VocabularyViewer";
 import { Subscribe } from "./components/Subscribe";
 import { Login } from "./components/Login";
 import { Demo } from "./components/Demo";
 import { Admin } from "./components/Admin";
 import { ProtectedRoute } from "./components/ProtectedRoute";
+import { GRAMMAR_LESSONS } from "./data/grammarData";
 
 export const router = createBrowserRouter([
   {
@@ -60,6 +64,44 @@ export const router = createBrowserRouter([
         element: (
           <ProtectedRoute>
             <TextPlayer />
+          </ProtectedRoute>
+        ),
+      },
+
+      // ── Gramática ──
+      {
+        path: "grammar",
+        element: (
+          <ProtectedRoute>
+            <Navigate to={`/grammar/${GRAMMAR_LESSONS[0].id}`} replace />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: "grammar/:id",
+        element: (
+          <ProtectedRoute>
+            <GrammarPlayer />
+          </ProtectedRoute>
+        ),
+      },
+
+      // ── Frases ──
+      {
+        path: "phrases",
+        element: (
+          <ProtectedRoute>
+            <PhrasesViewer />
+          </ProtectedRoute>
+        ),
+      },
+
+      // ── Vocabulário ──
+      {
+        path: "vocabulary",
+        element: (
+          <ProtectedRoute>
+            <VocabularyViewer />
           </ProtectedRoute>
         ),
       },

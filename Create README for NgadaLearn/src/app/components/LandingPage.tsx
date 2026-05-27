@@ -145,9 +145,13 @@ const REVIEWS = [
 ];
 
 /* ─── Component ─── */
+/* Vídeo promocional — altera este ID para qualquer vídeo do YouTube */
+const PROMO_VIDEO_ID = "d0yGdNEWdn0";
+
 export function LandingPage() {
-  const [openFaq, setOpenFaq] = useState<number | null>(null);
+  const [openFaq,     setOpenFaq]     = useState<number | null>(null);
   const [openSection, setOpenSection] = useState<number | null>(0);
+  const [videoOpen,   setVideoOpen]   = useState(false);
 
   return (
     <div className="w-full">
@@ -222,17 +226,32 @@ export function LandingPage() {
             {/* ── Card de compra (desktop) ── */}
             <div className="hidden lg:block">
               <Card className="p-6 bg-white text-gray-900 shadow-2xl">
-                {/* Thumbnail preview */}
-                <Link to="/demo">
-                  <div className="aspect-video bg-gradient-to-br from-purple-100 to-blue-100 rounded-lg mb-5 flex flex-col items-center justify-center gap-2 cursor-pointer group">
-                    <div className="w-14 h-14 bg-purple-600 group-hover:bg-purple-700 rounded-full flex items-center justify-center transition-colors">
-                      <PlayCircle className="w-8 h-8 text-white" />
+                {/* Thumbnail preview — clica para abrir vídeo */}
+                <button onClick={() => setVideoOpen(true)}
+                  className="w-full aspect-video rounded-lg mb-5 overflow-hidden relative cursor-pointer group block">
+                  <div className="absolute inset-0 bg-gradient-to-br from-purple-900 via-indigo-900 to-slate-900 flex flex-col items-center justify-center gap-3">
+                    {/* App feature pills */}
+                    <div className="flex gap-1.5 mb-1">
+                      <span className="bg-white/15 backdrop-blur rounded-full px-2 py-0.5 text-white text-[10px] font-semibold">🎵 Música</span>
+                      <span className="bg-white/15 backdrop-blur rounded-full px-2 py-0.5 text-white text-[10px] font-semibold">🎬 Filmes</span>
+                      <span className="bg-white/15 backdrop-blur rounded-full px-2 py-0.5 text-white text-[10px] font-semibold">💬 Conversação</span>
                     </div>
-                    <p className="text-sm text-gray-500 group-hover:text-purple-700 transition-colors">
-                      Ver aula gratuita →
+                    {/* Glow ring + play */}
+                    <div className="relative">
+                      <div className="absolute inset-0 rounded-full bg-red-500/30 blur-xl scale-150 group-hover:bg-red-500/50 transition-all" />
+                      <div className="relative w-14 h-14 bg-red-600 group-hover:bg-red-500 rounded-full flex items-center justify-center transition-all group-hover:scale-110 shadow-2xl">
+                        <PlayCircle className="w-8 h-8 text-white" />
+                      </div>
+                    </div>
+                    <p className="text-xs text-white/70 group-hover:text-white transition-colors font-medium">
+                      ▶ Ver demonstração gratuita
                     </p>
+                    {/* Barra de progresso fake */}
+                    <div className="w-2/3 h-1 bg-white/10 rounded-full overflow-hidden">
+                      <div className="h-full w-1/3 bg-red-500 rounded-full" />
+                    </div>
                   </div>
-                </Link>
+                </button>
 
                 <div className="mb-4">
                   <div className="text-xs text-gray-400 line-through mb-0.5">US$ 60</div>
@@ -576,6 +595,57 @@ export function LandingPage() {
         </div>
       </div>
       <div className="lg:hidden h-24" />
+
+      {/* ════════════════════════════════════════
+          MODAL DE VÍDEO PROMOCIONAL
+      ════════════════════════════════════════ */}
+      {videoOpen && (
+        <div
+          className="fixed inset-0 z-[200] flex items-center justify-center p-4"
+          style={{background:"rgba(0,0,0,.88)"}}
+          onClick={() => setVideoOpen(false)}
+        >
+          <div
+            className="relative w-full max-w-4xl"
+            onClick={e => e.stopPropagation()}
+          >
+            {/* Botão fechar */}
+            <div className="flex justify-between items-center mb-3">
+              <p className="text-white font-bold text-sm">
+                🎓 NgadaLearn — Aprende Inglês de Verdade
+              </p>
+              <button
+                onClick={() => setVideoOpen(false)}
+                className="text-white/70 hover:text-white bg-white/10 hover:bg-white/20 rounded-lg px-4 py-1.5 text-sm font-semibold transition-colors"
+              >
+                ✕ Fechar
+              </button>
+            </div>
+            {/* Player YouTube */}
+            <div className="aspect-video rounded-2xl overflow-hidden shadow-2xl border border-white/10">
+              <iframe
+                src={`https://www.youtube.com/embed/${PROMO_VIDEO_ID}?autoplay=1&rel=0&modestbranding=1`}
+                className="w-full h-full"
+                allow="autoplay; fullscreen; picture-in-picture"
+                allowFullScreen
+                title="Demonstração NgadaLearn"
+              />
+            </div>
+            {/* CTA abaixo do vídeo */}
+            <div className="mt-4 flex flex-col sm:flex-row items-center gap-3 justify-center">
+              <Link to="/subscribe" onClick={() => setVideoOpen(false)}>
+                <Button className="bg-purple-600 hover:bg-purple-500 font-bold px-8 py-3 text-base">
+                  🚀 Garantir Acesso Agora — US$ 20
+                </Button>
+              </Link>
+              <Link to="/demo" onClick={() => setVideoOpen(false)}
+                className="text-sm text-white/60 hover:text-white transition-colors underline underline-offset-2">
+                Ver aula gratuita interativa →
+              </Link>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -40,6 +40,14 @@ const ANIM = `
   background-size:200% 100%;
   animation:shimmer 2s infinite;
 }
+
+@keyframes subIn{
+  0%{opacity:0;transform:translateY(22px) scale(.94);filter:blur(6px)}
+  60%{opacity:1;filter:blur(0)}
+  100%{transform:translateY(0) scale(1)}
+}
+@keyframes subShimmer{0%{background-position:0% 50%}100%{background-position:300% 50%}}
+.sub-in{animation:subIn .48s cubic-bezier(.34,1.56,.64,1) both}
 `;
 
 /* ── Tipos ───────────────────────────────────────────────────────── */
@@ -183,6 +191,82 @@ function NowPlayingBar({clip,isPlaying,ccOn}:{clip:MovieClip;isPlaying:boolean;c
 }
 
 /* ════════════════════════════════════════════════════════════════════
+   CINEMA SUBTITLE DISPLAY — Legenda de filme animada profissional
+   ════════════════════════════════════════════════════════════════════ */
+function CinemaSubDisplay({ lines, active, isPlaying }: {
+  lines: string[]; active: number; isPlaying: boolean;
+}) {
+  if (!lines.length) return null;
+  const prev = lines[active - 1];
+  const curr = lines[active];
+  const next = lines[active + 1];
+  if (!curr) return null;
+
+  return (
+    <div className="relative overflow-hidden rounded-2xl shadow-2xl" style={{
+      background: "linear-gradient(135deg,rgba(12,5,2,.97) 0%,rgba(50,20,2,.97) 50%,rgba(20,8,2,.97) 100%)",
+      border: "1px solid rgba(245,158,11,.35)",
+      boxShadow: "0 0 40px rgba(180,83,9,.15), inset 0 0 60px rgba(180,83,9,.04)",
+    }}>
+      {/* Orb de fundo */}
+      <div style={{position:"absolute",inset:0,overflow:"hidden",pointerEvents:"none"}}>
+        <div style={{position:"absolute",top:"15%",left:"10%",width:110,height:110,borderRadius:"50%",
+          background:"rgba(245,158,11,.12)",filter:"blur(38px)",animation:"mglow 4.5s ease-in-out infinite"}} />
+        <div style={{position:"absolute",bottom:"15%",right:"10%",width:80,height:80,borderRadius:"50%",
+          background:"rgba(234,88,12,.09)",filter:"blur(30px)",animation:"mglow 5.5s 1s ease-in-out infinite"}} />
+      </div>
+
+      {/* Barra de topo */}
+      <div className="flex items-center gap-3 px-5 pt-3 pb-1 relative z-10">
+        {isPlaying ? (
+          <div className="flex items-end gap-0.5" style={{height:14}}>
+            {["meq1","meq3","meq5"].map(cls=>(
+              <div key={cls} className={cls} style={{width:2,borderRadius:2,backgroundColor:"#fbbf24",minHeight:2}} />
+            ))}
+          </div>
+        ) : <span style={{fontSize:13}}>📺</span>}
+        <span style={{fontSize:10,letterSpacing:"0.12em",fontFamily:"monospace",color:"rgba(245,158,11,.5)"}}>
+          {active+1} / {lines.length}
+        </span>
+        <div style={{flex:1,height:1,background:"linear-gradient(90deg,transparent,rgba(245,158,11,.25),transparent)"}} />
+        <span style={{fontSize:10,color:"rgba(245,158,11,.4)",letterSpacing:"0.08em"}}>✦ LEGENDA</span>
+      </div>
+
+      {/* Linha anterior */}
+      {prev && (
+        <p style={{textAlign:"center",padding:"0 24px 4px",fontSize:12,color:"rgba(255,255,255,.2)",
+          fontStyle:"italic",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",position:"relative",zIndex:10}}>
+          {prev}
+        </p>
+      )}
+
+      {/* Linha activa */}
+      <div key={`ms-${active}`} className="sub-in"
+        style={{textAlign:"center",padding:`${prev?"4px":"14px"} 20px ${next?"4px":"14px"}`,position:"relative",zIndex:10}}>
+        <p style={{
+          fontSize:"clamp(1.05rem,2.8vw,1.55rem)",
+          fontWeight:800,
+          color:"#fff",
+          lineHeight:1.35,
+          letterSpacing:"0.02em",
+          textShadow:"0 2px 30px rgba(0,0,0,.9), 0 0 50px rgba(245,158,11,.25)",
+        }}>
+          {curr}
+        </p>
+      </div>
+
+      {/* Próxima linha */}
+      {next && (
+        <p style={{textAlign:"center",padding:"4px 24px 12px",fontSize:12,color:"rgba(255,255,255,.2)",
+          fontStyle:"italic",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",position:"relative",zIndex:10}}>
+          {next}
+        </p>
+      )}
+    </div>
+  );
+}
+
+/* ════════════════════════════════════════════════════════════════════
    COMPONENTE PRINCIPAL
    ════════════════════════════════════════════════════════════════════ */
 export function MoviesPlayer() {
@@ -210,8 +294,13 @@ export function MoviesPlayer() {
   const [phrasePt,    setPhrasePt]    = useState("");
   const [savedPhrases,setSavedPhrases] = useState<SavedPhrase[]>([]);
   const [notes,       setNotes]       = useState("");
-  const [tab,         setTab]         = useState<"vocab"|"phrases"|"notes">("vocab");
+  const [tab,         setTab]         = useState<"vocab"|"phrases"|"notes"|"subs">("vocab");
   const nextId = useRef(0);
+
+  /* Legendas manuais animadas */
+  const [subRaw,    setSubRaw]    = useState("");
+  const [subLines,  setSubLines]  = useState<string[]>([]);
+  const [activeSub, setActiveSub] = useState(0);
 
   /* ── Carregar YT API ─────────────────────────────────────────── */
   useEffect(() => {
@@ -284,6 +373,26 @@ export function MoviesPlayer() {
     speedRef.current = speed;
     try { ytPlayer.current?.setPlaybackRate(speed); } catch(_) {}
   }, [speed]);
+
+  /* ── Parse de legendas quando o texto muda ────────────────────── */
+  useEffect(() => {
+    const ls = subRaw.split("\n").map(l => l.trim()).filter(Boolean);
+    setSubLines(ls);
+    setActiveSub(0);
+  }, [subRaw]);
+
+  /* ── Navegação ← → por teclado para legendas ───────────────────── */
+  useEffect(() => {
+    if (!subLines.length) return;
+    function onKey(e: KeyboardEvent) {
+      const tag = (e.target as HTMLElement).tagName;
+      if (tag === "TEXTAREA" || tag === "INPUT") return;
+      if (e.key === "ArrowRight") setActiveSub(p => Math.min(subLines.length - 1, p + 1));
+      if (e.key === "ArrowLeft")  setActiveSub(p => Math.max(0, p - 1));
+    }
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [subLines.length]);
 
   /* ── Pesquisa ────────────────────────────────────────────────── */
   const searchClips = useCallback(async (raw: string) => {
@@ -563,6 +672,11 @@ export function MoviesPlayer() {
               <NowPlayingBar clip={selected} isPlaying={isPlaying} ccOn={ccOn} />
             )}
 
+            {/* ✨ Legenda Animada Cinema */}
+            {subLines.length > 0 && (
+              <CinemaSubDisplay lines={subLines} active={activeSub} isPlaying={isPlaying} />
+            )}
+
             {/* CC + Velocidade */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
 
@@ -636,8 +750,9 @@ export function MoviesPlayer() {
               <div className="flex border-b border-white/10">
                 {([
                   { id:"vocab",   icon:"📖", label:"Vocabulário" },
-                  { id:"phrases", icon:"💬", label:"Frases Memoráveis" },
-                  { id:"notes",   icon:"🗒️", label:"Anotações" },
+                  { id:"phrases", icon:"💬", label:"Frases" },
+                  { id:"notes",   icon:"🗒️", label:"Notas" },
+                  { id:"subs",    icon:"📺", label:"Legendas" },
                 ] as const).map(t => (
                   <button key={t.id} onClick={()=>setTab(t.id)}
                     className={`flex-1 py-3 text-xs font-bold transition-colors ${
@@ -775,6 +890,64 @@ export function MoviesPlayer() {
                         }} className="text-xs bg-amber-600 hover:bg-amber-500 px-3 py-1 rounded-lg font-semibold transition-colors">
                           💾 Guardar .txt
                         </button>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* ── Legendas Animadas ── */}
+                {tab==="subs" && (
+                  <div className="space-y-3">
+                    <div>
+                      <label className="text-[10px] font-bold text-amber-300 uppercase tracking-widest block mb-1">
+                        📋 Cola as legendas — uma frase por linha
+                      </label>
+                      <textarea value={subRaw} onChange={e=>setSubRaw(e.target.value)}
+                        placeholder={"Life is like a box of chocolates.\nYou never know what you're gonna get.\nRun, Forrest, run!\n…"}
+                        rows={7}
+                        className="w-full bg-black/30 border border-white/10 rounded-lg px-3 py-2 text-sm text-white placeholder-white/25 resize-y focus:outline-none focus:border-amber-400 font-mono leading-7 transition-colors" />
+                      {subRaw && (
+                        <p className="text-[10px] text-amber-400/60 mt-1">
+                          ✓ {subLines.length} linhas carregadas
+                        </p>
+                      )}
+                    </div>
+
+                    {subLines.length > 0 && (
+                      <>
+                        <div className="flex items-center gap-2">
+                          <button onClick={()=>setActiveSub(p=>Math.max(0,p-1))}
+                            disabled={activeSub===0}
+                            className="bg-white/10 hover:bg-white/20 disabled:opacity-30 px-4 py-2 rounded-lg text-sm font-bold transition-colors">
+                            ← Anterior
+                          </button>
+                          <div className="flex-1 text-center text-xs text-amber-400/60 font-mono">
+                            {activeSub+1} / {subLines.length}
+                          </div>
+                          <button onClick={()=>setActiveSub(p=>Math.min(subLines.length-1,p+1))}
+                            disabled={activeSub>=subLines.length-1}
+                            className="bg-white/10 hover:bg-white/20 disabled:opacity-30 px-4 py-2 rounded-lg text-sm font-bold transition-colors">
+                            Próxima →
+                          </button>
+                        </div>
+                        <button onClick={()=>{setSubRaw("");setSubLines([]);setActiveSub(0);}}
+                          className="w-full py-1.5 bg-red-500/15 hover:bg-red-500/25 text-red-300 rounded-lg text-xs font-semibold transition-colors">
+                          🗑️ Limpar Legendas
+                        </button>
+                        <p className="text-[11px] text-white/35 text-center">
+                          💡 A legenda animada aparece acima · Use ← → ou as teclas do teclado
+                        </p>
+                      </>
+                    )}
+
+                    {!subRaw && (
+                      <div className="text-center py-4">
+                        <p className="text-xs text-white/40 mb-2">Como usar:</p>
+                        <div className="space-y-1 text-[11px] text-white/30 text-left">
+                          <p>1️⃣ Cola as legendas do filme (uma frase por linha)</p>
+                          <p>2️⃣ A legenda animada aparece em cima do player</p>
+                          <p>3️⃣ Navega com os botões ← → ou as teclas do teclado</p>
+                        </div>
                       </div>
                     )}
                   </div>

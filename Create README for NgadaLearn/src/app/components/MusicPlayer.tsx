@@ -54,6 +54,15 @@ const ANIM_STYLE = `
 
 @keyframes flashBorder{0%,100%{border-color:rgba(168,85,247,.6)}50%{border-color:#c084fc}}
 .flash-border{animation:flashBorder 1s ease-in-out infinite}
+
+@keyframes cinemaIn{
+  0%{opacity:0;transform:translateY(24px) scale(.93);filter:blur(7px)}
+  60%{opacity:1;filter:blur(0)}
+  100%{transform:translateY(0) scale(1)}
+}
+@keyframes shimmerText{0%{background-position:0% 50%}100%{background-position:300% 50%}}
+@keyframes waveFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-4px)}}
+.cinema-in{animation:cinemaIn .52s cubic-bezier(.34,1.56,.64,1) both}
 `;
 
 /* ── Tipos ────────────────────────────────────────────────────────── */
@@ -109,19 +118,35 @@ function parseLyrics(en: string, pt: string): LyricLine[] {
   })).filter(l => l.en || l.pt);
 }
 
-async function filterEmbeddable(videos: YTVideo[]): Promise<YTVideo[]> {
+/* Rejeita títulos com scripts não-latinos (coreano, japonês, árabe, cirílico, etc.) */
+function isNonEnglish(text: string): boolean {
+  return /[Ѐ-ӿ؀-ۿ一-鿿぀-ヿ가-힯฀-๿]/.test(text);
+}
+
+/* Filtra: apenas música em inglês E embeddable */
+async function filterEnglishEmbeddable(videos: YTVideo[]): Promise<YTVideo[]> {
   if (!videos.length) return [];
+  /* Passo 1 — excluir títulos/canais com caracteres não-latinos */
+  const latinOnly = videos.filter(v => !isNonEnglish(v.title) && !isNonEnglish(v.channel));
+  if (!latinOnly.length) return [];
+  /* Passo 2 — verificar embeddable + idioma via Videos API */
   try {
-    const ids = videos.map(v => v.id).join(",");
-    const res = await fetch(
-      `https://www.googleapis.com/youtube/v3/videos?part=status&id=${ids}&key=${API_KEY}`
+    const ids = latinOnly.map(v => v.id).join(",");
+    const res  = await fetch(
+      `https://www.googleapis.com/youtube/v3/videos?part=status,snippet&id=${ids}&key=${API_KEY}`
     );
     const data = await res.json();
-    const ok = new Set<string>(
-      (data.items||[]).filter((i:any) => i.status?.embeddable !== false).map((i:any) => i.id)
-    );
-    return videos.filter(v => ok.has(v.id));
-  } catch { return videos; }
+    const result: YTVideo[] = [];
+    for (const item of (data.items || [])) {
+      if (item.status?.embeddable === false) continue;
+      const lang = item.snippet?.defaultAudioLanguage || item.snippet?.defaultLanguage || "";
+      /* Aceita en, en-US, en-GB… ou sem idioma definido (muitos vídeos ingleses não definem) */
+      if (lang && !lang.startsWith("en")) continue;
+      const vid = latinOnly.find(v => v.id === item.id);
+      if (vid) result.push(vid);
+    }
+    return result;
+  } catch { return latinOnly; }
 }
 
 /* ── Equalizador ──────────────────────────────────────────────────── */
@@ -286,6 +311,104 @@ function NowPlayingBar({video, isPlaying, activeLyric}:
 }
 
 /* ════════════════════════════════════════════════════════════════════
+   CINEMA LYRIC DISPLAY — Legenda animada profissional
+   ════════════════════════════════════════════════════════════════════ */
+function CinemaLyricDisplay({ lines, activeLine, isPlaying }: {
+  lines: LyricLine[]; activeLine: number; isPlaying: boolean;
+}) {
+  if (!lines.length) return null;
+  const prev = lines[activeLine - 1];
+  const curr = lines[activeLine];
+  const next = lines[activeLine + 1];
+  if (!curr) return null;
+
+  const words = curr.en.split(" ");
+
+  return (
+    <div className="relative overflow-hidden rounded-2xl shadow-2xl" style={{
+      background: "linear-gradient(135deg,rgba(12,4,45,.98) 0%,rgba(45,12,85,.98) 50%,rgba(20,5,60,.98) 100%)",
+      border: "1px solid rgba(168,85,247,.4)",
+      boxShadow: "0 0 40px rgba(109,40,217,.2), inset 0 0 60px rgba(109,40,217,.05)",
+    }}>
+      {/* Orbs de fundo */}
+      <div style={{position:"absolute",inset:0,overflow:"hidden",pointerEvents:"none"}}>
+        <div style={{position:"absolute",top:"10%",left:"8%",width:120,height:120,borderRadius:"50%",
+          background:"rgba(139,92,246,.14)",filter:"blur(40px)",animation:"pulseGlow 4s ease-in-out infinite"}} />
+        <div style={{position:"absolute",bottom:"10%",right:"8%",width:90,height:90,borderRadius:"50%",
+          background:"rgba(99,102,241,.11)",filter:"blur(32px)",animation:"pulseGlow 5s 1.5s ease-in-out infinite"}} />
+      </div>
+
+      {/* Barra de topo */}
+      <div className="flex items-center gap-3 px-5 pt-3 pb-1 relative z-10">
+        {isPlaying ? (
+          <div className="flex items-end gap-0.5" style={{height:14}}>
+            {["eq1","eq3","eq5"].map(cls=>(
+              <div key={cls} className={cls} style={{width:2,borderRadius:2,backgroundColor:"#c084fc",minHeight:2}} />
+            ))}
+          </div>
+        ) : <span style={{fontSize:13}}>🎤</span>}
+        <span style={{fontSize:10,letterSpacing:"0.12em",fontFamily:"monospace",color:"rgba(168,85,247,.55)"}}>
+          {activeLine+1} / {lines.length}
+        </span>
+        <div style={{flex:1,height:1,background:"linear-gradient(90deg,transparent,rgba(168,85,247,.3),transparent)"}} />
+        {curr.difficulty==="hard"    && <span style={{fontSize:11}}>⭐ Difícil</span>}
+        {curr.difficulty==="learned" && <span style={{fontSize:11}}>✅ Aprendi</span>}
+        <span style={{fontSize:10,color:"rgba(168,85,247,.4)",letterSpacing:"0.08em"}}>✦ LEGENDA</span>
+      </div>
+
+      {/* Linha anterior — muito esbatida */}
+      {prev && (
+        <p style={{textAlign:"center",padding:"0 24px 4px",fontSize:13,color:"rgba(255,255,255,.18)",
+          fontStyle:"italic",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",position:"relative",zIndex:10}}>
+          {prev.en}
+        </p>
+      )}
+
+      {/* Linha activa — destaque máximo */}
+      <div key={`cl-${activeLine}`} className="cinema-in"
+        style={{textAlign:"center",padding:`${prev?"4px":"14px"} 18px ${next?"4px":"14px"}`,position:"relative",zIndex:10}}>
+        <p style={{fontSize:"clamp(1.1rem,3vw,1.7rem)",fontWeight:900,lineHeight:1.35,letterSpacing:"0.01em",
+          textShadow:"0 0 35px rgba(168,85,247,.75)"}}>
+          {words.map((w,wi) => {
+            const isHL = curr.highlighted.includes(wi);
+            return (
+              <span key={wi} style={{
+                display:"inline-block", marginRight:".3em",
+                ...(isHL ? {
+                  color:"#fde047",
+                  textShadow:"0 0 14px #fde047, 0 0 30px #fbbf24",
+                } : {
+                  background:"linear-gradient(90deg,#e879f9 0%,#a855f7 30%,#818cf8 60%,#a855f7 80%,#e879f9 100%)",
+                  backgroundSize:"300% 100%",
+                  animation:"shimmerText 4s linear infinite",
+                  WebkitBackgroundClip:"text",
+                  backgroundClip:"text",
+                  color:"transparent",
+                }),
+              }}>{w}</span>
+            );
+          })}
+        </p>
+        {curr.pt && (
+          <p style={{fontSize:"clamp(.75rem,1.8vw,.92rem)",color:"rgba(196,181,253,.65)",
+            fontStyle:"italic",marginTop:8,letterSpacing:"0.01em"}}>
+            {curr.pt}
+          </p>
+        )}
+      </div>
+
+      {/* Próxima linha — muito esbatida */}
+      {next && (
+        <p style={{textAlign:"center",padding:"4px 24px 12px",fontSize:13,color:"rgba(255,255,255,.18)",
+          fontStyle:"italic",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",position:"relative",zIndex:10}}>
+          {next.en}
+        </p>
+      )}
+    </div>
+  );
+}
+
+/* ════════════════════════════════════════════════════════════════════
    COMPONENTE PRINCIPAL
    ════════════════════════════════════════════════════════════════════ */
 export function MusicPlayer() {
@@ -349,7 +472,7 @@ export function MusicPlayer() {
   const searchVideos = useCallback(async (raw: string) => {
     if (!raw.trim()) return;
     setLoading(true); setError(""); setResults([]);
-    const q = raw.toLowerCase().includes("official") ? raw : `${raw} official`;
+    const q = raw.toLowerCase().includes("official") ? raw : `${raw} official english`;
     try {
       const params = new URLSearchParams({
         part:"snippet", q, type:"video",
@@ -364,7 +487,7 @@ export function MusicPlayer() {
         channel: item.snippet.channelTitle,
         thumbnail: item.snippet.thumbnails?.medium?.url || "",
       }));
-      const filtered = await filterEmbeddable(raw2);
+      const filtered = await filterEnglishEmbeddable(raw2);
       setResults(filtered.slice(0,12));
       if (!filtered.length) setError("Nenhum vídeo incorporável encontrado.");
     } catch(e:any) {
@@ -634,6 +757,15 @@ export function MusicPlayer() {
                 video={selected}
                 isPlaying={isPlaying}
                 activeLyric={activeLyricText()}
+              />
+            )}
+
+            {/* ✨ Legenda Animada Cinema */}
+            {lines.length > 0 && (
+              <CinemaLyricDisplay
+                lines={lines}
+                activeLine={activeLine}
+                isPlaying={isPlaying}
               />
             )}
 

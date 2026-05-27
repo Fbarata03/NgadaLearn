@@ -436,6 +436,15 @@ export function Lessons() {
   const lessons = (tab !== "conversacoes" && tab !== "textos" && tab !== "gramatica" && tab !== "frases" && tab !== "vocabulario" && tab !== "musica" && tab !== "filmes")
     ? LESSONS_MAP[tab as "assimil" | "pimsleur" | "leituras"]
     : [];
+
+  /* Navega para um tab e faz scroll suave até ele */
+  function goToTab(id: TabId) {
+    setTab(id);
+    setSearch("");
+    setTimeout(() => {
+      document.getElementById("lessons-tabs")?.scrollIntoView({ behavior: "smooth", block: "start" });
+    }, 60);
+  }
   const units = tab === "assimil" ? [...new Set(ASSIMIL_LESSONS.map(l => l.unit))].sort((a, b) => a - b) : [];
   const q = search.toLowerCase();
 
@@ -468,42 +477,50 @@ export function Lessons() {
           </p>
         </div>
 
-        {/* Estatísticas rápidas */}
+        {/* Estatísticas rápidas — clica em qualquer card para ir directo ao módulo */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-3">
-          <Card className="p-4 bg-purple-600 text-white border-0 rounded-xl text-center">
+          <button onClick={() => goToTab("assimil")}
+            className={`p-4 bg-purple-600 text-white border-0 rounded-xl text-center cursor-pointer transition-all hover:scale-105 hover:brightness-110 hover:shadow-xl shadow-md ${tab==="assimil"?"ring-4 ring-purple-300 scale-105":""}`}>
             <p className="text-2xl font-black">{ASSIMIL_LESSONS.length}</p>
             <p className="text-xs text-purple-200">Assimil</p>
-          </Card>
-          <Card className="p-4 bg-blue-600 text-white border-0 rounded-xl text-center">
+          </button>
+          <button onClick={() => goToTab("pimsleur")}
+            className={`p-4 bg-blue-600 text-white border-0 rounded-xl text-center cursor-pointer transition-all hover:scale-105 hover:brightness-110 hover:shadow-xl shadow-md ${tab==="pimsleur"?"ring-4 ring-blue-300 scale-105":""}`}>
             <p className="text-2xl font-black">{PIMSLEUR_LESSONS_LIST.length}</p>
             <p className="text-xs text-blue-200">Pimsleur</p>
-          </Card>
-          <Card className="p-4 bg-green-600 text-white border-0 rounded-xl text-center">
+          </button>
+          <button onClick={() => goToTab("leituras")}
+            className={`p-4 bg-green-600 text-white border-0 rounded-xl text-center cursor-pointer transition-all hover:scale-105 hover:brightness-110 hover:shadow-xl shadow-md ${tab==="leituras"?"ring-4 ring-green-300 scale-105":""}`}>
             <p className="text-2xl font-black">{LEITURAS_LIST.length}</p>
             <p className="text-xs text-green-200">Leituras</p>
-          </Card>
-          <Card className="p-4 bg-orange-500 text-white border-0 rounded-xl text-center">
+          </button>
+          <button onClick={() => goToTab("conversacoes")}
+            className={`p-4 bg-orange-500 text-white border-0 rounded-xl text-center cursor-pointer transition-all hover:scale-105 hover:brightness-110 hover:shadow-xl shadow-md ${tab==="conversacoes"?"ring-4 ring-orange-300 scale-105":""}`}>
             <p className="text-2xl font-black">{CONVERSATIONS.length}</p>
             <p className="text-xs text-orange-100">Conversações</p>
-          </Card>
+          </button>
         </div>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
-          <Card className="p-4 bg-teal-600 text-white border-0 rounded-xl text-center">
+          <button onClick={() => goToTab("textos")}
+            className={`p-4 bg-teal-600 text-white border-0 rounded-xl text-center cursor-pointer transition-all hover:scale-105 hover:brightness-110 hover:shadow-xl shadow-md ${tab==="textos"?"ring-4 ring-teal-300 scale-105":""}`}>
             <p className="text-2xl font-black">{TEXTS.length}</p>
             <p className="text-xs text-teal-100">Textos</p>
-          </Card>
-          <Card className="p-4 bg-indigo-600 text-white border-0 rounded-xl text-center">
+          </button>
+          <button onClick={() => goToTab("gramatica")}
+            className={`p-4 bg-indigo-600 text-white border-0 rounded-xl text-center cursor-pointer transition-all hover:scale-105 hover:brightness-110 hover:shadow-xl shadow-md ${tab==="gramatica"?"ring-4 ring-indigo-300 scale-105":""}`}>
             <p className="text-2xl font-black">{GRAMMAR_LESSONS.length}</p>
             <p className="text-xs text-indigo-200">Gramática</p>
-          </Card>
-          <Card className="p-4 bg-pink-500 text-white border-0 rounded-xl text-center">
+          </button>
+          <button onClick={() => goToTab("frases")}
+            className={`p-4 bg-pink-500 text-white border-0 rounded-xl text-center cursor-pointer transition-all hover:scale-105 hover:brightness-110 hover:shadow-xl shadow-md ${tab==="frases"?"ring-4 ring-pink-300 scale-105":""}`}>
             <p className="text-2xl font-black">{TOTAL_PHRASES}</p>
             <p className="text-xs text-pink-100">Frases</p>
-          </Card>
-          <Card className="p-4 bg-rose-600 text-white border-0 rounded-xl text-center">
+          </button>
+          <button onClick={() => goToTab("vocabulario")}
+            className={`p-4 bg-rose-600 text-white border-0 rounded-xl text-center cursor-pointer transition-all hover:scale-105 hover:brightness-110 hover:shadow-xl shadow-md ${tab==="vocabulario"?"ring-4 ring-rose-300 scale-105":""}`}>
             <p className="text-2xl font-black">{vocabTotal}</p>
             <p className="text-xs text-rose-200">Vocabulário</p>
-          </Card>
+          </button>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-6">
           <Link to="/music">
@@ -529,7 +546,7 @@ export function Lessons() {
         </div>
 
         {/* Tabs */}
-        <div className="flex gap-2 mb-5 flex-wrap">
+        <div id="lessons-tabs" className="flex gap-2 mb-5 flex-wrap">
           {TABS.map((t) => (
             <button
               key={t.id}

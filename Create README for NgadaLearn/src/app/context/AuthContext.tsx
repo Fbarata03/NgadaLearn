@@ -37,7 +37,7 @@ const SESSION_KEY = "ngada_session";
 
 const ADMIN_SEED: StoredUser = {
   name: "Fbarata03",
-  email: "Fbarata03",
+  email: "Fbarata03@gmail.com",
   password: "marias66s3",
   plan: "lifetime",
   paymentDate: new Date().toISOString(),

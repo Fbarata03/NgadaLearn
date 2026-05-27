@@ -546,19 +546,20 @@ export function Lessons() {
         </div>
 
         {/* Tabs */}
-        <div id="lessons-tabs" className="flex gap-2 mb-5 flex-wrap">
+        <div id="lessons-tabs" className="flex gap-2 mb-5 overflow-x-auto pb-1 flex-nowrap sm:flex-wrap scrollbar-hide -mx-1 px-1">
           {TABS.map((t) => (
             <button
               key={t.id}
               onClick={() => { setTab(t.id); setSearch(""); }}
-              className={`flex items-center gap-2 px-4 py-2.5 rounded-xl font-semibold text-sm transition-all ${
+              className={`flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2.5 rounded-xl font-semibold text-xs sm:text-sm transition-all flex-shrink-0 ${
                 tab === t.id
                   ? `${t.color} text-white shadow-md`
                   : "bg-white border text-gray-600 hover:border-purple-300"
               }`}
             >
-              <t.icon className="w-4 h-4" />
-              {t.label}
+              <t.icon className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+              <span className="hidden sm:inline">{t.label}</span>
+              <span className="sm:hidden">{t.label.split(" ")[0]}</span>
             </button>
           ))}
         </div>

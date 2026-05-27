@@ -411,7 +411,7 @@ export function LandingPage() {
               <h2 className="text-2xl font-bold mb-6">Avaliações dos alunos</h2>
 
               {/* Resumo de rating */}
-              <div className="flex items-center gap-10 mb-8">
+              <div className="flex flex-col sm:flex-row items-center gap-6 sm:gap-10 mb-8">
                 <div className="text-center flex-shrink-0">
                   <div className="text-6xl font-black text-yellow-500">4.9</div>
                   <div className="flex justify-center gap-0.5 my-1.5">
@@ -452,15 +452,15 @@ export function LandingPage() {
               <div className="space-y-6">
                 {REVIEWS.map((r) => (
                   <div key={r.name} className="border-b pb-6 last:border-b-0">
-                    <div className="flex items-start gap-3 mb-3">
+                    <div className="flex flex-wrap items-start gap-2 mb-3">
                       <div className="text-3xl leading-none">{r.avatar}</div>
-                      <div>
+                      <div className="flex-1 min-w-0">
                         <div className="font-semibold text-sm">{r.name}</div>
                         <div className="text-xs text-gray-500">
                           {r.location} · {r.date}
                         </div>
                       </div>
-                      <span className="ml-auto text-xs font-semibold text-green-700 bg-green-100 px-2 py-0.5 rounded-full">
+                      <span className="text-xs font-semibold text-green-700 bg-green-100 px-2 py-0.5 rounded-full">
                         ✓ {r.badge}
                       </span>
                     </div>

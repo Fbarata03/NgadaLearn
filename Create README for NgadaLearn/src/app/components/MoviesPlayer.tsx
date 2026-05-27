@@ -736,11 +736,11 @@ export function MoviesPlayer() {
       <div className="min-h-screen bg-gradient-to-br from-slate-950 via-amber-950/20 to-slate-950 text-white pb-14">
 
         {/* Header */}
-        <div className="bg-gradient-to-r from-amber-800 via-orange-800 to-amber-900 py-7 px-4 text-center shadow-xl">
-          <div className="flex items-center justify-center gap-3 mb-1">
-            <span className="text-4xl">🎬</span>
-            <h1 className="text-3xl font-black tracking-tight">Filmes para Aprender Inglês</h1>
-            <span className="text-4xl">🎬</span>
+        <div className="bg-gradient-to-r from-amber-800 via-orange-800 to-amber-900 py-4 sm:py-7 px-4 text-center shadow-xl">
+          <div className="flex items-center justify-center gap-2 sm:gap-3 mb-1">
+            <span className="text-2xl sm:text-4xl">🎬</span>
+            <h1 className="text-lg sm:text-3xl font-black tracking-tight">Filmes para Aprender Inglês</h1>
+            <span className="text-2xl sm:text-4xl">🎬</span>
           </div>
           <p className="text-amber-200 text-xs max-w-xl mx-auto">
             Cenas de filmes reais · Legendas automáticas · Velocidade ajustável · Treino de vocabulário
@@ -750,7 +750,7 @@ export function MoviesPlayer() {
         <div className="max-w-7xl mx-auto px-4 py-6 grid grid-cols-1 lg:grid-cols-3 gap-5">
 
           {/* ── COLUNA ESQUERDA ──────────────────────────────────── */}
-          <div className="lg:col-span-1 space-y-4">
+          <div className="lg:col-span-1 space-y-4 order-2 lg:order-1">
 
             {/* Pesquisa */}
             <form onSubmit={e=>{e.preventDefault();searchClips(query);}}
@@ -792,7 +792,7 @@ export function MoviesPlayer() {
                 ))}
               </div>
 
-              <div className="space-y-1.5 max-h-64 overflow-y-auto pr-1">
+              <div className="space-y-1.5 max-h-48 lg:max-h-64 overflow-y-auto pr-1">
                 {filteredCurated.map(m => (
                   <button key={m.label}
                     onClick={()=>{
@@ -885,7 +885,7 @@ export function MoviesPlayer() {
           </div>
 
           {/* ── COLUNA DIREITA ────────────────────────────────────── */}
-          <div className="lg:col-span-2 space-y-4">
+          <div className="lg:col-span-2 space-y-4 order-1 lg:order-2">
 
             {/* Player */}
             <div className={`rounded-2xl overflow-hidden shadow-2xl aspect-video bg-black relative ${isPlaying ? "movie-glow" : ""}`}>

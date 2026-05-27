@@ -194,7 +194,7 @@ function InteractiveLyrics({
     );
 
   return (
-    <div className="space-y-1 max-h-[52vh] overflow-y-auto pr-1 py-1">
+    <div className="space-y-1 max-h-[40vh] lg:max-h-[52vh] overflow-y-auto pr-1 py-1">
       {lines.map((line) => {
         const isActive = line.id === activeLine;
         const meta     = DIFF_META[line.difficulty];
@@ -707,11 +707,11 @@ export function MusicPlayer() {
       <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-950 to-slate-900 text-white pb-12">
 
         {/* Header */}
-        <div className="bg-gradient-to-r from-purple-800 via-violet-700 to-indigo-800 py-7 px-4 text-center shadow-xl">
-          <div className="flex items-center justify-center gap-3 mb-1">
-            <span className="text-4xl">🎵</span>
-            <h1 className="text-3xl font-black tracking-tight">Música para Aprender Inglês</h1>
-            <span className="text-4xl">🎵</span>
+        <div className="bg-gradient-to-r from-purple-800 via-violet-700 to-indigo-800 py-4 sm:py-7 px-4 text-center shadow-xl">
+          <div className="flex items-center justify-center gap-2 sm:gap-3 mb-1">
+            <span className="text-2xl sm:text-4xl">🎵</span>
+            <h1 className="text-lg sm:text-3xl font-black tracking-tight">Música para Aprender Inglês</h1>
+            <span className="text-2xl sm:text-4xl">🎵</span>
           </div>
           <p className="text-purple-200 text-xs max-w-xl mx-auto">
             Vídeos oficiais · Legenda interactiva linha a linha · Destaque de palavras · Karaoke automático
@@ -721,7 +721,7 @@ export function MusicPlayer() {
         <div className="max-w-7xl mx-auto px-4 py-6 grid grid-cols-1 lg:grid-cols-3 gap-5">
 
           {/* ── Coluna Esquerda: pesquisa ─────────────────────────── */}
-          <div className="lg:col-span-1 space-y-4">
+          <div className="lg:col-span-1 space-y-4 order-2 lg:order-1">
             <form onSubmit={e=>{e.preventDefault();searchVideos(query);}}
               className="bg-white/10 backdrop-blur rounded-xl p-4 space-y-3">
               <label className="block text-xs font-bold text-purple-200 uppercase tracking-widest">
@@ -753,7 +753,7 @@ export function MusicPlayer() {
               </div>
             )}
 
-            <div className="space-y-2 max-h-[62vh] overflow-y-auto pr-1">
+            <div className="space-y-2 max-h-[40vh] lg:max-h-[62vh] overflow-y-auto pr-1">
               {loading && (
                 <div className="text-center py-10">
                   <div className="flex justify-center gap-1 mb-3">
@@ -798,7 +798,7 @@ export function MusicPlayer() {
           </div>
 
           {/* ── Coluna Direita: player + legenda ──────────────────── */}
-          <div className="lg:col-span-2 space-y-4">
+          <div className="lg:col-span-2 space-y-4 order-1 lg:order-2">
 
             {/* Player — gerido pela YouTube IFrame API */}
             <div className={`rounded-2xl overflow-hidden shadow-2xl aspect-video relative bg-black ${isPlaying ? "player-glow" : ""}`}>

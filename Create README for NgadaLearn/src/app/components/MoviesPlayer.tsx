@@ -466,9 +466,12 @@ export function MoviesPlayer() {
   const [vidError,  setVidError]  = useState(false);
   const [speed,     setSpeed]     = useState<PlaybackRate>(1);
   const [ccOn,      setCcOn]      = useState(true);
-  const ytPlayer    = useRef<any>(null);
-  const speedRef    = useRef<PlaybackRate>(1);
-  const resultsRef  = useRef<MovieClip[]>([]);
+  const ytPlayer       = useRef<any>(null);
+  const speedRef       = useRef<PlaybackRate>(1);
+  const resultsRef     = useRef<MovieClip[]>([]);
+  const selectedRef    = useRef<MovieClip|null>(null);   // sempre atual — evita stale closures
+  const errorTimeout   = useRef<ReturnType<typeof setTimeout>|null>(null);
+  const skipTimeoutRef = useRef<ReturnType<typeof setTimeout>|null>(null);
 
   /* Vocabulário + Frases + Notas */
   const [vocabWord,   setVocabWord]   = useState("");
@@ -485,6 +488,22 @@ export function MoviesPlayer() {
   const [subRaw,    setSubRaw]    = useState("");
   const [subLines,  setSubLines]  = useState<string[]>([]);
   const [activeSub, setActiveSub] = useState(0);
+
+  /* ── Sync selectedRef (sempre atual para callbacks do YT) ───── */
+  useEffect(() => { selectedRef.current = selected; }, [selected]);
+
+  /* ── Helper: avançar para o próximo clip ou mostrar erro ─────── */
+  const skipToNextClip = useCallback(() => {
+    if (errorTimeout.current)   { clearTimeout(errorTimeout.current);   errorTimeout.current   = null; }
+    if (skipTimeoutRef.current) { clearTimeout(skipTimeoutRef.current); skipTimeoutRef.current = null; }
+    const curId = selectedRef.current?.id;
+    if (!curId) return;
+    const list = resultsRef.current;
+    const idx  = list.findIndex(v => v.id === curId);
+    const nxt  = list[idx + 1];
+    if (nxt) { setSelected(nxt); setIsPlaying(false); setVidError(false); }
+    else     { setVidError(true); setIsPlaying(false); }
+  }, []);
 
   /* ── Carregar YT API ─────────────────────────────────────────── */
   useEffect(() => {
@@ -517,30 +536,50 @@ export function MoviesPlayer() {
         width:      "100%",
         height:     "100%",
         playerVars: {
-          rel:          0,
+          rel:            0,
           modestbranding: 1,
-          playsinline:  1,
-          autoplay:     0,
-          cc_load_policy: ccOn ? 1 : 0,   // CC automático em inglês
-          cc_lang_pref:  "en",
-          hl:            "en",
+          playsinline:    1,
+          autoplay:       0,
+          cc_load_policy: ccOn ? 1 : 0,
+          cc_lang_pref:   "en",
+          hl:             "en",
+          origin:         window.location.origin,
         },
         events: {
           onReady: (e:any) => {
             e.target.setPlaybackRate(speedRef.current);
+
+            /* Timeout de segurança: se o vídeo não começar em 12s, avança */
+            if (errorTimeout.current) clearTimeout(errorTimeout.current);
+            errorTimeout.current = setTimeout(() => {
+              const state = ytPlayer.current?.getPlayerState?.() ?? -1;
+              /* -1=unstarted  0=ended  2=paused  3=buffering  5=cued */
+              if (state === -1 || state === 5) {
+                skipToNextClip();
+              }
+            }, 12000);
           },
           onStateChange: (e:any) => {
             setIsPlaying(e.data === 1);
-            if (e.data === 1) e.target.setPlaybackRate(speedRef.current);
+            if (e.data === 1) {
+              e.target.setPlaybackRate(speedRef.current);
+              /* Limpar timeout: está a reproduzir com sucesso */
+              if (errorTimeout.current) { clearTimeout(errorTimeout.current); errorTimeout.current = null; }
+            }
+            /* Estado -1 (unstarted) após breve carregamento = vídeo bloqueado */
+            if (e.data === -1) {
+              if (skipTimeoutRef.current) clearTimeout(skipTimeoutRef.current);
+              skipTimeoutRef.current = setTimeout(() => {
+                const st = ytPlayer.current?.getPlayerState?.() ?? -1;
+                if (st === -1) skipToNextClip();
+              }, 4000);
+            } else {
+              if (skipTimeoutRef.current) { clearTimeout(skipTimeoutRef.current); skipTimeoutRef.current = null; }
+            }
           },
           onError: () => {
-            /* Auto-avançar silenciosamente para a próxima cena */
-            const curId = selected!.id;
-            const list  = resultsRef.current;
-            const idx   = list.findIndex(v => v.id === curId);
-            const nxt   = list[idx + 1];
-            if (nxt) { setSelected(nxt); setIsPlaying(false); setVidError(false); }
-            else     { setVidError(true); setIsPlaying(false); }
+            /* Qualquer erro do YT API → avançar silenciosamente */
+            skipToNextClip();
           },
         },
       });
@@ -561,6 +600,8 @@ export function MoviesPlayer() {
   /* ── Cleanup ─────────────────────────────────────────────────── */
   useEffect(() => () => {
     try { ytPlayer.current?.destroy(); } catch(_) {}
+    if (errorTimeout.current)   clearTimeout(errorTimeout.current);
+    if (skipTimeoutRef.current) clearTimeout(skipTimeoutRef.current);
   }, []);
 
   /* ── Velocidade ──────────────────────────────────────────────── */
@@ -607,6 +648,7 @@ export function MoviesPlayer() {
         type:              "video",
         videoCategoryId:   "1",           // Film & Animation
         videoEmbeddable:   "true",
+        videoSyndicated:   "true",        // pode ser reproduzido fora do YT
         videoDuration:     "short",       // < 4 min — cenas, não filmes inteiros
         maxResults:        "25",
         key:               API_KEY,
@@ -683,12 +725,7 @@ export function MoviesPlayer() {
       : CURATED.filter(m => m.genre === genreFilter),
   [genreFilter]);
 
-  function tryNext() {
-    if (!selected) return;
-    const idx  = results.findIndex(v => v.id === selected.id);
-    const next = results[idx+1];
-    if (next) { setSelected(next); setIsPlaying(false); setVidError(false); }
-  }
+  function tryNext() { skipToNextClip(); }
 
   /* ════════════════════════════════════════════════════════════════
      RENDER

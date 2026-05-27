@@ -9,6 +9,7 @@ import { TextPlayer } from "./components/TextPlayer";
 import { GrammarPlayer } from "./components/GrammarPlayer";
 import { PhrasesViewer } from "./components/PhrasesViewer";
 import { VocabularyViewer } from "./components/VocabularyViewer";
+import { MusicPlayer } from "./components/MusicPlayer";
 import { Subscribe } from "./components/Subscribe";
 import { Login } from "./components/Login";
 import { Demo } from "./components/Demo";
@@ -102,6 +103,16 @@ export const router = createBrowserRouter([
         element: (
           <ProtectedRoute>
             <VocabularyViewer />
+          </ProtectedRoute>
+        ),
+      },
+
+      // ── Música ──
+      {
+        path: "music",
+        element: (
+          <ProtectedRoute>
+            <MusicPlayer />
           </ProtectedRoute>
         ),
       },

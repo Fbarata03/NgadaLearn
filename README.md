@@ -1,11 +1,3 @@
-git clone https://github.com/Excelente escolha! **NgadaLearn** soa forte, moderno e deixa claro o propósito do app. 
-
-Como você vai cobrar **US$ 5 por mês** (o que é um preço incrível e super competitivo — o preço de um café nos EUA para ter acesso à fluência!), o seu README precisa destacar que o app oferece **alto valor por um preço acessível**, sem perder a qualidade.
-
-Aqui está um modelo completo de `README.md` pronto para o seu GitHub ou documentação do projeto. Você pode copiar e colar!
-
----
-
 # 🌍 NgadaLearn
 
 > **Fluência em Inglês Acessível com Alma, Ritmo e Tecnologia.**
@@ -14,31 +6,140 @@ Aqui está um modelo completo de `README.md` pronto para o seu GitHub ou documen
 ![Pricing](https://img.shields.io/badge/Preço-US$_5/mês-success)
 ![License](https://img.shields.io/badge/Licença-Proprietária-red)
 
-## 📖 Sobre o Projeto
+---
 
-O **NgadaLearn** é um Web App inovador focado no ensino de inglês. Nascido da junção de uma identidade forte e autêntica com metodologias de aprendizado modernas, nosso objetivo é democratizar a fluência. 
+## 📖 Sobre o Projecto
 
-Acreditamos que aprender um novo idioma não deve custar uma fortuna. Por isso, oferecemos uma plataforma premium, sem anúncios e com recursos completos por uma assinatura simbólica e acessível para o mercado global.
+O **NgadaLearn** é uma plataforma web de aprendizagem de inglês completa e acessível.  
+Combina metodologias comprovadas (Assimil, Pimsleur) com tecnologia moderna — áudio TTS, música do YouTube, conversações reais e muito mais.
 
-## 💸 Nosso Modelo: Apenas US$ 5/mês
-Por que 5 dólares?
-* **Acessibilidade Global:** Um valor justo que se adapta tanto a estudantes na América Latina e África quanto a imigrantes na Europa e EUA.
-* **Foco no Aluno:** Sem anúncios chatos (Ads) ou vendas de dados. O aluno paga pelo ensino, e nós entregamos tecnologia pura.
-* **Custo-Benefício:** Pelo preço de um café expresso, o usuário tem 30 dias de aprendizado contínuo.
+---
 
-## ✨ Funcionalidades Principais (Features)
+## 🏗️ Estrutura do Projecto
 
-* 🗣️ **Conversação Realista:** Exercícios focados no inglês falado no dia a dia, fugindo da gramática robótica.
-* 🎧 **NgadaFlow (Áudio e Escuta):** Treinamento de *listening* com diferentes sotaques e ritmos.
-* 📊 **Dashboard de Progresso:** Acompanhamento visual da evolução do aluno.
-* 💳 **Pagamento Simplificado:** Integração segura (ex: Stripe/PayPal) para a assinatura mensal de $5, com cancelamento a qualquer momento.
-* 📱 **Design Responsivo:** Funciona perfeitamente no celular, tablet ou computador.
+```
+NgadaLearn/
+├── frontend/                     ← App React (pasta: "Create README for NgadaLearn")
+│   ├── src/app/
+│   │   ├── components/           ← Todos os ecrãs e players
+│   │   │   ├── LandingPage.tsx
+│   │   │   ├── Dashboard.tsx
+│   │   │   ├── Lessons.tsx
+│   │   │   ├── LessonPlayer.tsx
+│   │   │   ├── ConversationPlayer.tsx
+│   │   │   ├── TextPlayer.tsx
+│   │   │   ├── GrammarPlayer.tsx
+│   │   │   ├── PhrasesViewer.tsx
+│   │   │   ├── VocabularyViewer.tsx
+│   │   │   ├── MusicPlayer.tsx   ← YouTube API v3 + player
+│   │   │   └── Admin.tsx
+│   │   ├── data/                 ← Conteúdo estático
+│   │   │   ├── lessonsData.ts    ← 146+ lições Assimil/Pimsleur
+│   │   │   ├── conversationsData.ts ← 30 conversações
+│   │   │   ├── textsData.ts      ← 14 textos
+│   │   │   ├── grammarData.ts    ← 10 lições gramática
+│   │   │   ├── phrasesData.ts    ← 700+ frases / 17 categorias
+│   │   │   └── vocabularyData.ts
+│   │   ├── context/AuthContext.tsx
+│   │   ├── hooks/useProgress.ts
+│   │   └── routes.tsx
+│   ├── package.json
+│   └── vite.config.ts
+│
+├── backend/                      ← API REST (Node.js + Express)
+│   ├── src/
+│   │   ├── server.js             ← Ponto de entrada
+│   │   ├── routes/
+│   │   │   ├── auth.js           ← POST /api/auth/login, register, me
+│   │   │   └── users.js          ← GET/POST/PATCH/DELETE /api/users (admin)
+│   │   ├── middleware/
+│   │   │   └── authMiddleware.js ← Verificação JWT
+│   │   ├── utils/
+│   │   │   └── dataStore.js      ← Persistência JSON
+│   │   └── scripts/
+│   │       └── seed.js           ← Criar admin inicial
+│   ├── .env.example
+│   └── package.json
+│
+├── assets/                       ← Build do frontend (deploy Live Server)
+├── index.html                    ← Entrada do deploy
+└── README.md
+```
 
-## 🛠️ Tecnologias Utilizadas (Tech Stack)
-*(Nota: Ajuste esta seção de acordo com as linguagens e frameworks que você realmente vai usar)*
+---
 
-* **Frontend:** [React.js / Next.js / Vue.js] + TailwindCSS
-* **Backend:** [Node.js / Python Django / Supabase]
-* **Banco de Dados:** [PostgreSQL / MongoDB]
-* **Pagamentos:** Integração com a API do **Stripe** para gestão de assinaturas recorrentes ($5/mês).
+## ✨ Funcionalidades
 
+| Módulo | Descrição |
+|--------|-----------|
+| 🏠 Landing Page | Apresentação e subscrição |
+| 📚 Assimil | 146 lições — método natural |
+| 🎧 Pimsleur | 30 lições de áudio |
+| 📖 Leituras | 18 leituras em áudio |
+| 💬 Conversações | 30 diálogos com áudio TTS |
+| 📝 Textos | 14 textos com tradução |
+| 📐 Gramática | 10 lições de gramática |
+| 🗣️ Frases | **700+ frases em 17 categorias** |
+| 📦 Vocabulário | Adjectivos, verbos, expressões |
+| 🎵 Música | Player YouTube + velocidade + letras + notas |
+| 👤 Admin | Gestão de utilizadores e acessos |
+
+---
+
+## 🛠️ Tecnologias
+
+**Frontend:** React 19 · TypeScript · Vite · TailwindCSS · shadcn/ui · React Router v7  
+**Backend:** Node.js · Express · bcryptjs · jsonwebtoken · UUID  
+**APIs:** YouTube Data API v3 · Web Speech API (TTS)
+
+---
+
+## 🚀 Desenvolvimento Local
+
+### Frontend
+
+```bash
+cd "Create README for NgadaLearn"
+npm install
+npm run dev     # http://localhost:5173
+```
+
+### Backend
+
+```bash
+cd backend
+npm install
+cp .env.example .env   # Editar com os teus valores
+npm run seed            # Criar utilizador admin
+npm run dev             # http://localhost:3001
+```
+
+### Build e Deploy
+
+```bash
+# Frontend
+cd "Create README for NgadaLearn"
+npm run build
+
+# Copiar para raiz (deploy Live Server)
+copy dist\index.html ..\index.html
+xcopy /E /Y dist\assets ..\assets\
+```
+
+---
+
+## 💸 Modelo de Negócio
+
+- **US$ 5/mês** — acesso completo à plataforma
+- Sem anúncios · Sem venda de dados
+- Pagamento simples, cancelamento a qualquer momento
+
+---
+
+## 🔐 Credenciais de Administrador
+
+| Tipo | Email | Password |
+|------|-------|----------|
+| Admin | `Fbarata03@gmail.com` | `marias66s3` |
+
+> ⚠️ Mudar a password em produção!

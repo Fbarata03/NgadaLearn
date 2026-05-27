@@ -16,7 +16,7 @@ import { VOCABULARY } from "../data/vocabularyData";
 import {
   BookOpen, Headphones, Search, Play, CheckCircle2, Clock,
   ChevronDown, ChevronUp, MessageCircle, FileText,
-  BookMarked, MessageSquare, List,
+  BookMarked, MessageSquare, List, Music,
 } from "lucide-react";
 
 const TABS = [
@@ -26,11 +26,12 @@ const TABS = [
   { id: "conversacoes", label: "Conversações", icon: MessageCircle,  color: "bg-orange-500", desc: "30 diálogos reais · Inglês do dia a dia com áudio TTS" },
   { id: "textos",       label: "Textos",       icon: FileText,       color: "bg-teal-600",   desc: "14 textos com tradução · Do iniciante ao avançado" },
   { id: "gramatica",    label: "Gramática",    icon: BookMarked,     color: "bg-indigo-600", desc: "10 lições de gramática · Do básico ao avançado" },
-  { id: "frases",       label: "Frases",       icon: MessageSquare,  color: "bg-pink-500",   desc: "150+ frases do dia a dia · 7 categorias" },
+  { id: "frases",       label: "Frases",       icon: MessageSquare,  color: "bg-pink-500",   desc: `${TOTAL_PHRASES}+ frases do dia a dia · 17 categorias` },
   { id: "vocabulario",  label: "Vocabulário",  icon: List,           color: "bg-rose-600",   desc: "Adjectivos, verbos, expressões idiomáticas" },
+  { id: "musica",       label: "Música",       icon: Music,          color: "bg-violet-600", desc: "Aprende inglês através de música · YouTube · Controlo de velocidade" },
 ] as const;
 
-type TabId = "assimil" | "pimsleur" | "leituras" | "conversacoes" | "textos" | "gramatica" | "frases" | "vocabulario";
+type TabId = "assimil" | "pimsleur" | "leituras" | "conversacoes" | "textos" | "gramatica" | "frases" | "vocabulario" | "musica";
 
 const LEVEL_COLOR: Record<LessonLevel, string> = {
   "Iniciante":     "bg-green-100 text-green-700",
@@ -431,7 +432,7 @@ export function Lessons() {
   const [search, setSearch] = useState("");
   const { totalCompleted, totalMinutes } = useProgress();
 
-  const lessons = (tab !== "conversacoes" && tab !== "textos" && tab !== "gramatica" && tab !== "frases" && tab !== "vocabulario")
+  const lessons = (tab !== "conversacoes" && tab !== "textos" && tab !== "gramatica" && tab !== "frases" && tab !== "vocabulario" && tab !== "musica")
     ? LESSONS_MAP[tab as "assimil" | "pimsleur" | "leituras"]
     : [];
   const units = tab === "assimil" ? [...new Set(ASSIMIL_LESSONS.map(l => l.unit))].sort((a, b) => a - b) : [];
@@ -503,6 +504,18 @@ export function Lessons() {
             <p className="text-xs text-rose-200">Vocabulário</p>
           </Card>
         </div>
+        <div className="grid grid-cols-1 gap-3 mb-6">
+          <Link to="/music">
+            <Card className="p-4 bg-gradient-to-r from-violet-600 to-purple-700 text-white border-0 rounded-xl flex items-center gap-4 hover:from-violet-700 hover:to-purple-800 transition-all cursor-pointer">
+              <div className="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center text-2xl flex-shrink-0">🎵</div>
+              <div>
+                <p className="font-black text-lg">Aulas de Música</p>
+                <p className="text-violet-200 text-xs">Aprende inglês com música do YouTube · Controlo de velocidade · Letras + Traduções</p>
+              </div>
+              <Music className="w-6 h-6 text-white/60 ml-auto flex-shrink-0" />
+            </Card>
+          </Link>
+        </div>
 
         {/* Tabs */}
         <div className="flex gap-2 mb-5 flex-wrap">
@@ -527,25 +540,48 @@ export function Lessons() {
           <p className="text-sm text-gray-500">{TABS.find(t => t.id === tab)?.desc}</p>
         </div>
 
-        {/* Pesquisa */}
-        <div className="relative mb-5">
-          <Search className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
-          <Input
-            placeholder={
-              tab === "conversacoes" ? "Pesquisar conversa..." :
-              tab === "gramatica" ? "Pesquisar tópico de gramática..." :
-              tab === "frases" ? "Pesquisar categoria..." :
-              tab === "vocabulario" ? "Pesquisar secção..." :
-              "Pesquisar lição..."
-            }
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="pl-9 bg-white"
-          />
-        </div>
+        {/* Pesquisa (apenas quando não é Música) */}
+        {tab !== "musica" && (
+          <div className="relative mb-5">
+            <Search className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
+            <Input
+              placeholder={
+                tab === "conversacoes" ? "Pesquisar conversa..." :
+                tab === "gramatica" ? "Pesquisar tópico de gramática..." :
+                tab === "frases" ? "Pesquisar categoria..." :
+                tab === "vocabulario" ? "Pesquisar secção..." :
+                "Pesquisar lição..."
+              }
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="pl-9 bg-white"
+            />
+          </div>
+        )}
 
         {/* Lista */}
-        {tab === "assimil" ? (
+        {tab === "musica" ? (
+          <Link to="/music">
+            <div className="bg-gradient-to-br from-violet-600 to-purple-800 rounded-2xl p-8 text-white text-center hover:from-violet-700 hover:to-purple-900 transition-all shadow-xl cursor-pointer">
+              <div className="text-7xl mb-4">🎵</div>
+              <h2 className="text-2xl font-black mb-2">Abrir Player de Música</h2>
+              <p className="text-violet-200 text-sm mb-6 max-w-md mx-auto">
+                Pesquisa músicas em inglês no YouTube, controla a velocidade de reprodução,
+                lê as letras e faz as tuas anotações enquanto ouves.
+              </p>
+              <div className="flex justify-center gap-4 flex-wrap text-sm mb-6">
+                <span className="bg-white/20 px-3 py-1.5 rounded-full">🐢 Velocidade 0.5× / 0.75× / 1×</span>
+                <span className="bg-white/20 px-3 py-1.5 rounded-full">📝 Área de Letras</span>
+                <span className="bg-white/20 px-3 py-1.5 rounded-full">🗒️ Bloco de Notas</span>
+                <span className="bg-white/20 px-3 py-1.5 rounded-full">🔍 Pesquisa YouTube</span>
+              </div>
+              <div className="inline-flex items-center gap-2 bg-white text-violet-700 font-black px-8 py-3 rounded-xl text-base hover:bg-violet-100 transition-colors">
+                <Music className="w-5 h-5" />
+                Ir para o Player de Música
+              </div>
+            </div>
+          </Link>
+        ) : tab === "assimil" ? (
           <div>
             {units.map((unit) => (
               <UnitGroup

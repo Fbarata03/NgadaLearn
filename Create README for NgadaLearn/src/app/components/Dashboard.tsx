@@ -55,7 +55,7 @@ export function Dashboard() {
           <div className="bg-gradient-to-r from-purple-700 to-blue-700 rounded-2xl p-6 text-white">
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
               <div>
-                <h1 className="text-3xl font-black mb-1">
+                <h1 className="text-2xl sm:text-3xl font-black mb-1">
                   Bem-vindo{user?.name ? `, ${user.name.split(" ")[0]}` : ""}! 👋
                 </h1>
                 <p className="text-purple-200">

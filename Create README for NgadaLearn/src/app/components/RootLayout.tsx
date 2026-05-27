@@ -44,9 +44,9 @@ export function RootLayout() {
       <header className="border-b bg-white sticky top-0 z-50 shadow-sm">
         <div className="container mx-auto px-4 h-16 flex items-center gap-4">
           {/* Logo */}
-          <Link to="/" className="flex items-center gap-2 flex-shrink-0">
-            <GraduationCap className="w-8 h-8 text-purple-600" />
-            <span className="font-black text-xl text-gray-900 tracking-tight">NgadaLearn</span>
+          <Link to="/" className="flex items-center gap-1.5 sm:gap-2 flex-shrink-0">
+            <GraduationCap className="w-7 h-7 sm:w-8 sm:h-8 text-purple-600" />
+            <span className="font-black text-lg sm:text-xl text-gray-900 tracking-tight">NgadaLearn</span>
           </Link>
 
           {/* Nav (desktop) */}
@@ -292,9 +292,9 @@ export function RootLayout() {
             </div>
           </div>
 
-          <div className="border-t border-gray-800 pt-6 flex flex-col md:flex-row items-center justify-between gap-4 text-sm text-gray-500">
+          <div className="border-t border-gray-800 pt-6 flex flex-col md:flex-row items-center justify-between gap-3 text-xs sm:text-sm text-gray-500 text-center">
             <p>© 2026 NgadaLearn. Todos os direitos reservados.</p>
-            <div className="flex items-center gap-6">
+            <div className="flex flex-wrap items-center justify-center gap-4">
               <span>🌍 Português</span>
               <span>🔒 Pagamentos seguros via Stripe</span>
             </div>

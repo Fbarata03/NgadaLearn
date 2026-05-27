@@ -159,8 +159,8 @@ export function LandingPage() {
           HERO — estilo Udemy
       ══════════════════════════════════════ */}
       <section className="bg-gradient-to-br from-slate-900 via-purple-950 to-slate-900 text-white">
-        <div className="container mx-auto px-4 py-14">
-          <div className="grid lg:grid-cols-3 gap-12 items-start">
+        <div className="container mx-auto px-4 py-8 sm:py-14">
+          <div className="grid lg:grid-cols-3 gap-8 sm:gap-12 items-start">
             {/* ── Texto ── */}
             <div className="lg:col-span-2 space-y-5">
               {/* Breadcrumb */}
@@ -172,7 +172,7 @@ export function LandingPage() {
                 <span className="text-gray-300">NgadaLearn Premium</span>
               </div>
 
-              <h1 className="text-4xl md:text-5xl font-black leading-tight">
+              <h1 className="text-2xl sm:text-4xl md:text-5xl font-black leading-tight">
                 Domine o Inglês de<br />Uma Vez por Todas
               </h1>
 

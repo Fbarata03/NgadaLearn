@@ -199,7 +199,7 @@ export function Subscribe() {
           <div className="grid lg:grid-cols-5 gap-8">
             <div className="lg:col-span-3 space-y-5">
               <div>
-                <h1 className="text-3xl font-black mb-1">
+                <h1 className="text-2xl sm:text-3xl font-black mb-1">
                   {isRenewal ? "Renovar Plano Mensal" : step === "plan" ? "Escolha seu plano" : "Criar conta e pagar"}
                 </h1>
                 <p className="text-gray-600 text-sm">
@@ -416,7 +416,7 @@ export function Subscribe() {
                         )}
                       </Button>
 
-                      <div className="flex items-center justify-center gap-5 pt-1">
+                      <div className="flex flex-wrap items-center justify-center gap-3 pt-1">
                         <div className="flex items-center gap-1.5 text-xs text-gray-500"><Shield className="w-4 h-4 text-green-500" /> SSL Criptografado</div>
                         <div className="flex items-center gap-1.5 text-xs text-gray-500"><CreditCard className="w-4 h-4 text-blue-500" /> PCI Compliant</div>
                         <div className="flex items-center gap-1.5 text-xs text-gray-500"><Lock className="w-4 h-4 text-purple-500" /> Dados Protegidos</div>

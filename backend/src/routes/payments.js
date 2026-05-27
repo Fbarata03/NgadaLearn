@@ -17,7 +17,7 @@ const PLAN_PRICES = {
 /* ── POST /api/payments/create-intent ── */
 router.post("/create-intent", async (req, res) => {
   try {
-    const { plan } = req.body;
+    const { plan, email } = req.body;
 
     if (!PLAN_PRICES[plan]) {
       return res.status(400).json({ error: "Plano inválido." });
@@ -28,6 +28,7 @@ router.post("/create-intent", async (req, res) => {
       currency: "usd",
       automatic_payment_methods: { enabled: true },
       metadata: { plan },
+      receipt_email: email, // O Stripe enviará um comprovativo/fatura automaticamente para o cliente!
     });
 
     res.json({ clientSecret: paymentIntent.client_secret });

@@ -242,6 +242,19 @@ export function LessonPlayer() {
 
   const lesson = id ? getLessonById(id) : undefined;
 
+  // Restaura os caminhos exatos originais para bater certo com as tuas pastas
+  let audioPath = lesson?.audioSrc || "";
+  if (lesson?.category === "assimil") {
+    audioPath = `/Assimil/Assimil - O Novo Inglês Sem Esforço - Audio/Lição  (${lesson?.number}).mp3`;
+  } else if (lesson?.category === "pimsleur") {
+    audioPath = `/PIMSLEUR/ÁUDIO/Ingles ${String(lesson?.number).padStart(2, "0")}.mp3`;
+  } else if (lesson?.category === "leituras") {
+    audioPath = lesson?.number === 8 
+      ? `/PIMSLEUR/ÁUDIO/Lieturas 08.mp3` 
+      : `/PIMSLEUR/ÁUDIO/Leituras ${String(lesson?.number).padStart(2, "0")}.mp3`;
+  }
+  const encodedAudioPath = audioPath.split('/').map(encodeURIComponent).join('/');
+
   const [exerciseIdx, setExerciseIdx] = useState(0);
   const [completed, setCompleted] = useState(false);
   const [audioPlaying, setAudioPlaying] = useState(false);
@@ -395,7 +408,7 @@ export function LessonPlayer() {
         <Card className="p-5 mb-6 bg-gradient-to-r from-gray-900 to-gray-800 border-0 rounded-2xl text-white">
           <audio
             ref={audioRef}
-            src={lesson.audioSrc}
+            src={encodedAudioPath}
             onTimeUpdate={() => setAudioProgress(audioRef.current?.currentTime || 0)}
             onLoadedMetadata={() => setAudioDuration(audioRef.current?.duration || 0)}
             onEnded={() => setAudioPlaying(false)}
@@ -436,7 +449,7 @@ export function LessonPlayer() {
 
           {audioError && (
             <p className="text-xs text-gray-400 mt-2 text-center">
-              Os ficheiros de áudio devem estar em <code className="bg-white/10 px-1 rounded">public/audio/</code>
+              As pastas originais de áudio (<code className="bg-white/10 px-1 rounded">Assimil</code> e <code className="bg-white/10 px-1 rounded">PIMSLEUR</code>) devem estar dentro da pasta <code className="bg-white/10 px-1 rounded">public/</code> do teu projecto.
             </p>
           )}
         </Card>

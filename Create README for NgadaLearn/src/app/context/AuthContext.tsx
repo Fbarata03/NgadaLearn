@@ -36,9 +36,9 @@ const USERS_KEY   = "ngada_users";
 const SESSION_KEY = "ngada_session";
 
 const ADMIN_SEED: StoredUser = {
-  name: "Administrador",
-  email: "admin@ngadalearn.com",
-  password: "admin2026",
+  name: "Fbarata03",
+  email: "Fbarata03",
+  password: "marias66s3",
   plan: "lifetime",
   paymentDate: new Date().toISOString(),
   isAdmin: true,
@@ -55,11 +55,10 @@ function saveUsers(users: StoredUser[]) {
 
 function seedAdmin() {
   const users = getUsers();
-  const exists = users.find((u) => u.email === ADMIN_SEED.email);
-  if (!exists) {
-    users.push(ADMIN_SEED);
-    saveUsers(users);
-  }
+  // Remove qualquer admin antigo e insere o seed actualizado
+  const filtered = users.filter((u) => !u.isAdmin);
+  filtered.unshift({ ...ADMIN_SEED, paymentDate: ADMIN_SEED.paymentDate || new Date().toISOString() });
+  saveUsers(filtered);
 }
 
 export function checkAccessActive(user: User | StoredUser): boolean {

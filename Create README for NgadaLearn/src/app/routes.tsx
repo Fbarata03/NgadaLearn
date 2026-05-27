@@ -5,6 +5,7 @@ import { Dashboard } from "./components/Dashboard";
 import { Lessons } from "./components/Lessons";
 import { LessonPlayer } from "./components/LessonPlayer";
 import { ConversationPlayer } from "./components/ConversationPlayer";
+import { TextPlayer } from "./components/TextPlayer";
 import { Subscribe } from "./components/Subscribe";
 import { Login } from "./components/Login";
 import { Demo } from "./components/Demo";
@@ -51,6 +52,14 @@ export const router = createBrowserRouter([
         element: (
           <ProtectedRoute>
             <ConversationPlayer />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: "texts/:id",
+        element: (
+          <ProtectedRoute>
+            <TextPlayer />
           </ProtectedRoute>
         ),
       },

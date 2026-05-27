@@ -9,19 +9,21 @@ import {
   type Lesson, type LessonLevel,
 } from "../data/lessonsData";
 import { CONVERSATIONS } from "../data/conversationsData";
+import { TEXTS } from "../data/textsData";
 import {
   BookOpen, Headphones, Search, Play, CheckCircle2, Clock,
-  ChevronDown, ChevronUp, MessageCircle,
+  ChevronDown, ChevronUp, MessageCircle, FileText,
 } from "lucide-react";
 
 const TABS = [
   { id: "assimil",       label: "Assimil",       icon: BookOpen,        color: "bg-purple-600", desc: "146 lições · Método natural · Progressão gradual" },
   { id: "pimsleur",      label: "Pimsleur",      icon: Headphones,      color: "bg-blue-600",   desc: "30 lições de áudio · Fala e compreensão oral" },
   { id: "leituras",      label: "Leituras",      icon: BookOpen,        color: "bg-green-600",  desc: "18 leituras em áudio · Vocabulário em contexto" },
-  { id: "conversacoes",  label: "Conversações",  icon: MessageCircle,   color: "bg-orange-500", desc: "20 diálogos reais · Inglês do dia a dia com áudio TTS" },
+  { id: "conversacoes",  label: "Conversações",  icon: MessageCircle,   color: "bg-orange-500", desc: "30 diálogos reais · Inglês do dia a dia com áudio TTS" },
+  { id: "textos",        label: "Textos",        icon: FileText,        color: "bg-teal-600",   desc: "14 textos com tradução · Do iniciante ao avançado" },
 ] as const;
 
-type TabId = "assimil" | "pimsleur" | "leituras" | "conversacoes";
+type TabId = "assimil" | "pimsleur" | "leituras" | "conversacoes" | "textos";
 
 const LEVEL_COLOR: Record<LessonLevel, string> = {
   "Iniciante":     "bg-green-100 text-green-700",
@@ -160,6 +162,59 @@ function FlatList({ lessons, search }: { lessons: Lesson[]; search: string }) {
   );
 }
 
+/* ── Lista de Textos ── */
+function TextsList({ search }: { search: string }) {
+  const filtered = search
+    ? TEXTS.filter(
+        t =>
+          t.title.toLowerCase().includes(search) ||
+          t.titlePt.toLowerCase().includes(search) ||
+          t.topic.toLowerCase().includes(search) ||
+          t.level.toLowerCase().includes(search)
+      )
+    : TEXTS;
+
+  const LEVEL_STYLE: Record<string, string> = {
+    "Iniciante":     "bg-green-100 text-green-700",
+    "Intermediário": "bg-blue-100 text-blue-700",
+    "Avançado":      "bg-purple-100 text-purple-700",
+  };
+
+  if (filtered.length === 0) {
+    return <p className="text-center text-gray-400 py-10">Nenhum texto encontrado.</p>;
+  }
+
+  return (
+    <div className="space-y-2">
+      {filtered.map((t) => (
+        <Link key={t.id} to={`/texts/${t.id}`}>
+          <div className="flex items-center gap-4 p-4 bg-white border rounded-xl hover:border-teal-300 hover:shadow-md transition-all cursor-pointer group">
+            <div className="w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0 font-black text-sm bg-teal-50 text-teal-600 group-hover:bg-teal-100">
+              {t.number}
+            </div>
+            <div className="flex-1 min-w-0">
+              <div className="flex flex-wrap items-center gap-2 mb-0.5">
+                <span className="font-bold text-gray-900 text-sm">{t.title}</span>
+                <span className={`px-2 py-0.5 rounded-full text-xs font-semibold ${LEVEL_STYLE[t.level]}`}>
+                  {t.level}
+                </span>
+                <span className="px-2 py-0.5 rounded-full text-xs font-semibold bg-teal-100 text-teal-700">
+                  {t.topic}
+                </span>
+              </div>
+              <p className="text-xs text-gray-500 truncate">{t.titlePt}</p>
+            </div>
+            <div className="flex items-center gap-1.5 text-xs text-gray-400 flex-shrink-0">
+              <FileText className="w-3.5 h-3.5" />
+              {t.paragraphs.length} §
+            </div>
+          </div>
+        </Link>
+      ))}
+    </div>
+  );
+}
+
 /* ── Lista de Conversações ── */
 function ConversationsList({ search }: { search: string }) {
   const filtered = search
@@ -214,11 +269,13 @@ export function Lessons() {
   const [search, setSearch] = useState("");
   const { totalCompleted, totalMinutes } = useProgress();
 
-  const lessons = tab !== "conversacoes" ? LESSONS_MAP[tab as "assimil" | "pimsleur" | "leituras"] : [];
+  const lessons = (tab !== "conversacoes" && tab !== "textos")
+    ? LESSONS_MAP[tab as "assimil" | "pimsleur" | "leituras"]
+    : [];
   const units = tab === "assimil" ? [...new Set(ASSIMIL_LESSONS.map(l => l.unit))].sort((a, b) => a - b) : [];
   const q = search.toLowerCase();
 
-  const totalAll = ASSIMIL_LESSONS.length + PIMSLEUR_LESSONS_LIST.length + LEITURAS_LIST.length + CONVERSATIONS.length;
+  const totalAll = ASSIMIL_LESSONS.length + PIMSLEUR_LESSONS_LIST.length + LEITURAS_LIST.length + CONVERSATIONS.length + TEXTS.length;
 
   return (
     <div className="bg-gray-50 min-h-screen">
@@ -233,14 +290,14 @@ export function Lessons() {
         </div>
 
         {/* Estatísticas rápidas */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
+        <div className="grid grid-cols-2 md:grid-cols-5 gap-3 mb-6">
           <Card className="p-4 bg-purple-600 text-white border-0 rounded-xl text-center">
             <p className="text-2xl font-black">{ASSIMIL_LESSONS.length}</p>
-            <p className="text-xs text-purple-200">Lições Assimil</p>
+            <p className="text-xs text-purple-200">Assimil</p>
           </Card>
           <Card className="p-4 bg-blue-600 text-white border-0 rounded-xl text-center">
             <p className="text-2xl font-black">{PIMSLEUR_LESSONS_LIST.length}</p>
-            <p className="text-xs text-blue-200">Áudio Pimsleur</p>
+            <p className="text-xs text-blue-200">Pimsleur</p>
           </Card>
           <Card className="p-4 bg-green-600 text-white border-0 rounded-xl text-center">
             <p className="text-2xl font-black">{LEITURAS_LIST.length}</p>
@@ -249,6 +306,10 @@ export function Lessons() {
           <Card className="p-4 bg-orange-500 text-white border-0 rounded-xl text-center">
             <p className="text-2xl font-black">{CONVERSATIONS.length}</p>
             <p className="text-xs text-orange-100">Conversações</p>
+          </Card>
+          <Card className="p-4 bg-teal-600 text-white border-0 rounded-xl text-center">
+            <p className="text-2xl font-black">{TEXTS.length}</p>
+            <p className="text-xs text-teal-100">Textos</p>
           </Card>
         </div>
 
@@ -300,6 +361,8 @@ export function Lessons() {
           </div>
         ) : tab === "conversacoes" ? (
           <ConversationsList search={q} />
+        ) : tab === "textos" ? (
+          <TextsList search={q} />
         ) : (
           <FlatList lessons={lessons} search={q} />
         )}

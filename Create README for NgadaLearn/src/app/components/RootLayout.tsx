@@ -12,6 +12,7 @@ import {
   ChevronDown,
   ShieldCheck,
   Music,
+  Film,
 } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 
@@ -32,6 +33,7 @@ export function RootLayout() {
     ? [
         { to: "/lessons", label: "Conteúdo do Curso", icon: BookOpen },
         { to: "/music", label: "Música", icon: Music },
+        { to: "/movies", label: "Filmes", icon: Film },
         { to: "/dashboard", label: "Meu Progresso", icon: LayoutDashboard },
       ]
     : [];

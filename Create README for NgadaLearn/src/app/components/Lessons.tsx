@@ -16,7 +16,7 @@ import { VOCABULARY } from "../data/vocabularyData";
 import {
   BookOpen, Headphones, Search, Play, CheckCircle2, Clock,
   ChevronDown, ChevronUp, MessageCircle, FileText,
-  BookMarked, MessageSquare, List, Music,
+  BookMarked, MessageSquare, List, Music, Film,
 } from "lucide-react";
 
 const TABS = [
@@ -29,9 +29,10 @@ const TABS = [
   { id: "frases",       label: "Frases",       icon: MessageSquare,  color: "bg-pink-500",   desc: `${TOTAL_PHRASES}+ frases do dia a dia · 17 categorias` },
   { id: "vocabulario",  label: "Vocabulário",  icon: List,           color: "bg-rose-600",   desc: "Adjectivos, verbos, expressões idiomáticas" },
   { id: "musica",       label: "Música",       icon: Music,          color: "bg-violet-600", desc: "Aprende inglês através de música · YouTube · Controlo de velocidade" },
+  { id: "filmes",       label: "Filmes",       icon: Film,           color: "bg-amber-600",  desc: "Trechos de filmes oficiais · Legendas · Vocabulário e anotações" },
 ] as const;
 
-type TabId = "assimil" | "pimsleur" | "leituras" | "conversacoes" | "textos" | "gramatica" | "frases" | "vocabulario" | "musica";
+type TabId = "assimil" | "pimsleur" | "leituras" | "conversacoes" | "textos" | "gramatica" | "frases" | "vocabulario" | "musica" | "filmes";
 
 const LEVEL_COLOR: Record<LessonLevel, string> = {
   "Iniciante":     "bg-green-100 text-green-700",
@@ -432,7 +433,7 @@ export function Lessons() {
   const [search, setSearch] = useState("");
   const { totalCompleted, totalMinutes } = useProgress();
 
-  const lessons = (tab !== "conversacoes" && tab !== "textos" && tab !== "gramatica" && tab !== "frases" && tab !== "vocabulario" && tab !== "musica")
+  const lessons = (tab !== "conversacoes" && tab !== "textos" && tab !== "gramatica" && tab !== "frases" && tab !== "vocabulario" && tab !== "musica" && tab !== "filmes")
     ? LESSONS_MAP[tab as "assimil" | "pimsleur" | "leituras"]
     : [];
   const units = tab === "assimil" ? [...new Set(ASSIMIL_LESSONS.map(l => l.unit))].sort((a, b) => a - b) : [];
@@ -504,15 +505,25 @@ export function Lessons() {
             <p className="text-xs text-rose-200">Vocabulário</p>
           </Card>
         </div>
-        <div className="grid grid-cols-1 gap-3 mb-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-6">
           <Link to="/music">
-            <Card className="p-4 bg-gradient-to-r from-violet-600 to-purple-700 text-white border-0 rounded-xl flex items-center gap-4 hover:from-violet-700 hover:to-purple-800 transition-all cursor-pointer">
+            <Card className="p-4 bg-gradient-to-r from-violet-600 to-purple-700 text-white border-0 rounded-xl flex items-center gap-4 hover:from-violet-700 hover:to-purple-800 transition-all cursor-pointer h-full">
               <div className="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center text-2xl flex-shrink-0">🎵</div>
               <div>
                 <p className="font-black text-lg">Aulas de Música</p>
                 <p className="text-violet-200 text-xs">Aprende inglês com música do YouTube · Controlo de velocidade · Letras + Traduções</p>
               </div>
               <Music className="w-6 h-6 text-white/60 ml-auto flex-shrink-0" />
+            </Card>
+          </Link>
+          <Link to="/movies">
+            <Card className="p-4 bg-gradient-to-r from-amber-600 to-orange-700 text-white border-0 rounded-xl flex items-center gap-4 hover:from-amber-700 hover:to-orange-800 transition-all cursor-pointer h-full">
+              <div className="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center text-2xl flex-shrink-0">🎬</div>
+              <div>
+                <p className="font-black text-lg">Filmes em Inglês</p>
+                <p className="text-amber-100 text-xs">Trechos de filmes oficiais · Legendas CC · Vocabulário e anotações</p>
+              </div>
+              <Film className="w-6 h-6 text-white/60 ml-auto flex-shrink-0" />
             </Card>
           </Link>
         </div>
@@ -540,8 +551,8 @@ export function Lessons() {
           <p className="text-sm text-gray-500">{TABS.find(t => t.id === tab)?.desc}</p>
         </div>
 
-        {/* Pesquisa (apenas quando não é Música) */}
-        {tab !== "musica" && (
+        {/* Pesquisa (apenas quando não é Música nem Filmes) */}
+        {tab !== "musica" && tab !== "filmes" && (
           <div className="relative mb-5">
             <Search className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
             <Input
@@ -578,6 +589,27 @@ export function Lessons() {
               <div className="inline-flex items-center gap-2 bg-white text-violet-700 font-black px-8 py-3 rounded-xl text-base hover:bg-violet-100 transition-colors">
                 <Music className="w-5 h-5" />
                 Ir para o Player de Música
+              </div>
+            </div>
+          </Link>
+        ) : tab === "filmes" ? (
+          <Link to="/movies">
+            <div className="bg-gradient-to-br from-amber-600 to-orange-800 rounded-2xl p-8 text-white text-center hover:from-amber-700 hover:to-orange-900 transition-all shadow-xl cursor-pointer">
+              <div className="text-7xl mb-4">🎬</div>
+              <h2 className="text-2xl font-black mb-2">Abrir Player de Filmes</h2>
+              <p className="text-amber-100 text-sm mb-6 max-w-md mx-auto">
+                Assiste a trechos de filmes oficiais em inglês, ativa as legendas CC,
+                guarda vocabulário novo e faz anotações enquanto assistis.
+              </p>
+              <div className="flex justify-center gap-4 flex-wrap text-sm mb-6">
+                <span className="bg-white/20 px-3 py-1.5 rounded-full">🎭 12 Sugestões de Filmes</span>
+                <span className="bg-white/20 px-3 py-1.5 rounded-full">📺 Legendas CC em Inglês</span>
+                <span className="bg-white/20 px-3 py-1.5 rounded-full">📚 Guardar Vocabulário</span>
+                <span className="bg-white/20 px-3 py-1.5 rounded-full">🗒️ Frases Memoráveis</span>
+              </div>
+              <div className="inline-flex items-center gap-2 bg-white text-amber-700 font-black px-8 py-3 rounded-xl text-base hover:bg-amber-50 transition-colors">
+                <Film className="w-5 h-5" />
+                Ir para o Player de Filmes
               </div>
             </div>
           </Link>

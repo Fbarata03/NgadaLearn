@@ -1,0 +1,27 @@
+services:
+  - type: web
+    name: ngadalearn-api
+    env: node
+    region: frankfurt
+    rootDir: backend
+    buildCommand: npm install
+    # Seed cria o admin na 1ª arrancada e a cada reinício
+    startCommand: node src/scripts/seed.js && node src/server.js
+    plan: free
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 3001
+      - key: JWT_SECRET
+        generateValue: true          # Render gera automaticamente
+      - key: JWT_EXPIRES_IN
+        value: 7d
+      # FRONTEND_URL: origin do GitHub Pages (sem barra no final)
+      - key: FRONTEND_URL
+        value: https://fbarata03.github.io
+      # Definir manualmente no dashboard do Render:
+      - key: ADMIN_EMAIL
+        sync: false
+      - key: ADMIN_PASSWORD
+        sync: false

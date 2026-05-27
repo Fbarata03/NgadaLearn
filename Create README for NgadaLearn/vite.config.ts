@@ -24,6 +24,10 @@ export default defineConfig({
     react(),
     tailwindcss(),
   ],
+
+  /* Base URL para GitHub Pages — corresponde ao nome do repositório */
+  base: '/NgadaLearn/',
+
   resolve: {
     alias: {
       // Alias @ to the src directory

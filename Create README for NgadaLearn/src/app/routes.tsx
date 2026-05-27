@@ -18,6 +18,9 @@ import { Admin } from "./components/Admin";
 import { ProtectedRoute } from "./components/ProtectedRoute";
 import { GRAMMAR_LESSONS } from "./data/grammarData";
 
+/* basename = nome do repo → funciona em GitHub Pages */
+const BASE = import.meta.env.BASE_URL.replace(/\/$/, "") || "";
+
 export const router = createBrowserRouter([
   {
     path: "/",
@@ -141,4 +144,4 @@ export const router = createBrowserRouter([
   },
   // Login fora do RootLayout (página isolada)
   { path: "/login", Component: Login },
-]);
+], { basename: BASE });

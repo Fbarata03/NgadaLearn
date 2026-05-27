@@ -16,8 +16,22 @@ const app  = express();
 const PORT = process.env.PORT || 3001;
 
 // ── Middleware global ─────────────────────────────────────────────
+const ALLOWED_ORIGINS = [
+  "http://localhost:5173",
+  "http://localhost:4173",
+  "https://fbarata03.github.io",
+  ...(process.env.FRONTEND_URL ? [process.env.FRONTEND_URL] : []),
+];
+
 app.use(cors({
-  origin: process.env.FRONTEND_URL || "http://localhost:5173",
+  origin: (origin, callback) => {
+    /* Permite pedidos sem origin (ex: Postman, curl) e origens da lista */
+    if (!origin || ALLOWED_ORIGINS.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error(`CORS: origem não permitida — ${origin}`));
+    }
+  },
   credentials: true,
 }));
 app.use(express.json());

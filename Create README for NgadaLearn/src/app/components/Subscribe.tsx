@@ -28,7 +28,7 @@ const stripePromise = loadStripe(
 
 const API_URL =
   import.meta.env.VITE_API_URL ||
-  "https://ngadalearn-backend.onrender.com";
+  "https://ngadalearn-api.onrender.com";
 
 /* ── Planos ── */
 const PLANS = [

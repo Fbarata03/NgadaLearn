@@ -6,6 +6,7 @@ import { Lessons } from "./components/Lessons";
 import { Subscribe } from "./components/Subscribe";
 import { Login } from "./components/Login";
 import { Demo } from "./components/Demo";
+import { Admin } from "./components/Admin";
 import { ProtectedRoute } from "./components/ProtectedRoute";
 
 export const router = createBrowserRouter([
@@ -18,7 +19,7 @@ export const router = createBrowserRouter([
       { path: "subscribe", Component: Subscribe },
       { path: "demo", Component: Demo },
 
-      // ── Protegidas (exigem login + pagamento) ──
+      // ── Protegidas (exigem login + pagamento activo) ──
       {
         path: "dashboard",
         element: (
@@ -32,6 +33,16 @@ export const router = createBrowserRouter([
         element: (
           <ProtectedRoute>
             <Lessons />
+          </ProtectedRoute>
+        ),
+      },
+
+      // ── Admin (só para administradores) ──
+      {
+        path: "admin",
+        element: (
+          <ProtectedRoute adminOnly>
+            <Admin />
           </ProtectedRoute>
         ),
       },

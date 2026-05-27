@@ -242,19 +242,6 @@ export function LessonPlayer() {
 
   const lesson = id ? getLessonById(id) : undefined;
 
-  // Restaura os caminhos exatos originais para bater certo com as tuas pastas
-  let audioPath = lesson?.audioSrc || "";
-  if (lesson?.category === "assimil") {
-    audioPath = `/Assimil/Assimil - O Novo Inglês Sem Esforço - Audio/Lição  (${lesson?.number}).mp3`;
-  } else if (lesson?.category === "pimsleur") {
-    audioPath = `/PIMSLEUR/ÁUDIO/Ingles ${String(lesson?.number).padStart(2, "0")}.mp3`;
-  } else if (lesson?.category === "leituras") {
-    audioPath = lesson?.number === 8 
-      ? `/PIMSLEUR/ÁUDIO/Lieturas 08.mp3` 
-      : `/PIMSLEUR/ÁUDIO/Leituras ${String(lesson?.number).padStart(2, "0")}.mp3`;
-  }
-  const encodedAudioPath = audioPath.split('/').map(encodeURIComponent).join('/');
-
   const [exerciseIdx, setExerciseIdx] = useState(0);
   const [completed, setCompleted] = useState(false);
   const [audioPlaying, setAudioPlaying] = useState(false);
@@ -263,6 +250,61 @@ export function LessonPlayer() {
   const [audioError, setAudioError] = useState(false);
   const audioRef = useRef<HTMLAudioElement>(null);
 
+  // Lógica de "Self-Healing": Tenta várias opções de caminhos de áudio
+  const [audioSources, setAudioSources] = useState<string[]>([]);
+  const [currentSrcIdx, setCurrentSrcIdx] = useState(0);
+
+  useEffect(() => {
+    if (!lesson) return;
+    setAudioError(false);
+    setCurrentSrcIdx(0);
+    setAudioPlaying(false);
+
+    const base = import.meta.env.BASE_URL || "/";
+    const cleanBase = base.endsWith("/") ? base : base + "/";
+    const sources: string[] = [];
+
+    // 1. Tenta o caminho VITE padrão limpo (ex: /audio/assimil/001.mp3)
+    sources.push(`${cleanBase}${lesson.audioSrc.replace(/^\//, "")}`);
+
+    // 2. Fallbacks de nomes originais cobrindo todas as variantes possíveis
+    if (lesson.category === "assimil") {
+      const p1 = `Assimil/Assimil - O Novo Inglês Sem Esforço - Audio/Lição  (${lesson.number}).mp3`;
+      const p2 = `Assimil/Assimil - O Novo Inglês Sem Esforço - Audio/Lição (${lesson.number}).mp3`;
+      sources.push(`${cleanBase}${p1.split("/").map(encodeURIComponent).join("/")}`);
+      sources.push(`${cleanBase}${p1}`);
+      sources.push(`${cleanBase}${p2.split("/").map(encodeURIComponent).join("/")}`);
+      sources.push(`${cleanBase}${p2}`);
+    } else if (lesson.category === "pimsleur") {
+      const p1 = `PIMSLEUR/ÁUDIO/Ingles ${String(lesson.number).padStart(2, "0")}.mp3`;
+      const p2 = `PIMSLEUR/AUDIO/Ingles ${String(lesson.number).padStart(2, "0")}.mp3`;
+      sources.push(`${cleanBase}${p1.split("/").map(encodeURIComponent).join("/")}`);
+      sources.push(`${cleanBase}${p1}`);
+      sources.push(`${cleanBase}${p2.split("/").map(encodeURIComponent).join("/")}`);
+      sources.push(`${cleanBase}${p2}`);
+    } else if (lesson.category === "leituras") {
+      const is08 = lesson.number === 8;
+      const p1 = `PIMSLEUR/ÁUDIO/${is08 ? "Lieturas 08" : `Leituras ${String(lesson.number).padStart(2, "0")}`}.mp3`;
+      const p2 = `PIMSLEUR/AUDIO/Leituras ${String(lesson.number).padStart(2, "0")}.mp3`;
+      sources.push(`${cleanBase}${p1.split("/").map(encodeURIComponent).join("/")}`);
+      sources.push(`${cleanBase}${p1}`);
+      sources.push(`${cleanBase}${p2.split("/").map(encodeURIComponent).join("/")}`);
+      sources.push(`${cleanBase}${p2}`);
+    }
+    
+    setAudioSources([...new Set(sources)]);
+  }, [lesson]);
+
+  // Tenta recarregar caso a fonte mude após um erro
+  useEffect(() => {
+    if (audioSources.length > 0 && audioRef.current) {
+      audioRef.current.load();
+      if (audioPlaying) {
+        audioRef.current.play().catch(() => {});
+      }
+    }
+  }, [currentSrcIdx, audioSources]);
+
   const alreadyDone = lesson ? isCompleted(lesson.id) : false;
 
   // Audio controls
@@ -270,7 +312,14 @@ export function LessonPlayer() {
     const a = audioRef.current;
     if (!a) return;
     if (audioPlaying) { a.pause(); setAudioPlaying(false); }
-    else { a.play().catch(() => setAudioError(true)); setAudioPlaying(true); }
+    else { 
+      if (audioError) {
+        setAudioError(false);
+        setCurrentSrcIdx(0);
+      }
+      setAudioPlaying(true);
+      a.play().catch(() => handleAudioError()); 
+    }
   };
 
   const seekAudio = (e: React.MouseEvent<HTMLDivElement>) => {
@@ -286,6 +335,16 @@ export function LessonPlayer() {
     const m = Math.floor(s / 60);
     const sec = Math.floor(s % 60);
     return `${m}:${sec.toString().padStart(2, "0")}`;
+  };
+
+  const handleAudioError = () => {
+    if (currentSrcIdx < audioSources.length - 1) {
+      // Se falhar, tenta o próximo caminho da lista
+      setCurrentSrcIdx((prev) => prev + 1);
+    } else {
+      setAudioError(true);
+      setAudioPlaying(false);
+    }
   };
 
   const handleNext = () => {
@@ -408,11 +467,11 @@ export function LessonPlayer() {
         <Card className="p-5 mb-6 bg-gradient-to-r from-gray-900 to-gray-800 border-0 rounded-2xl text-white">
           <audio
             ref={audioRef}
-            src={encodedAudioPath}
+            src={audioSources[currentSrcIdx] || ""}
             onTimeUpdate={() => setAudioProgress(audioRef.current?.currentTime || 0)}
             onLoadedMetadata={() => setAudioDuration(audioRef.current?.duration || 0)}
             onEnded={() => setAudioPlaying(false)}
-            onError={() => setAudioError(true)}
+            onError={handleAudioError}
             preload="metadata"
           />
 
@@ -449,7 +508,7 @@ export function LessonPlayer() {
 
           {audioError && (
             <p className="text-xs text-gray-400 mt-2 text-center">
-              As pastas originais de áudio (<code className="bg-white/10 px-1 rounded">Assimil</code> e <code className="bg-white/10 px-1 rounded">PIMSLEUR</code>) devem estar dentro da pasta <code className="bg-white/10 px-1 rounded">public/</code> do teu projecto.
+              ⚠ Áudio não encontrado. Verifica se a pasta <code className="bg-white/10 px-1 rounded">audio/</code> ou as originais (<code className="bg-white/10 px-1 rounded">Assimil/</code> e <code className="bg-white/10 px-1 rounded">PIMSLEUR/</code>) estão dentro de <code className="bg-white/10 px-1 rounded">public/</code>.
             </p>
           )}
         </Card>

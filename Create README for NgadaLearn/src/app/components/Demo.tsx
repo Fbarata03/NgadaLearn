@@ -36,6 +36,15 @@ export function Demo() {
     setShowResult(true);
   };
 
+  const playAudioDemo = () => {
+    if (!("speechSynthesis" in window)) return;
+    window.speechSynthesis.cancel();
+    const u = new SpeechSynthesisUtterance("Nice to meet you!");
+    u.lang = "en-US";
+    u.rate = 0.85;
+    window.speechSynthesis.speak(u);
+  };
+
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Banner de demo */}
@@ -141,7 +150,7 @@ export function Demo() {
                       Ouça e repita: "Nice to meet you!"
                     </p>
                   </div>
-                  <Button size="sm" className="bg-white text-purple-700 hover:bg-gray-100 font-semibold flex-shrink-0">
+                  <Button onClick={playAudioDemo} size="sm" className="bg-white text-purple-700 hover:bg-gray-100 font-semibold flex-shrink-0">
                     <PlayCircle className="w-4 h-4 mr-1.5" />
                     Ouvir
                   </Button>

@@ -109,6 +109,189 @@ const CURATED: {
 
 const GENRES = ["Todos","Drama","Acção","Sci-Fi","Animação"];
 
+/* ── Legendas pré-carregadas para filmes curados ──────────────── */
+const MOVIE_SUBTITLES: Record<string, string> = {
+  "Forrest Gump": [
+    "My mama always said life was like a box of chocolates.",
+    "You never know what you're gonna get.",
+    "Stupid is as stupid does.",
+    "I'm not a smart man, but I know what love is.",
+    "Run, Forrest, run!",
+    "I just felt like running.",
+    "Mama always had a way of explaining things so I could understand them.",
+    "Lieutenant Dan, ice cream!",
+    "Have you accepted Jesus Christ as your personal savior?",
+    "Life is like a box of chocolates, Forrest.",
+    "Now you wouldn't believe me if I told you, but I could run like the wind blows.",
+    "From that day on, if I was going somewhere, I was running!",
+  ].join("\n"),
+
+  "The Pursuit of Happyness": [
+    "Don't ever let somebody tell you you can't do something.",
+    "Not even me. You got a dream, you gotta protect it.",
+    "People can't do something themselves, they wanna tell you you can't do it.",
+    "You want something, go get it. Period.",
+    "This part of my life, this little part, is called happiness.",
+    "The world is your oyster. It's up to you to find the pearls.",
+    "You got a dream... You gotta protect it.",
+    "I am the man who will catch the 49ers' game.",
+    "It was right then that I started thinking about Thomas Jefferson.",
+    "The pursuit of happyness.",
+    "Hey, I'm a self-made man. I had to work for everything I got.",
+    "I'm happy. Don't mess up my happiness.",
+  ].join("\n"),
+
+  "The Lion King": [
+    "Remember who you are.",
+    "You are my son, and the one true king.",
+    "Everything the light touches is our kingdom.",
+    "A king's time as ruler rises and falls like the sun.",
+    "One day, Simba, the sun will set on my time here.",
+    "And will rise with you as the new king.",
+    "I'm only brave when I have to be.",
+    "Oh yes, the past can hurt.",
+    "But the way I see it, you can either run from it or learn from it.",
+    "Hakuna Matata! It means no worries for the rest of your days.",
+    "Oh yes, the past can hurt. But the way I see it...",
+    "You can either run from it or... learn from it.",
+  ].join("\n"),
+
+  "Dead Poets Society": [
+    "O Captain! My Captain!",
+    "Carpe diem. Seize the day, boys.",
+    "Make your lives extraordinary.",
+    "We are food for worms, lads.",
+    "Believe it or not, each and every one of us in this room is one day going to stop breathing.",
+    "No matter what anybody tells you, words and ideas can change the world.",
+    "That you are here — that life exists and identity,",
+    "That the powerful play goes on, and you may contribute a verse.",
+    "What will your verse be?",
+    "Now, I didn't hear a word Keating said, but I certainly was moved.",
+    "Boys, you must strive to find your own voice.",
+    "Because the longer you wait to begin, the less likely you are to find it at all.",
+  ].join("\n"),
+
+  "The Dark Knight": [
+    "Why so serious?",
+    "Some men just want to watch the world burn.",
+    "You either die a hero or you live long enough to see yourself become the villain.",
+    "Why so serious? Let's put a smile on that face!",
+    "I'm an agent of chaos.",
+    "Madness, as you know, is like gravity. All it takes is a little push.",
+    "Because he's not the hero Gotham deserves, but the one it needs right now.",
+    "He's the Dark Knight.",
+    "You see, I'm a man of simple tastes.",
+    "I enjoy dynamite, and gunpowder, and gasoline!",
+    "Do you want to know why I use a knife?",
+    "Guns are too quick. You can't savor all the little emotions.",
+  ].join("\n"),
+
+  "The Matrix": [
+    "What is the Matrix?",
+    "You take the blue pill, the story ends.",
+    "You wake up in your bed and believe whatever you want to believe.",
+    "You take the red pill, you stay in Wonderland,",
+    "And I show you how deep the rabbit hole goes.",
+    "I know kung fu.",
+    "There is no spoon.",
+    "The Matrix is everywhere. It is all around us.",
+    "It is the world that has been pulled over your eyes to blind you from the truth.",
+    "You've been living in a dream world, Neo.",
+    "This is the world as it exists today.",
+    "Welcome to the desert of the real.",
+  ].join("\n"),
+
+  "Good Will Hunting": [
+    "It's not your fault.",
+    "It's not your fault, Will.",
+    "It's not your fault.",
+    "You're not perfect, and let me save you the suspense: this girl you've met isn't perfect either.",
+    "But the question is whether or not you're perfect for each other.",
+    "You're an orphan right? Do you think I know what it's like?",
+    "Personally, I don't know what it's like to have a father who's an alcoholic.",
+    "I don't know what that's like.",
+    "You're a genius, Will. No one denies that.",
+    "But you're just a kid and you don't have the faintest idea what you're talking about.",
+    "Real loss is only possible when you love something more than you love yourself.",
+    "I think you know how to write it down. Write it down.",
+  ].join("\n"),
+
+  "The Social Network": [
+    "A million dollars isn't cool. You know what's cool?",
+    "A billion dollars.",
+    "You're not an asshole, Mark. You're just trying so hard to be.",
+    "I'm CEO, bitch.",
+    "Drop the 'The'. Just 'Facebook'. It's cleaner.",
+    "We lived on farms, then we lived in cities,",
+    "And now we're gonna live on the internet.",
+    "We don't know what it can be, we don't know what it will be.",
+    "We know that it's cool.",
+    "If you guys were the inventors of Facebook, you'd have invented Facebook.",
+    "You better lawyer up, asshole.",
+    "Because I'm not coming back for 30%, I'm coming back for everything.",
+  ].join("\n"),
+
+  "Inception": [
+    "You mustn't be afraid to dream a little bigger, darling.",
+    "We need to go deeper.",
+    "Your mind is the scene of the crime.",
+    "What is the most resilient parasite?",
+    "A bacteria? A virus?",
+    "An idea. A single idea from the human mind can build cities.",
+    "An idea can transform the world and rewrite all the rules.",
+    "Which is why I have to steal it.",
+    "Dreams feel real while we're in them.",
+    "It's only when we wake up that we realize something was actually strange.",
+    "I can't imagine you with kids.",
+    "Do you want to take a leap of faith?",
+  ].join("\n"),
+
+  "Interstellar": [
+    "We've always defined ourselves by the ability to overcome the impossible.",
+    "Do not go gentle into that good night.",
+    "Old age should burn and rave at close of day.",
+    "Rage, rage against the dying of the light.",
+    "Love is the one thing that transcends time and space.",
+    "Maybe it means something more — some evidence, some artifact.",
+    "Love is the one thing we're capable of perceiving that transcends time and space.",
+    "We're not meant to save the world. We're meant to leave it.",
+    "Murph! You have to tell me what I did!",
+    "It's not possible.",
+    "No. It's necessary.",
+    "Once you're a parent, you're the ghost of your children's future.",
+  ].join("\n"),
+
+  "Erin Brockovich": [
+    "That's the thing about the truth. It's never what it is, it's what it represents.",
+    "I don't need pity, I need a paycheck.",
+    "You think you're the first person to try this?",
+    "Those people don't dream about being on boats.",
+    "Not only do I have a letter that says you knew,",
+    "But I have documentation that proves it.",
+    "I don't need a lawyer to make me feel smart.",
+    "I've got $700 and a beat-up Hyundai.",
+    "You know, this might mean nothing to you.",
+    "But to those 634 plaintiffs...",
+    "You are their only hope.",
+    "$333 million, split between 634 plaintiffs.",
+  ].join("\n"),
+
+  "A Few Good Men": [
+    "You can't handle the truth!",
+    "Son, we live in a world that has walls,",
+    "And those walls have to be guarded by men with guns.",
+    "Who's gonna do it? You? You, Lieutenant Weinberg?",
+    "I have a greater responsibility than you could possibly fathom.",
+    "You weep for Santiago and curse the Marines.",
+    "You have that luxury.",
+    "You don't want the truth because deep down in places",
+    "You don't talk about at parties,",
+    "You want me on that wall. You need me on that wall.",
+    "We use words like honor, code, loyalty.",
+    "You ordered the Code Red!",
+  ].join("\n"),
+};
+
 const SPEED_OPT: {label:string;value:PlaybackRate;color:string;tip:string}[] = [
   { label:"0.5×", value:0.5,  color:"bg-red-600",    tip:"Muito lento — cada sílaba clara" },
   { label:"0.75×",value:0.75, color:"bg-yellow-600", tip:"Lento — bom equilíbrio" },
@@ -283,8 +466,9 @@ export function MoviesPlayer() {
   const [vidError,  setVidError]  = useState(false);
   const [speed,     setSpeed]     = useState<PlaybackRate>(1);
   const [ccOn,      setCcOn]      = useState(true);
-  const ytPlayer   = useRef<any>(null);
-  const speedRef   = useRef<PlaybackRate>(1);
+  const ytPlayer    = useRef<any>(null);
+  const speedRef    = useRef<PlaybackRate>(1);
+  const resultsRef  = useRef<MovieClip[]>([]);
 
   /* Vocabulário + Frases + Notas */
   const [vocabWord,   setVocabWord]   = useState("");
@@ -349,7 +533,15 @@ export function MoviesPlayer() {
             setIsPlaying(e.data === 1);
             if (e.data === 1) e.target.setPlaybackRate(speedRef.current);
           },
-          onError: () => { setVidError(true); setIsPlaying(false); },
+          onError: () => {
+            /* Auto-avançar silenciosamente para a próxima cena */
+            const curId = selected!.id;
+            const list  = resultsRef.current;
+            const idx   = list.findIndex(v => v.id === curId);
+            const nxt   = list[idx + 1];
+            if (nxt) { setSelected(nxt); setIsPlaying(false); setVidError(false); }
+            else     { setVidError(true); setIsPlaying(false); }
+          },
         },
       });
     }
@@ -362,6 +554,9 @@ export function MoviesPlayer() {
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selected?.id]);
+
+  /* ── Sync resultsRef (para onError não fechar sobre estado stale) */
+  useEffect(() => { resultsRef.current = results; }, [results]);
 
   /* ── Cleanup ─────────────────────────────────────────────────── */
   useEffect(() => () => {
@@ -563,16 +758,33 @@ export function MoviesPlayer() {
               <div className="space-y-1.5 max-h-64 overflow-y-auto pr-1">
                 {filteredCurated.map(m => (
                   <button key={m.label}
-                    onClick={()=>{ setQuery(m.label); searchClips(m.query); }}
+                    onClick={()=>{
+                      setQuery(m.label);
+                      searchClips(m.query);
+                      /* Pré-carregar legendas icónicas se existirem */
+                      const subs = MOVIE_SUBTITLES[m.label];
+                      if (subs) {
+                        setSubRaw(subs);
+                        setActiveSub(0);
+                        setTab("subs");
+                      }
+                    }}
                     className="w-full text-left flex items-center gap-2.5 p-2.5 rounded-lg bg-white/5 hover:bg-amber-600/20 border border-transparent hover:border-amber-500/30 transition-all">
                     <span className="text-lg flex-shrink-0">{m.icon}</span>
                     <div className="flex-1 min-w-0">
                       <p className="text-xs font-bold truncate">{m.label}</p>
                       <p className="text-[10px] text-white/40 truncate">{m.tip}</p>
                     </div>
-                    <span className={`text-[10px] px-1.5 py-0.5 rounded-full border ${DIFF_COLOR[m.diff]} flex-shrink-0`}>
-                      {m.diff === "Iniciante" ? "A1" : m.diff === "Intermediário" ? "B1" : "C1"}
-                    </span>
+                    <div className="flex flex-col items-end gap-0.5 flex-shrink-0">
+                      <span className={`text-[10px] px-1.5 py-0.5 rounded-full border ${DIFF_COLOR[m.diff]}`}>
+                        {m.diff === "Iniciante" ? "A1" : m.diff === "Intermediário" ? "B1" : "C1"}
+                      </span>
+                      {MOVIE_SUBTITLES[m.label] && (
+                        <span className="text-[9px] bg-amber-500/20 text-amber-300 px-1 py-0.5 rounded font-bold">
+                          📺 CC
+                        </span>
+                      )}
+                    </div>
                   </button>
                 ))}
               </div>

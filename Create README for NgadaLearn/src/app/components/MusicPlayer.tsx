@@ -424,7 +424,8 @@ export function MusicPlayer() {
   const [isPlaying, setIsPlaying] = useState(false);
   const [vidError,  setVidError]  = useState(false);
   const ytPlayer   = useRef<any>(null);
-  const speedRef   = useRef<PlaybackRate>(1);   // mantém o valor mais recente acessível no callback
+  const speedRef   = useRef<PlaybackRate>(1);
+  const resultsRef = useRef<YTVideo[]>([]);      // sempre actualizado — acessível nos callbacks YT
 
   /* Letras — raw text */
   const [rawEn, setRawEn] = useState("");
@@ -443,6 +444,10 @@ export function MusicPlayer() {
 
   /* Tab principal */
   const [tab, setTab] = useState<"lyrics"|"notes">("lyrics");
+
+  /* Auto-busca de letra */
+  const [fetchingLyrics, setFetchingLyrics] = useState(false);
+  const [lyricsFetchMsg, setLyricsFetchMsg] = useState("");
 
   /* ── Parse de letras quando muda o raw text ────────────────────── */
   useEffect(() => {
@@ -544,8 +549,16 @@ export function MusicPlayer() {
             }
           },
           onError: () => {
-            setVidError(true);
-            setIsPlaying(false);
+            /* Auto-avançar silenciosamente para o próximo vídeo */
+            const curId = selected!.id;
+            const list  = resultsRef.current;
+            const idx   = list.findIndex(v => v.id === curId);
+            const nxt   = list[idx + 1];
+            if (nxt) {
+              setSelected(nxt); setIsPlaying(false); setVidError(false);
+            } else {
+              setVidError(true); setIsPlaying(false);
+            }
           },
         },
       });
@@ -576,11 +589,46 @@ export function MusicPlayer() {
     };
   }, []);
 
+  /* ── Sincronizar resultsRef com o estado ────────────────────────── */
+  useEffect(() => { resultsRef.current = results; }, [results]);
+
   /* ── Velocidade — aplica imediatamente ao player ─────────────────── */
   useEffect(() => {
     speedRef.current = speed;
     try { ytPlayer.current?.setPlaybackRate(speed); } catch(_) {}
   }, [speed]);
+
+  /* ── Auto-busca de letra via lyrics.ovh (API gratuita) ─────────── */
+  function parseArtistTitle(vTitle: string): { artist: string; title: string } | null {
+    const clean = vTitle
+      .replace(/\([^)]*official[^)]*\)/gi, "")
+      .replace(/\[[^\]]*official[^\]]*\]/gi, "")
+      .replace(/official music video|official video|official audio|music video|lyric video/gi, "")
+      .replace(/\([^)]*lyrics?[^)]*\)/gi, "")
+      .replace(/\s+/g, " ").trim();
+    const di = clean.indexOf(" - ");
+    if (di > 0) return { artist: clean.slice(0, di).trim(), title: clean.slice(di + 3).trim() };
+    return null;
+  }
+
+  async function fetchAutoLyrics(vTitle: string) {
+    const parsed = parseArtistTitle(vTitle);
+    if (!parsed) { setLyricsFetchMsg("❌ Formato do título indetectável. Cola manualmente."); return; }
+    setFetchingLyrics(true); setLyricsFetchMsg("");
+    try {
+      const { artist, title } = parsed;
+      const res  = await fetch(`https://api.lyrics.ovh/v1/${encodeURIComponent(artist)}/${encodeURIComponent(title)}`);
+      const data = await res.json();
+      if (data.lyrics) {
+        setRawEn(data.lyrics.replace(/\r\n/g, "\n").trim());
+        setLyricsFetchMsg(`✅ Letra de "${title}" carregada!`);
+        setTimeout(() => { setLyricsMode("view"); setLyricsFetchMsg(""); }, 800);
+      } else {
+        setLyricsFetchMsg("❌ Letra não encontrada. Cola manualmente abaixo.");
+      }
+    } catch { setLyricsFetchMsg("❌ Erro ao buscar. Cola manualmente."); }
+    finally  { setFetchingLyrics(false); }
+  }
 
   /* ── Handlers ────────────────────────────────────────────────────── */
   function selectVideo(v: YTVideo) {
@@ -866,6 +914,29 @@ export function MusicPlayer() {
                   {/* MODO EDIÇÃO */}
                   {lyricsMode==="edit" && (
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-3 p-4">
+
+                      {/* ── Buscar letra automaticamente ── */}
+                      {selected && (
+                        <div className="md:col-span-2 flex flex-wrap items-center gap-2 p-3 bg-purple-900/30 border border-purple-500/20 rounded-xl">
+                          <button
+                            onClick={() => { setLyricsFetchMsg(""); fetchAutoLyrics(selected.title); }}
+                            disabled={fetchingLyrics}
+                            className="bg-gradient-to-r from-purple-600 to-violet-600 hover:from-purple-500 hover:to-violet-500 disabled:opacity-50 px-4 py-2 rounded-xl text-xs font-black transition-all flex items-center gap-2 shadow-lg">
+                            {fetchingLyrics ? "⏳ A buscar letra…" : "✨ Buscar Letra Automaticamente"}
+                          </button>
+                          {lyricsFetchMsg && (
+                            <span className={`text-xs font-semibold ${lyricsFetchMsg.startsWith("✅") ? "text-green-300" : "text-red-300"}`}>
+                              {lyricsFetchMsg}
+                            </span>
+                          )}
+                          {!lyricsFetchMsg && !fetchingLyrics && (
+                            <span className="text-xs text-white/35">
+                              Funciona com títulos no formato "Artista - Música" · ou cola manualmente abaixo
+                            </span>
+                          )}
+                        </div>
+                      )}
+
                       <div>
                         <label className="text-xs font-bold text-purple-300 uppercase tracking-widest block mb-2">
                           🇬🇧 Letra em Inglês

@@ -3,6 +3,8 @@ import { RootLayout } from "./components/RootLayout";
 import { LandingPage } from "./components/LandingPage";
 import { Dashboard } from "./components/Dashboard";
 import { Lessons } from "./components/Lessons";
+import { LessonPlayer } from "./components/LessonPlayer";
+import { ConversationPlayer } from "./components/ConversationPlayer";
 import { Subscribe } from "./components/Subscribe";
 import { Login } from "./components/Login";
 import { Demo } from "./components/Demo";
@@ -33,6 +35,22 @@ export const router = createBrowserRouter([
         element: (
           <ProtectedRoute>
             <Lessons />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: "lessons/:id",
+        element: (
+          <ProtectedRoute>
+            <LessonPlayer />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: "conversations/:id",
+        element: (
+          <ProtectedRoute>
+            <ConversationPlayer />
           </ProtectedRoute>
         ),
       },

@@ -1,29 +1,48 @@
-import { createContext, useContext, useState, ReactNode } from "react";
+import { createContext, useContext, useState, useEffect, ReactNode } from "react";
 
-/* ── Tipos ── */
+/* ── Tipos públicos ── */
+export type PlanType = "monthly" | "lifetime";
+
 export interface User {
   name: string;
   email: string;
-  isPaid: boolean;
+  plan: PlanType;
+  paymentDate: string; // ISO 8601
+  isAdmin: boolean;
 }
 
-interface StoredUser extends User {
+/* ── Tipo interno (com senha) ── */
+export interface StoredUser extends User {
   password: string;
 }
 
+/* ── Context API ── */
 interface AuthContextType {
   user: User | null;
   isAuthenticated: boolean;
-  isPaid: boolean;
+  isAccessActive: boolean;   // false se plano mensal expirou
+  isAdmin: boolean;
   login: (email: string, password: string) => { success: boolean; error?: string };
   logout: () => void;
-  /** Chamado após pagamento confirmado: cria conta + marca como pago */
-  registerAndPay: (name: string, email: string, password: string) => void;
+  registerAndPay: (name: string, email: string, password: string, plan: PlanType) => void;
+  /** Usado na renovação do plano mensal */
+  renewMonthly: () => void;
+  /** Apenas para o admin */
+  getAllUsers: () => StoredUser[];
 }
 
-/* ── Helpers localStorage ── */
-const USERS_KEY = "ngada_users";
+/* ── Helpers ── */
+const USERS_KEY   = "ngada_users";
 const SESSION_KEY = "ngada_session";
+
+const ADMIN_SEED: StoredUser = {
+  name: "Administrador",
+  email: "admin@ngadalearn.com",
+  password: "admin2026",
+  plan: "lifetime",
+  paymentDate: new Date().toISOString(),
+  isAdmin: true,
+};
 
 function getUsers(): StoredUser[] {
   try { return JSON.parse(localStorage.getItem(USERS_KEY) || "[]"); }
@@ -34,13 +53,44 @@ function saveUsers(users: StoredUser[]) {
   localStorage.setItem(USERS_KEY, JSON.stringify(users));
 }
 
+function seedAdmin() {
+  const users = getUsers();
+  const exists = users.find((u) => u.email === ADMIN_SEED.email);
+  if (!exists) {
+    users.push(ADMIN_SEED);
+    saveUsers(users);
+  }
+}
+
+export function checkAccessActive(user: User | StoredUser): boolean {
+  if (user.plan === "lifetime") return true;
+  if (user.plan === "monthly") {
+    const paid = new Date(user.paymentDate);
+    const expiry = new Date(paid);
+    expiry.setDate(expiry.getDate() + 30);
+    return new Date() < expiry;
+  }
+  return false;
+}
+
+/** Devolve a data de expiração para plano mensal */
+export function getExpiryDate(user: User | StoredUser): Date | null {
+  if (user.plan !== "monthly") return null;
+  const paid = new Date(user.paymentDate);
+  const expiry = new Date(paid);
+  expiry.setDate(expiry.getDate() + 30);
+  return expiry;
+}
+
 function getCurrentUser(): User | null {
   try {
     const email = localStorage.getItem(SESSION_KEY);
     if (!email) return null;
     const found = getUsers().find((u) => u.email === email);
     if (!found) return null;
-    return { name: found.name, email: found.email, isPaid: found.isPaid };
+    const { password: _, ...rest } = found;
+    void _;
+    return rest;
   } catch { return null; }
 }
 
@@ -48,6 +98,9 @@ function getCurrentUser(): User | null {
 const AuthContext = createContext<AuthContextType | null>(null);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
+  // Seed admin na primeira carga
+  useEffect(() => { seedAdmin(); }, []);
+
   const [user, setUser] = useState<User | null>(getCurrentUser);
 
   const login = (email: string, password: string) => {
@@ -55,8 +108,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       (u) => u.email.toLowerCase() === email.toLowerCase() && u.password === password
     );
     if (!found) return { success: false, error: "E-mail ou senha incorretos." };
-    const u: User = { name: found.name, email: found.email, isPaid: found.isPaid };
-    setUser(u);
+    const { password: _, ...rest } = found;
+    void _;
+    setUser(rest);
     localStorage.setItem(SESSION_KEY, found.email);
     return { success: true };
   };
@@ -66,31 +120,52 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     localStorage.removeItem(SESSION_KEY);
   };
 
-  const registerAndPay = (name: string, email: string, password: string) => {
+  const registerAndPay = (name: string, email: string, password: string, plan: PlanType) => {
     const users = getUsers();
-    const exists = users.findIndex((u) => u.email.toLowerCase() === email.toLowerCase());
-    const newUser: StoredUser = { name, email, password, isPaid: true };
-    if (exists >= 0) {
-      users[exists] = newUser; // actualiza se já existir
-    } else {
-      users.push(newUser);
-    }
+    const idx = users.findIndex((u) => u.email.toLowerCase() === email.toLowerCase());
+    const newUser: StoredUser = {
+      name,
+      email,
+      password,
+      plan,
+      paymentDate: new Date().toISOString(),
+      isAdmin: false,
+    };
+    if (idx >= 0) users[idx] = newUser;
+    else users.push(newUser);
     saveUsers(users);
-    setUser({ name, email, isPaid: true });
+    const { password: _, ...rest } = newUser;
+    void _;
+    setUser(rest);
     localStorage.setItem(SESSION_KEY, email);
   };
 
+  const renewMonthly = () => {
+    if (!user) return;
+    const users = getUsers();
+    const idx = users.findIndex((u) => u.email === user.email);
+    if (idx < 0) return;
+    users[idx].paymentDate = new Date().toISOString();
+    saveUsers(users);
+    setUser({ ...user, paymentDate: users[idx].paymentDate });
+  };
+
+  const getAllUsers = (): StoredUser[] => getUsers();
+
+  const isAccessActive = user ? checkAccessActive(user) : false;
+
   return (
-    <AuthContext.Provider
-      value={{
-        user,
-        isAuthenticated: !!user,
-        isPaid: user?.isPaid ?? false,
-        login,
-        logout,
-        registerAndPay,
-      }}
-    >
+    <AuthContext.Provider value={{
+      user,
+      isAuthenticated: !!user,
+      isAccessActive,
+      isAdmin: user?.isAdmin ?? false,
+      login,
+      logout,
+      registerAndPay,
+      renewMonthly,
+      getAllUsers,
+    }}>
       {children}
     </AuthContext.Provider>
   );

@@ -46,7 +46,7 @@ export function Demo() {
           </p>
           <Link to="/subscribe">
             <Button size="sm" className="bg-white text-purple-700 hover:bg-gray-100 font-bold text-xs">
-              Comprar Acesso Completo — US$ 29
+              Comprar Acesso Completo — US$ 20
             </Button>
           </Link>
         </div>
@@ -163,7 +163,7 @@ export function Demo() {
                     size="lg"
                     className="bg-purple-600 hover:bg-purple-700 px-8 font-bold"
                   >
-                    Garantir Acesso Completo — US$ 29
+                    Garantir Acesso Completo — US$ 20
                   </Button>
                 </Link>
                 <p className="text-xs text-gray-500 mt-3">
@@ -217,7 +217,7 @@ export function Demo() {
                   size="lg"
                   className="w-full bg-purple-600 hover:bg-purple-700 font-bold py-5"
                 >
-                  Comprar por US$ 29 →
+                  Comprar por US$ 20 →
                 </Button>
               </Link>
               <p className="text-center text-xs text-gray-500">

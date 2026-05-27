@@ -25,8 +25,8 @@ export default defineConfig({
     tailwindcss(),
   ],
 
-  /* Base URL para GitHub Pages — corresponde ao nome do repositório */
-  base: '/NgadaLearn/',
+  /* Base URL — raiz (domínio próprio ngadalearn.pt) */
+  base: '/',
 
   resolve: {
     alias: {

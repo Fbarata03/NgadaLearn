@@ -1,82 +1,17 @@
-<!DOCTYPE html>
-<html lang="pt-BR">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>NgadaLearn</title>
-  <link rel="stylesheet" href="css/style.css">
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
-</head>
-<body>
-<div class="app" id="app">
-  <header class="topbar">
-    <div class="topbar-inner">
-      <a href="#" class="brand" data-nav="home">
-        <span class="brand-icon">🎓</span>
-        <span class="brand-text">NgadaLearn</span>
-      </a>
 
-      <button class="menu-btn" id="sidebarToggle" aria-label="Menu">☰</button>
+  <!DOCTYPE html>
+  <html lang="en">
+    <head>
+      <meta charset="UTF-8" />
+      <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+      <title>Create README for NgadaLearn</title>
+      <style>html, body { height: 100%; margin: 0; } #root { height: 100%; }</style>
+      <script type="module" crossorigin src="/assets/index-DtmFyiAt.js"></script>
+      <link rel="stylesheet" crossorigin href="/assets/index-DJhUiFug.css">
+    </head>
 
-      <nav class="topnav" id="sidebar">
-        <a href="#" class="nav-item active" data-page="home"><span class="nav-label">🏠 Início</span></a>
-        <a href="#" class="nav-item" data-page="assimil"><span class="nav-label">📚 Assimil</span><span class="nav-badge">146</span></a>
-        <a href="#" class="nav-item" data-page="pimsleur"><span class="nav-label">🎧 PIMSLEUR</span><span class="nav-badge">48</span></a>
-        <a href="#" class="nav-item" data-page="textos"><span class="nav-label">📖 Textos</span><span class="nav-badge" id="badgeTextos">5</span></a>
-        <a href="#" class="nav-item" data-page="frases"><span class="nav-label">⚡ Flashcards</span><span class="nav-badge new" id="badgeFrases">15</span></a>
-        <a href="#" class="nav-item" data-page="conversas"><span class="nav-label">🗣️ Conversas</span><span class="nav-badge" id="badgeConversas">4</span></a>
-        <a href="#" class="nav-item" data-page="conquistas"><span class="nav-label">🏆 Conquistas</span></a>
-      </nav>
-
-      <div class="topbar-actions">
-        <button class="theme-toggle" id="themeToggle" title="Alternar tema">🌙</button>
-        <div class="top-profile" id="sidebarProfile"></div>
-      </div>
-    </div>
-  </header>
-
-  <main class="main-content container" id="mainContent"></main>
-
-  <footer class="footer">
-    <div class="container footer-inner">
-      <div class="footer-text">© 2026 NgadaLearn. Fluência em Inglês Acessível com Alma, Ritmo e Tecnologia.</div>
-    </div>
-  </footer>
-
-  <div class="player" id="player">
-    <div class="player-info">
-      <div class="player-icon" id="playerIcon">🎵</div>
-      <div class="player-meta">
-        <div class="player-title" id="playerTitle">Nenhuma lição</div>
-        <div class="player-course" id="playerCourse">Seleciona uma lição para começar</div>
-      </div>
-    </div>
-    <div class="player-controls">
-      <button class="player-btn" id="prevBtn">⏮</button>
-      <button class="player-btn play-main" id="playBtn">▶</button>
-      <button class="player-btn" id="nextBtn">⏭</button>
-    </div>
-    <div class="player-prog-wrap">
-      <span class="ptime" id="currentTime">0:00</span>
-      <div class="player-bar" id="playerBar"><div class="player-bar-fill" id="playerBarFill"></div></div>
-      <span class="ptime" id="totalTime">0:00</span>
-    </div>
-    <div class="player-opts">
-      <select class="speed-sel" id="speedSelect">
-        <option value="0.75">0.75×</option><option value="1" selected>1×</option>
-        <option value="1.25">1.25×</option><option value="1.5">1.5×</option><option value="2">2×</option>
-      </select>
-      <input type="range" class="vol-slider" id="volSlider" min="0" max="1" step="0.05" value="1">
-    </div>
-    <audio id="audioEl" preload="metadata"></audio>
-  </div>
-</div>
-
-<div class="xp-pop" id="xpPop">+10 XP ⚡</div>
-<div class="overlay" id="overlay"></div>
-<div class="modal" id="modal"></div>
-
-<script src="js/app.js"></script>
-</body>
-</html>
+    <body>
+      <div id="root"></div>
+    </body>
+  </html>
+  

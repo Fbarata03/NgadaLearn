@@ -7,8 +7,9 @@ require("dotenv").config();
 const express = require("express");
 const cors    = require("cors");
 
-const authRoutes  = require("./routes/auth");
-const userRoutes  = require("./routes/users");
+const authRoutes     = require("./routes/auth");
+const userRoutes     = require("./routes/users");
+const paymentRoutes  = require("./routes/payments");
 const { initDB }  = require("./utils/dataStore");
 const { seed }    = require("./scripts/seed");
 
@@ -46,8 +47,9 @@ if (process.env.NODE_ENV !== "production") {
 }
 
 // ── Rotas da API ──────────────────────────────────────────────────
-app.use("/api/auth",  authRoutes);
-app.use("/api/users", userRoutes);
+app.use("/api/auth",     authRoutes);
+app.use("/api/users",    userRoutes);
+app.use("/api/payments", paymentRoutes);
 
 // ── Health check ──────────────────────────────────────────────────
 app.get("/api/health", (_req, res) => {

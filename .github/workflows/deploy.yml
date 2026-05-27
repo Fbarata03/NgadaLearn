@@ -29,6 +29,9 @@ jobs:
 
       - name: Build (produção)
         working-directory: 'Create README for NgadaLearn'
+        env:
+          VITE_STRIPE_PUBLIC_KEY: ${{ secrets.VITE_STRIPE_PUBLIC_KEY }}
+          VITE_API_URL: ${{ secrets.VITE_API_URL }}
         run: npm run build
 
       - name: Deploy para gh-pages

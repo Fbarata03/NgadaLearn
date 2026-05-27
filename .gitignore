@@ -10,3 +10,10 @@ node_modules/
 dist/
 .vite/
 *.local
+
+# Variáveis de ambiente (nunca commitar)
+.env
+.env.local
+.env.*.local
+Create README for NgadaLearn/.env
+backend/.env

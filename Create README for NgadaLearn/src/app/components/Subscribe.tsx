@@ -1,5 +1,12 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router";
+import { loadStripe } from "@stripe/stripe-js";
+import {
+  Elements,
+  CardElement,
+  useStripe,
+  useElements,
+} from "@stripe/react-stripe-js";
 import { Card } from "./ui/card";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
@@ -8,23 +15,22 @@ import { Separator } from "./ui/separator";
 import { useAuth } from "../context/AuthContext";
 import type { PlanType } from "../context/AuthContext";
 import {
-  Check,
-  CreditCard,
-  Shield,
-  Clock,
-  Headphones,
-  Award,
-  Lock,
-  Star,
-  Users,
-  BookOpen,
-  Eye,
-  EyeOff,
-  ChevronRight,
-  AlertCircle,
-  RefreshCw,
+  Check, Shield, Clock, Headphones, Award,
+  Lock, Star, Users, BookOpen, ChevronRight,
+  AlertCircle, RefreshCw, CreditCard,
 } from "lucide-react";
 
+/* ── Stripe init ── */
+const stripePromise = loadStripe(
+  import.meta.env.VITE_STRIPE_PUBLIC_KEY ||
+  "pk_test_51TbipT91laigJgQDKbz0z0Z1UTvAXIAQfQoYmgCb2JnUjZw6g1pEkpsbXY8nVGRcw1yTRkseQUVHuj2p4pNQgUbC00e7vQrnc0"
+);
+
+const API_URL =
+  import.meta.env.VITE_API_URL ||
+  "https://ngadalearn-backend.onrender.com";
+
+/* ── Planos ── */
 const PLANS = [
   {
     id: "monthly" as PlanType,
@@ -35,7 +41,7 @@ const PLANS = [
     badge: "MAIS ACESSÍVEL",
     badgeColor: "bg-blue-600",
     borderColor: "border-blue-300",
-    description: "Acesso completo por 30 dias. Renove quando quiser.",
+    description: "Acesso completo por 30 dias.",
     features: [
       "50+ horas de conteúdo",
       "NgadaFlow (áudio com nativos)",
@@ -54,7 +60,7 @@ const PLANS = [
     badge: "MELHOR VALOR",
     badgeColor: "bg-purple-600",
     borderColor: "border-purple-300",
-    description: "Pague uma vez, acesso para sempre. Sem renovações.",
+    description: "Pague uma vez, acesso para sempre.",
     features: [
       "50+ horas de conteúdo",
       "NgadaFlow (áudio com nativos)",
@@ -75,41 +81,279 @@ const INCLUDES = [
   { icon: Check,      text: "Zero anúncios" },
 ];
 
+/* ── Estilo do CardElement ── */
+const CARD_STYLE = {
+  style: {
+    base: {
+      fontSize: "16px",
+      color: "#1f2937",
+      fontFamily: "inherit",
+      "::placeholder": { color: "#9ca3af" },
+    },
+    invalid: { color: "#ef4444" },
+  },
+};
+
+/* ══════════════════════════════════════════
+   FORMULÁRIO COM STRIPE
+══════════════════════════════════════════ */
+function PaymentForm({
+  selectedPlan,
+  isRenewal,
+  onBack,
+}: {
+  selectedPlan: PlanType;
+  isRenewal: boolean;
+  onBack: () => void;
+}) {
+  const stripe    = useStripe();
+  const elements  = useElements();
+  const navigate  = useNavigate();
+  const { registerAndPay, renewMonthly, user } = useAuth();
+
+  const plan = PLANS.find((p) => p.id === selectedPlan)!;
+
+  const [form, setForm] = useState({
+    name:     user?.name  || "",
+    email:    user?.email || "",
+    password: "",
+  });
+  const [error,       setError]       = useState("");
+  const [processing,  setProcessing]  = useState(false);
+  const [cardReady,   setCardReady]   = useState(false);
+
+  const set = (field: keyof typeof form) =>
+    (e: React.ChangeEvent<HTMLInputElement>) =>
+      setForm((prev) => ({ ...prev, [field]: e.target.value }));
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!stripe || !elements) return;
+
+    setError("");
+
+    /* Validações básicas */
+    if (!isRenewal) {
+      if (!form.name.trim())    return setError("Informe o seu nome completo.");
+      if (!form.email.includes("@")) return setError("Informe um e-mail válido.");
+      if (form.password.length < 6)  return setError("A senha deve ter pelo menos 6 caracteres.");
+    }
+
+    setProcessing(true);
+
+    try {
+      /* 1 — Criar PaymentIntent no backend */
+      const res = await fetch(`${API_URL}/api/payments/create-intent`, {
+        method:  "POST",
+        headers: { "Content-Type": "application/json" },
+        body:    JSON.stringify({ plan: isRenewal ? "monthly" : selectedPlan }),
+      });
+
+      if (!res.ok) throw new Error("Erro ao iniciar pagamento.");
+
+      const { clientSecret } = await res.json();
+
+      /* 2 — Confirmar pagamento com Stripe */
+      const cardEl = elements.getElement(CardElement);
+      if (!cardEl) throw new Error("Cartão não encontrado.");
+
+      const result = await stripe.confirmCardPayment(clientSecret, {
+        payment_method: {
+          card: cardEl,
+          billing_details: {
+            name:  isRenewal ? user?.name  : form.name,
+            email: isRenewal ? user?.email : form.email,
+          },
+        },
+      });
+
+      if (result.error) {
+        setError(result.error.message || "Pagamento recusado.");
+        setProcessing(false);
+        return;
+      }
+
+      /* 3 — Pagamento aprovado → activar conta */
+      if (isRenewal) {
+        renewMonthly();
+      } else {
+        registerAndPay(form.name, form.email, form.password, selectedPlan);
+      }
+
+      navigate("/dashboard");
+
+    } catch (err: any) {
+      setError(err.message || "Erro inesperado. Tente novamente.");
+      setProcessing(false);
+    }
+  };
+
+  return (
+    <form onSubmit={handleSubmit}>
+      <Card className="p-6 bg-white shadow-sm space-y-5">
+
+        {/* Resumo do plano */}
+        <div className="p-3 bg-purple-50 rounded-xl flex items-center justify-between">
+          <div>
+            <p className="text-sm font-bold text-purple-900">
+              {isRenewal ? "Renovação — Plano Mensal" : plan.label}
+            </p>
+            <p className="text-xs text-purple-700">
+              {isRenewal ? "30 dias de acesso renovado" : plan.note}
+            </p>
+          </div>
+          <div className="text-right">
+            <p className="text-2xl font-black text-purple-700">
+              US$ {isRenewal ? "5" : plan.price}
+            </p>
+            <p className="text-xs text-gray-500">
+              {isRenewal ? "/mês" : plan.period}
+            </p>
+          </div>
+        </div>
+
+        {/* Dados da conta (apenas novo registo) */}
+        {!isRenewal && (
+          <>
+            <div>
+              <h3 className="font-bold text-gray-800 mb-3 flex items-center gap-2">
+                <span className="w-6 h-6 bg-purple-600 text-white rounded-full text-xs flex items-center justify-center font-bold">1</span>
+                Criar a sua conta
+              </h3>
+              <div className="space-y-3">
+                <div>
+                  <Label className="text-sm font-semibold">Nome completo</Label>
+                  <Input placeholder="O seu nome" value={form.name} onChange={set("name")} className="mt-1.5" />
+                </div>
+                <div>
+                  <Label className="text-sm font-semibold">E-mail</Label>
+                  <Input type="email" placeholder="seu@email.com" value={form.email} onChange={set("email")} className="mt-1.5" />
+                </div>
+                <div>
+                  <Label className="text-sm font-semibold">Senha (mín. 6 caracteres)</Label>
+                  <Input type="password" placeholder="Crie uma senha segura" value={form.password} onChange={set("password")} className="mt-1.5" />
+                  <p className="text-xs text-gray-500 mt-1">Guarde esta senha para futuros acessos.</p>
+                </div>
+              </div>
+            </div>
+            <Separator />
+          </>
+        )}
+
+        {/* Dados do cartão — Stripe Element */}
+        <div>
+          <h3 className="font-bold text-gray-800 mb-3 flex items-center gap-2">
+            <span className="w-6 h-6 bg-purple-600 text-white rounded-full text-xs flex items-center justify-center font-bold">
+              {isRenewal ? "1" : "2"}
+            </span>
+            Dados do cartão
+          </h3>
+
+          <div className="border rounded-xl p-4 bg-gray-50 focus-within:ring-2 focus-within:ring-purple-400 transition-all">
+            <CardElement
+              options={CARD_STYLE}
+              onChange={(e) => {
+                setCardReady(e.complete);
+                if (e.error) setError(e.error.message || "");
+                else setError("");
+              }}
+            />
+          </div>
+
+          <div className="flex flex-wrap items-center gap-2 mt-2">
+            <img src="https://js.stripe.com/v3/fingerprinted/img/visa-365725566f9578a9589553aa9296d178.svg" alt="Visa" className="h-5" />
+            <img src="https://js.stripe.com/v3/fingerprinted/img/mastercard-4d8844094130711885b5e41b28c9848f.svg" alt="MC" className="h-5" />
+            <img src="https://js.stripe.com/v3/fingerprinted/img/amex-a49b82f46c5cd6a96a6e418a6ca1717c.svg" alt="Amex" className="h-5" />
+            <span className="text-xs text-gray-400 ml-auto flex items-center gap-1">
+              <Lock className="w-3 h-3" /> Protegido por Stripe
+            </span>
+          </div>
+        </div>
+
+        <Separator />
+
+        {/* Total */}
+        <div className="bg-gray-50 rounded-xl p-4 text-sm">
+          <div className="flex justify-between font-black text-lg">
+            <span>Total</span>
+            <span className="text-purple-700">US$ {isRenewal ? "5" : plan.price},00</span>
+          </div>
+          <p className="text-xs text-gray-500 mt-1">
+            {isRenewal
+              ? "Acesso renovado por mais 30 dias"
+              : selectedPlan === "monthly"
+              ? "Acesso por 30 dias · Renove para continuar"
+              : "Cobrança única · Acesso para sempre"}
+          </p>
+        </div>
+
+        {/* Erro */}
+        {error && (
+          <div className="flex items-start gap-2.5 p-3.5 bg-red-50 border border-red-200 rounded-xl text-sm text-red-700">
+            <AlertCircle className="w-4 h-4 flex-shrink-0 mt-0.5" />
+            {error}
+          </div>
+        )}
+
+        {/* Botão pagar */}
+        <Button
+          type="submit"
+          size="lg"
+          className="w-full bg-purple-600 hover:bg-purple-700 py-6 text-lg font-bold disabled:opacity-60"
+          disabled={processing || !stripe || !cardReady}
+        >
+          {processing ? (
+            <span className="flex items-center gap-2">
+              <span className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent" />
+              A processar pagamento...
+            </span>
+          ) : (
+            <>
+              <Lock className="w-4 h-4 mr-2" />
+              {isRenewal
+                ? "Renovar por US$ 5"
+                : `Pagar US$ ${plan.price} e Activar Acesso`}
+            </>
+          )}
+        </Button>
+
+        {/* Selos de segurança */}
+        <div className="flex flex-wrap items-center justify-center gap-3">
+          <div className="flex items-center gap-1.5 text-xs text-gray-500"><Shield className="w-4 h-4 text-green-500" /> SSL Criptografado</div>
+          <div className="flex items-center gap-1.5 text-xs text-gray-500"><CreditCard className="w-4 h-4 text-blue-500" /> PCI Compliant</div>
+          <div className="flex items-center gap-1.5 text-xs text-gray-500"><Lock className="w-4 h-4 text-purple-500" /> Dados Protegidos</div>
+        </div>
+
+        {!isRenewal && (
+          <button type="button" onClick={onBack} className="w-full text-sm text-gray-500 hover:text-purple-600 transition-colors">
+            ← Voltar e alterar plano
+          </button>
+        )}
+      </Card>
+    </form>
+  );
+}
+
+/* ══════════════════════════════════════════
+   PÁGINA PRINCIPAL
+══════════════════════════════════════════ */
 export function Subscribe() {
-  const { registerAndPay, renewMonthly, isAuthenticated, isAccessActive, user } = useAuth();
+  const { isAuthenticated, isAccessActive, user } = useAuth();
   const navigate = useNavigate();
 
   const [selectedPlan, setSelectedPlan] = useState<PlanType>("lifetime");
   const [step, setStep] = useState<"plan" | "payment">("plan");
-  const [isProcessing, setIsProcessing] = useState(false);
-  const [showPw, setShowPw] = useState(false);
-  const [error, setError] = useState("");
-
-  const [form, setForm] = useState({
-    name: user?.name || "",
-    email: user?.email || "",
-    password: "",
-    card: "",
-    expiry: "",
-    cvv: "",
-    cardName: "",
-  });
-
-  const set = (field: keyof typeof form) => (e: React.ChangeEvent<HTMLInputElement>) =>
-    setForm((prev) => ({ ...prev, [field]: e.target.value }));
 
   const plan = PLANS.find((p) => p.id === selectedPlan)!;
 
-  // Utilizador com acesso activo — redireciona
+  /* Utilizador com acesso activo */
   if (isAuthenticated && isAccessActive) {
     return (
       <div className="min-h-[70vh] flex items-center justify-center px-4">
         <div className="text-center max-w-md">
           <div className="text-6xl mb-4">✅</div>
           <h1 className="text-2xl font-black mb-3">Você já tem acesso!</h1>
-          <p className="text-gray-600 mb-6">
-            O seu plano está activo. Vai directo para o painel.
-          </p>
+          <p className="text-gray-600 mb-6">O seu plano está activo. Vai directo para o painel.</p>
           <Link to="/dashboard">
             <Button size="lg" className="bg-purple-600 hover:bg-purple-700 font-bold px-10">
               Ir para Meu Painel →
@@ -120,78 +364,43 @@ export function Subscribe() {
     );
   }
 
-  // Renovação de plano mensal expirado
   const isRenewal = isAuthenticated && !isAccessActive && user?.plan === "monthly";
-
-  const validate = () => {
-    if (!isRenewal) {
-      if (!form.name.trim()) return "Informe seu nome completo.";
-      if (!form.email.trim() || !form.email.includes("@")) return "Informe um e-mail válido.";
-      if (form.password.length < 6) return "A senha deve ter pelo menos 6 caracteres.";
-    }
-    if (form.card.replace(/\s/g, "").length < 13) return "Número de cartão inválido.";
-    if (!form.expiry) return "Informe a validade do cartão.";
-    if (!form.cvv || form.cvv.length < 3) return "CVV inválido.";
-    if (!form.cardName.trim()) return "Informe o nome no cartão.";
-    return null;
-  };
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    const err = validate();
-    if (err) { setError(err); return; }
-    setIsProcessing(true);
-    setError("");
-    setTimeout(() => {
-      if (isRenewal) {
-        renewMonthly();
-      } else {
-        registerAndPay(form.name, form.email, form.password, selectedPlan);
-      }
-      setIsProcessing(false);
-      navigate("/dashboard");
-    }, 2000);
-  };
 
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Barra de confiança */}
       <div className="bg-purple-700 text-white py-2.5">
-        <div className="container mx-auto px-4 flex flex-wrap items-center justify-center gap-6 text-sm">
+        <div className="container mx-auto px-4 flex flex-wrap items-center justify-center gap-4 sm:gap-6 text-xs sm:text-sm">
           <span className="flex items-center gap-1.5"><Shield className="w-4 h-4" /> Pagamento 100% seguro</span>
           <span className="flex items-center gap-1.5"><Check className="w-4 h-4" /> Acesso imediato após pagamento</span>
           <span className="flex items-center gap-1.5"><Lock className="w-4 h-4" /> Sem taxas escondidas</span>
         </div>
       </div>
 
-      <div className="container mx-auto px-4 py-10">
+      <div className="container mx-auto px-4 py-8 sm:py-10">
         <div className="max-w-5xl mx-auto">
 
-          {/* Alerta de renovação */}
+          {/* Alerta renovação */}
           {isRenewal && (
             <div className="mb-6 p-4 bg-orange-50 border-2 border-orange-300 rounded-2xl flex items-start gap-3">
               <RefreshCw className="w-5 h-5 text-orange-600 flex-shrink-0 mt-0.5" />
               <div>
                 <p className="font-bold text-orange-800">O seu plano mensal expirou</p>
-                <p className="text-sm text-orange-700 mt-0.5">
-                  Renove agora para recuperar o acesso completo ao curso.
-                </p>
+                <p className="text-sm text-orange-700 mt-0.5">Renove agora para recuperar o acesso completo ao curso.</p>
               </div>
             </div>
           )}
 
           {/* Passos */}
           {!isRenewal && (
-            <div className="flex items-center gap-2 text-sm text-gray-500 mb-8">
-              <button
-                onClick={() => step === "payment" && setStep("plan")}
-                className={`font-semibold ${step === "plan" ? "text-purple-700" : "text-gray-400"}`}
-              >
+            <div className="flex items-center gap-2 text-sm text-gray-500 mb-6">
+              <button onClick={() => step === "payment" && setStep("plan")}
+                className={`font-semibold ${step === "plan" ? "text-purple-700" : "text-gray-400"}`}>
                 1. Escolher Plano
               </button>
               <ChevronRight className="w-4 h-4" />
               <span className={`font-semibold ${step === "payment" ? "text-purple-700" : "text-gray-400"}`}>
-                2. {isRenewal ? "Renovar" : "Criar Conta & Pagar"}
+                2. Criar Conta & Pagar
               </span>
             </div>
           )}
@@ -200,31 +409,24 @@ export function Subscribe() {
             <div className="lg:col-span-3 space-y-5">
               <div>
                 <h1 className="text-2xl sm:text-3xl font-black mb-1">
-                  {isRenewal ? "Renovar Plano Mensal" : step === "plan" ? "Escolha seu plano" : "Criar conta e pagar"}
+                  {isRenewal ? "Renovar Plano Mensal" : step === "plan" ? "Escolha o seu plano" : "Criar conta e pagar"}
                 </h1>
                 <p className="text-gray-600 text-sm">
-                  {isRenewal
-                    ? "Pague para ter mais 30 dias de acesso completo"
-                    : step === "plan"
-                    ? "Seleccione o plano que melhor se adapta a si"
-                    : "Crie a sua conta e finalize o pagamento"}
+                  {step === "plan" ? "Seleccione o plano que melhor se adapta a si" : "Dados da conta e pagamento seguro via Stripe"}
                 </p>
               </div>
 
-              {/* ── ETAPA 1: Escolha de plano ── */}
+              {/* ── ETAPA 1: Escolha do plano ── */}
               {step === "plan" && !isRenewal && (
                 <>
                   <div className="grid sm:grid-cols-2 gap-4">
                     {PLANS.map((p) => (
-                      <div
-                        key={p.id}
-                        onClick={() => setSelectedPlan(p.id)}
+                      <div key={p.id} onClick={() => setSelectedPlan(p.id)}
                         className={`relative p-5 border-2 rounded-2xl cursor-pointer transition-all ${
                           selectedPlan === p.id
                             ? `${p.borderColor} bg-white shadow-lg scale-[1.02]`
                             : "border-gray-200 bg-white hover:border-gray-300"
-                        }`}
-                      >
+                        }`}>
                         <div className={`absolute top-0 right-0 ${p.badgeColor} text-white text-xs font-bold px-2.5 py-1 rounded-bl-lg rounded-tr-xl`}>
                           {p.badge}
                         </div>
@@ -244,25 +446,19 @@ export function Subscribe() {
                         <div className="space-y-1.5">
                           {p.features.map((f) => (
                             <div key={f} className="flex items-start gap-2 text-xs text-gray-700">
-                              <Check className="w-3.5 h-3.5 text-green-600 flex-shrink-0 mt-0.5" />
-                              {f}
+                              <Check className="w-3.5 h-3.5 text-green-600 flex-shrink-0 mt-0.5" />{f}
                             </div>
                           ))}
                         </div>
-                        <p className={`text-xs mt-3 font-medium ${
-                          p.id === "monthly" ? "text-orange-600" : "text-purple-700"
-                        }`}>
+                        <p className={`text-xs mt-3 font-medium ${p.id === "monthly" ? "text-orange-600" : "text-purple-700"}`}>
                           {p.note}
                         </p>
                       </div>
                     ))}
                   </div>
 
-                  <Button
-                    size="lg"
-                    className="w-full bg-purple-600 hover:bg-purple-700 py-6 text-lg font-bold"
-                    onClick={() => setStep("payment")}
-                  >
+                  <Button size="lg" className="w-full bg-purple-600 hover:bg-purple-700 py-6 text-lg font-bold"
+                    onClick={() => setStep("payment")}>
                     Continuar com {plan.label} — US$ {plan.price}{plan.period} →
                   </Button>
 
@@ -273,157 +469,15 @@ export function Subscribe() {
                 </>
               )}
 
-              {/* ── ETAPA 2: Formulário ── */}
+              {/* ── ETAPA 2: Formulário Stripe ── */}
               {(step === "payment" || isRenewal) && (
-                <form onSubmit={handleSubmit}>
-                  <Card className="p-6 bg-white shadow-sm">
-                    <div className="space-y-5">
-
-                      {/* Resumo do plano */}
-                      <div className="p-3 bg-purple-50 rounded-xl flex items-center justify-between">
-                        <div>
-                          <p className="text-sm font-bold text-purple-900">
-                            {isRenewal ? "Renovação — Plano Mensal" : plan.label}
-                          </p>
-                          <p className="text-xs text-purple-700">
-                            {isRenewal ? "30 dias de acesso renovado" : plan.note}
-                          </p>
-                        </div>
-                        <div className="text-right">
-                          <p className="text-2xl font-black text-purple-700">
-                            US$ {isRenewal ? "5" : plan.price}
-                          </p>
-                          <p className="text-xs text-gray-500">
-                            {isRenewal ? "/mês" : plan.period}
-                          </p>
-                        </div>
-                      </div>
-
-                      {/* Dados da conta (apenas novo registo) */}
-                      {!isRenewal && (
-                        <>
-                          <div>
-                            <h3 className="font-bold text-gray-800 mb-3 flex items-center gap-2">
-                              <span className="w-6 h-6 bg-purple-600 text-white rounded-full text-xs flex items-center justify-center font-bold">1</span>
-                              Criar sua conta
-                            </h3>
-                            <div className="space-y-3">
-                              <div>
-                                <Label className="text-sm font-semibold">Nome completo</Label>
-                                <Input placeholder="Seu nome completo" value={form.name} onChange={set("name")} className="mt-1.5" />
-                              </div>
-                              <div>
-                                <Label className="text-sm font-semibold">E-mail</Label>
-                                <Input type="email" placeholder="seu@email.com" value={form.email} onChange={set("email")} className="mt-1.5" />
-                              </div>
-                              <div>
-                                <Label className="text-sm font-semibold">Senha (mín. 6 caracteres)</Label>
-                                <div className="relative mt-1.5">
-                                  <Input
-                                    type={showPw ? "text" : "password"}
-                                    placeholder="Crie uma senha segura"
-                                    value={form.password}
-                                    onChange={set("password")}
-                                    className="pr-10"
-                                  />
-                                  <button type="button" className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400" onClick={() => setShowPw(!showPw)}>
-                                    {showPw ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                                  </button>
-                                </div>
-                                <p className="text-xs text-gray-500 mt-1">Guarde esta senha para futuros acessos.</p>
-                              </div>
-                            </div>
-                          </div>
-                          <Separator />
-                        </>
-                      )}
-
-                      {/* Dados do cartão */}
-                      <div>
-                        <h3 className="font-bold text-gray-800 mb-3 flex items-center gap-2">
-                          <span className="w-6 h-6 bg-purple-600 text-white rounded-full text-xs flex items-center justify-center font-bold">
-                            {isRenewal ? "1" : "2"}
-                          </span>
-                          Dados do cartão
-                        </h3>
-                        <div className="space-y-3">
-                          <div>
-                            <Label className="text-sm font-semibold">Número do Cartão</Label>
-                            <div className="relative mt-1.5">
-                              <Input placeholder="0000 0000 0000 0000" value={form.card} onChange={set("card")} className="pl-10" maxLength={19} />
-                              <CreditCard className="w-5 h-5 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
-                            </div>
-                          </div>
-                          <div className="grid grid-cols-2 gap-3">
-                            <div>
-                              <Label className="text-sm font-semibold">Validade</Label>
-                              <Input placeholder="MM/AA" value={form.expiry} onChange={set("expiry")} className="mt-1.5" maxLength={5} />
-                            </div>
-                            <div>
-                              <Label className="text-sm font-semibold">CVV</Label>
-                              <Input placeholder="000" value={form.cvv} onChange={set("cvv")} className="mt-1.5" maxLength={4} />
-                            </div>
-                          </div>
-                          <div>
-                            <Label className="text-sm font-semibold">Nome no cartão</Label>
-                            <Input placeholder="Como aparece no cartão" value={form.cardName} onChange={set("cardName")} className="mt-1.5" />
-                          </div>
-                        </div>
-                      </div>
-
-                      <Separator />
-
-                      {/* Resumo final */}
-                      <div className="bg-gray-50 rounded-xl p-4 space-y-2 text-sm">
-                        <div className="flex justify-between text-gray-700">
-                          <span>{isRenewal ? "Renovação Plano Mensal" : plan.label}</span>
-                          <span>US$ {isRenewal ? "5" : plan.price},00</span>
-                        </div>
-                        <Separator />
-                        <div className="flex justify-between font-black text-lg">
-                          <span>Total</span>
-                          <span className="text-purple-700">US$ {isRenewal ? "5" : plan.price},00</span>
-                        </div>
-                        <p className="text-xs text-gray-500">
-                          {isRenewal
-                            ? "Acesso renovado por mais 30 dias a partir de hoje"
-                            : selectedPlan === "monthly"
-                            ? "Acesso por 30 dias · Renove para continuar"
-                            : "Cobrança única · Acesso para sempre"}
-                        </p>
-                      </div>
-
-                      {error && (
-                        <div className="flex items-start gap-2.5 p-3.5 bg-red-50 border border-red-200 rounded-xl text-sm text-red-700">
-                          <AlertCircle className="w-4 h-4 flex-shrink-0 mt-0.5" />
-                          {error}
-                        </div>
-                      )}
-
-                      <Button type="submit" size="lg" className="w-full bg-purple-600 hover:bg-purple-700 py-6 text-lg font-bold" disabled={isProcessing}>
-                        {isProcessing ? (
-                          <span className="flex items-center gap-2">
-                            <span className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent" />
-                            Processando pagamento...
-                          </span>
-                        ) : (
-                          <>
-                            <Lock className="w-4 h-4 mr-2" />
-                            {isRenewal
-                              ? "Renovar por US$ 5 e Recuperar Acesso"
-                              : `Pagar US$ ${plan.price} e Liberar Acesso`}
-                          </>
-                        )}
-                      </Button>
-
-                      <div className="flex flex-wrap items-center justify-center gap-3 pt-1">
-                        <div className="flex items-center gap-1.5 text-xs text-gray-500"><Shield className="w-4 h-4 text-green-500" /> SSL Criptografado</div>
-                        <div className="flex items-center gap-1.5 text-xs text-gray-500"><CreditCard className="w-4 h-4 text-blue-500" /> PCI Compliant</div>
-                        <div className="flex items-center gap-1.5 text-xs text-gray-500"><Lock className="w-4 h-4 text-purple-500" /> Dados Protegidos</div>
-                      </div>
-                    </div>
-                  </Card>
-                </form>
+                <Elements stripe={stripePromise}>
+                  <PaymentForm
+                    selectedPlan={selectedPlan}
+                    isRenewal={isRenewal}
+                    onBack={() => setStep("plan")}
+                  />
+                </Elements>
               )}
             </div>
 
@@ -441,7 +495,6 @@ export function Subscribe() {
                 </div>
               </Card>
 
-              {/* Comparação de planos */}
               <Card className="p-5 bg-gray-50">
                 <h4 className="font-bold text-sm mb-3">Comparação de planos</h4>
                 <div className="space-y-2 text-xs">
@@ -465,7 +518,7 @@ export function Subscribe() {
               </Card>
 
               <Card className="p-5">
-                <h4 className="font-semibold text-sm mb-3">O que dizem nossos alunos</h4>
+                <h4 className="font-semibold text-sm mb-3">O que dizem os nossos alunos</h4>
                 <div className="space-y-3">
                   {[
                     { avatar: "👩🏽", name: "Maria S.", text: "Consegui emprego internacional em 3 meses!" },

@@ -1,16 +1,37 @@
 import { useState } from "react";
-import { Outlet, Link, useLocation } from "react-router";
+import { Outlet, Link, useLocation, useNavigate } from "react-router";
 import { Button } from "./ui/button";
-import { GraduationCap, Menu, X, BookOpen, LayoutDashboard } from "lucide-react";
+import {
+  GraduationCap,
+  Menu,
+  X,
+  BookOpen,
+  LayoutDashboard,
+  LogOut,
+  User,
+  ChevronDown,
+} from "lucide-react";
+import { useAuth } from "../context/AuthContext";
 
 export function RootLayout() {
   const location = useLocation();
+  const navigate = useNavigate();
+  const { user, isAuthenticated, isPaid, logout } = useAuth();
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [userMenuOpen, setUserMenuOpen] = useState(false);
 
-  const navLinks = [
-    { to: "/lessons", label: "Conteúdo do Curso", icon: BookOpen },
-    { to: "/dashboard", label: "Meu Progresso", icon: LayoutDashboard },
-  ];
+  const handleLogout = () => {
+    logout();
+    setUserMenuOpen(false);
+    navigate("/");
+  };
+
+  const navLinks = isPaid
+    ? [
+        { to: "/lessons", label: "Conteúdo do Curso", icon: BookOpen },
+        { to: "/dashboard", label: "Meu Progresso", icon: LayoutDashboard },
+      ]
+    : [];
 
   return (
     <div className="min-h-screen flex flex-col bg-white">
@@ -24,35 +45,93 @@ export function RootLayout() {
           </Link>
 
           {/* Nav (desktop) */}
-          <nav className="hidden md:flex items-center gap-6 flex-1 ml-4">
-            {navLinks.map(({ to, label }) => (
-              <Link
-                key={to}
-                to={to}
-                className={`text-sm font-medium transition-colors hover:text-purple-600 ${
-                  location.pathname === to ? "text-purple-700 font-semibold" : "text-gray-700"
-                }`}
-              >
-                {label}
-              </Link>
-            ))}
-          </nav>
+          {navLinks.length > 0 && (
+            <nav className="hidden md:flex items-center gap-6 flex-1 ml-4">
+              {navLinks.map(({ to, label }) => (
+                <Link
+                  key={to}
+                  to={to}
+                  className={`text-sm font-medium transition-colors hover:text-purple-600 ${
+                    location.pathname === to ? "text-purple-700 font-semibold" : "text-gray-700"
+                  }`}
+                >
+                  {label}
+                </Link>
+              ))}
+            </nav>
+          )}
 
           {/* Right actions */}
           <div className="flex items-center gap-3 ml-auto">
-            <Link to="/dashboard" className="hidden md:block">
-              <Button variant="outline" size="sm" className="border-gray-300">
-                Entrar
-              </Button>
-            </Link>
-            <Link to="/subscribe">
-              <Button
-                size="sm"
-                className="bg-purple-600 hover:bg-purple-700 font-semibold hidden md:flex"
-              >
-                Começar Grátis
-              </Button>
-            </Link>
+            {isAuthenticated ? (
+              /* ── Utilizador logado ── */
+              <div className="relative hidden md:block">
+                <button
+                  onClick={() => setUserMenuOpen(!userMenuOpen)}
+                  className="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-gray-100 transition-colors"
+                >
+                  <div className="w-8 h-8 bg-purple-100 rounded-full flex items-center justify-center">
+                    <User className="w-4 h-4 text-purple-700" />
+                  </div>
+                  <span className="text-sm font-semibold text-gray-800 max-w-[120px] truncate">
+                    {user?.name}
+                  </span>
+                  <ChevronDown className="w-4 h-4 text-gray-500" />
+                </button>
+
+                {userMenuOpen && (
+                  <div className="absolute right-0 top-full mt-1 w-52 bg-white border rounded-xl shadow-xl py-2 z-50">
+                    <div className="px-4 py-2 border-b mb-1">
+                      <p className="text-xs font-bold text-gray-800 truncate">{user?.name}</p>
+                      <p className="text-xs text-gray-500 truncate">{user?.email}</p>
+                      {isPaid && (
+                        <span className="inline-block mt-1 text-xs bg-green-100 text-green-700 font-semibold px-2 py-0.5 rounded-full">
+                          ✓ Acesso Vitalício
+                        </span>
+                      )}
+                    </div>
+                    {isPaid && (
+                      <>
+                        <Link
+                          to="/dashboard"
+                          className="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
+                          onClick={() => setUserMenuOpen(false)}
+                        >
+                          <LayoutDashboard className="w-4 h-4" /> Meu Progresso
+                        </Link>
+                        <Link
+                          to="/lessons"
+                          className="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
+                          onClick={() => setUserMenuOpen(false)}
+                        >
+                          <BookOpen className="w-4 h-4" /> Minhas Aulas
+                        </Link>
+                      </>
+                    )}
+                    <button
+                      onClick={handleLogout}
+                      className="flex items-center gap-2 px-4 py-2 text-sm text-red-600 hover:bg-red-50 w-full text-left mt-1 border-t"
+                    >
+                      <LogOut className="w-4 h-4" /> Sair
+                    </button>
+                  </div>
+                )}
+              </div>
+            ) : (
+              /* ── Visitante ── */
+              <>
+                <Link to="/login" className="hidden md:block">
+                  <Button variant="outline" size="sm" className="border-gray-300">
+                    Entrar
+                  </Button>
+                </Link>
+                <Link to="/subscribe">
+                  <Button size="sm" className="bg-purple-600 hover:bg-purple-700 font-semibold hidden md:flex">
+                    Comprar Agora
+                  </Button>
+                </Link>
+              </>
+            )}
 
             {/* Mobile toggle */}
             <button
@@ -65,10 +144,24 @@ export function RootLayout() {
           </div>
         </div>
 
-        {/* Mobile menu */}
+        {/* Menu mobile */}
         {mobileOpen && (
           <div className="md:hidden border-t bg-white shadow-lg">
             <nav className="container mx-auto px-4 py-4 space-y-1">
+              {isAuthenticated && (
+                <div className="flex items-center gap-3 px-3 py-3 mb-2 bg-purple-50 rounded-xl">
+                  <div className="w-9 h-9 bg-purple-100 rounded-full flex items-center justify-center">
+                    <User className="w-5 h-5 text-purple-700" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-bold text-gray-800">{user?.name}</p>
+                    {isPaid && (
+                      <p className="text-xs text-green-600 font-medium">✓ Acesso Vitalício</p>
+                    )}
+                  </div>
+                </div>
+              )}
+
               {navLinks.map(({ to, label, icon: Icon }) => (
                 <Link
                   key={to}
@@ -80,23 +173,44 @@ export function RootLayout() {
                   {label}
                 </Link>
               ))}
+
               <hr className="my-2" />
-              <Link
-                to="/dashboard"
-                className="block px-3 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-50 rounded-lg"
-                onClick={() => setMobileOpen(false)}
-              >
-                Entrar
-              </Link>
-              <Link to="/subscribe" onClick={() => setMobileOpen(false)}>
-                <Button className="w-full bg-purple-600 hover:bg-purple-700 mt-1">
-                  Começar Grátis — 7 dias
-                </Button>
-              </Link>
+
+              {isAuthenticated ? (
+                <button
+                  onClick={() => { handleLogout(); setMobileOpen(false); }}
+                  className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-red-600 hover:bg-red-50 w-full"
+                >
+                  <LogOut className="w-4 h-4" /> Sair
+                </button>
+              ) : (
+                <>
+                  <Link
+                    to="/login"
+                    className="block px-3 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-50 rounded-lg"
+                    onClick={() => setMobileOpen(false)}
+                  >
+                    Entrar
+                  </Link>
+                  <Link to="/subscribe" onClick={() => setMobileOpen(false)}>
+                    <Button className="w-full bg-purple-600 hover:bg-purple-700 mt-1">
+                      Comprar Agora — US$ 29
+                    </Button>
+                  </Link>
+                </>
+              )}
             </nav>
           </div>
         )}
       </header>
+
+      {/* Fechar menu do utilizador ao clicar fora */}
+      {userMenuOpen && (
+        <div
+          className="fixed inset-0 z-40"
+          onClick={() => setUserMenuOpen(false)}
+        />
+      )}
 
       <main className="flex-1">
         <Outlet />
@@ -119,9 +233,9 @@ export function RootLayout() {
             <div>
               <h4 className="font-bold text-sm uppercase tracking-wider text-gray-300 mb-4">Curso</h4>
               <ul className="space-y-2 text-sm text-gray-400">
+                <li><Link to="/demo" className="hover:text-white transition-colors">Aula Gratuita</Link></li>
                 <li><Link to="/lessons" className="hover:text-white transition-colors">Conversação</Link></li>
                 <li><Link to="/lessons" className="hover:text-white transition-colors">NgadaFlow (Áudio)</Link></li>
-                <li><Link to="/lessons" className="hover:text-white transition-colors">Vocabulário</Link></li>
                 <li><Link to="/lessons" className="hover:text-white transition-colors">Inglês Profissional</Link></li>
               </ul>
             </div>
@@ -137,13 +251,13 @@ export function RootLayout() {
             </div>
 
             <div>
-              <h4 className="font-bold text-sm uppercase tracking-wider text-gray-300 mb-4">Assinatura</h4>
+              <h4 className="font-bold text-sm uppercase tracking-wider text-gray-300 mb-4">Acesso Vitalício</h4>
               <p className="text-sm text-gray-400 mb-4">
-                Acesso completo ao curso por apenas <strong className="text-white">US$ 5/mês</strong>
+                Acesso completo ao curso por apenas <strong className="text-white">US$ 29</strong> — pagamento único
               </p>
               <Link to="/subscribe">
                 <Button size="sm" className="bg-purple-600 hover:bg-purple-700">
-                  Começar 7 Dias Grátis
+                  Comprar Agora
                 </Button>
               </Link>
             </div>

@@ -4,3 +4,9 @@ PIMSLEUR/
 Udemy/
 *.mp3
 *.pdf
+
+# Dependências e build
+node_modules/
+dist/
+.vite/
+*.local

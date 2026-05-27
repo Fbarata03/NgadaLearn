@@ -20,7 +20,6 @@ import {
   FileText,
   Shield,
   Users,
-  CreditCard,
   Lock,
 } from "lucide-react";
 
@@ -91,16 +90,16 @@ const LESSONS_PREVIEW = [
 
 const FAQ_ITEMS = [
   {
-    q: "Existe período de teste gratuito?",
-    a: "Sim! Seus primeiros 7 dias são completamente gratuitos. Cancele antes do fim do período e não será cobrado nada.",
+    q: "É um pagamento único ou mensalidade?",
+    a: "Pagamento único! Você paga uma vez e tem acesso completo ao curso para sempre. Sem mensalidades, sem renovações automáticas, sem surpresas.",
   },
   {
-    q: "O que está incluído na assinatura?",
-    a: "Você tem acesso completo a TUDO: todas as aulas de conversação, áudio NgadaFlow com sotaques reais, exercícios de vocabulário, dashboard de progresso e certificados de conclusão. Sem restrições.",
+    q: "O que está incluído no curso?",
+    a: "Você tem acesso completo a TUDO: todas as aulas de conversação, áudio NgadaFlow com sotaques reais, exercícios de vocabulário, dashboard de progresso e certificados de conclusão. Sem restrições, para sempre.",
   },
   {
-    q: "Posso cancelar a qualquer momento?",
-    a: "Sim! Cancele sua assinatura a qualquer momento com um clique. Sem burocracia, sem perguntas, sem taxas escondidas.",
+    q: "Tenho acesso para sempre mesmo?",
+    a: "Sim! Após o pagamento único, o acesso é vitalício. Mesmo quando adicionarmos novos conteúdos, você continuará tendo acesso sem pagar nada a mais.",
   },
   {
     q: "O curso funciona no celular?",
@@ -175,8 +174,8 @@ export function LandingPage() {
 
               <p className="text-lg text-gray-300 leading-relaxed max-w-xl">
                 Do zero à fluência — conversação real, áudio com nativos e um método
-                que realmente funciona. <strong className="text-white">Acesso completo</strong> a
-                todo o conteúdo por menos de um café por mês.
+                que realmente funciona. <strong className="text-white">Acesso completo e vitalício</strong> —
+                pague uma vez e aprenda para sempre.
               </p>
 
               {/* Rating */}
@@ -211,11 +210,11 @@ export function LandingPage() {
                     size="lg"
                     className="w-full bg-purple-600 hover:bg-purple-700 py-6 text-lg font-bold"
                   >
-                    Começar 7 Dias Grátis
+                    Garantir Acesso Vitalício — US$ 29
                   </Button>
                 </Link>
                 <p className="text-center text-sm text-gray-400">
-                  Depois apenas US$ 5/mês · Cancele quando quiser
+                  Pagamento único · Acesso para sempre
                 </p>
               </div>
             </div>
@@ -224,35 +223,34 @@ export function LandingPage() {
             <div className="hidden lg:block">
               <Card className="p-6 bg-white text-gray-900 shadow-2xl">
                 {/* Thumbnail preview */}
-                <div className="aspect-video bg-gradient-to-br from-purple-100 to-blue-100 rounded-lg mb-5 flex flex-col items-center justify-center gap-2 cursor-pointer group">
-                  <div className="w-14 h-14 bg-purple-600 group-hover:bg-purple-700 rounded-full flex items-center justify-center transition-colors">
-                    <PlayCircle className="w-8 h-8 text-white" />
+                <Link to="/demo">
+                  <div className="aspect-video bg-gradient-to-br from-purple-100 to-blue-100 rounded-lg mb-5 flex flex-col items-center justify-center gap-2 cursor-pointer group">
+                    <div className="w-14 h-14 bg-purple-600 group-hover:bg-purple-700 rounded-full flex items-center justify-center transition-colors">
+                      <PlayCircle className="w-8 h-8 text-white" />
+                    </div>
+                    <p className="text-sm text-gray-500 group-hover:text-purple-700 transition-colors">
+                      Ver aula gratuita →
+                    </p>
                   </div>
-                  <p className="text-sm text-gray-500">Prévia gratuita do curso</p>
-                </div>
+                </Link>
 
                 <div className="mb-4">
-                  <div className="text-4xl font-black">US$ 5</div>
-                  <div className="text-gray-500 text-sm">por mês</div>
-                  <div className="text-xs text-gray-400 mt-0.5 line-through">Comparado a US$ 49/ano</div>
+                  <div className="text-xs text-gray-400 line-through mb-0.5">US$ 99</div>
+                  <div className="text-4xl font-black">US$ 29</div>
+                  <div className="text-purple-700 text-xs font-bold mt-0.5">pagamento único · acesso vitalício</div>
                 </div>
 
-                <Link to="/subscribe" className="block mb-2">
+                <Link to="/subscribe" className="block mb-4">
                   <Button
                     size="lg"
                     className="w-full bg-purple-600 hover:bg-purple-700 py-5 text-base font-bold"
                   >
-                    Começar 7 Dias Grátis
-                  </Button>
-                </Link>
-                <Link to="/subscribe" className="block mb-4">
-                  <Button size="lg" variant="outline" className="w-full py-4 text-sm">
-                    Assinar por US$ 5/mês
+                    Garantir Meu Acesso Agora
                   </Button>
                 </Link>
 
                 <p className="text-center text-xs text-gray-500 mb-5">
-                  🔒 Pagamento 100% seguro via Stripe
+                  🔒 Pagamento único e seguro via Stripe
                 </p>
 
                 <div className="space-y-2.5 text-sm text-gray-700 border-t pt-4">
@@ -493,19 +491,19 @@ export function LandingPage() {
               <div className="text-5xl mb-4">🚀</div>
               <h2 className="text-3xl font-black mb-3">Sua jornada começa hoje</h2>
               <p className="text-purple-200 mb-6 max-w-md mx-auto">
-                Não adie mais. Por US$ 5/mês você investe no inglês que abre portas para empregos,
-                viagens e oportunidades globais.
+                Não adie mais. Com apenas US$ 29 você investe no inglês que abre portas para
+                empregos, viagens e oportunidades do mundo inteiro — para sempre.
               </p>
               <Link to="/subscribe">
                 <Button
                   size="lg"
                   className="bg-white text-purple-700 hover:bg-gray-100 px-10 py-5 font-black text-lg"
                 >
-                  Começar 7 Dias Grátis Agora
+                  Garantir Meu Acesso Vitalício
                 </Button>
               </Link>
               <p className="text-xs text-purple-300 mt-3">
-                Sem cartão obrigatório · Cancele quando quiser
+                Pagamento único · Sem mensalidades · Acesso para sempre
               </p>
             </section>
           </div>
@@ -514,26 +512,22 @@ export function LandingPage() {
           <div className="hidden lg:block">
             <div className="sticky top-20 space-y-4">
               <Card className="p-6 shadow-xl border-2 border-gray-100">
-                <div className="text-4xl font-black mb-0.5">US$ 5</div>
-                <div className="text-gray-500 text-sm mb-5">por mês</div>
+                <div className="text-xs text-gray-400 line-through mb-0.5">US$ 99</div>
+                <div className="text-4xl font-black mb-0.5">US$ 29</div>
+                <div className="text-purple-700 text-xs font-bold mb-5">pagamento único · acesso vitalício</div>
 
-                <Link to="/subscribe" className="block mb-2">
+                <Link to="/subscribe" className="block mb-4">
                   <Button
                     size="lg"
                     className="w-full bg-purple-600 hover:bg-purple-700 py-5 font-bold text-base"
                   >
-                    Começar 7 Dias Grátis
-                  </Button>
-                </Link>
-                <Link to="/subscribe" className="block mb-4">
-                  <Button size="lg" variant="outline" className="w-full py-4 text-sm">
-                    Assinar por US$ 5/mês
+                    Garantir Meu Acesso Agora
                   </Button>
                 </Link>
 
                 <p className="text-center text-xs text-gray-500 mb-4 flex items-center justify-center gap-1.5">
                   <Lock className="w-3 h-3" />
-                  Pagamento seguro via Stripe
+                  Pagamento único e seguro via Stripe
                 </p>
 
                 <div className="space-y-2.5 text-sm text-gray-700 border-t pt-4">
@@ -544,14 +538,6 @@ export function LandingPage() {
                       <span>{item.text}</span>
                     </div>
                   ))}
-                </div>
-
-                <div className="mt-4 p-3.5 bg-green-50 border border-green-200 rounded-lg flex items-start gap-2.5">
-                  <Shield className="w-4 h-4 text-green-600 flex-shrink-0 mt-0.5" />
-                  <p className="text-xs text-green-800 leading-relaxed">
-                    <strong>Garantia de 30 dias.</strong> Não ficou satisfeito?
-                    Devolvemos 100% do seu dinheiro.
-                  </p>
                 </div>
               </Card>
 
@@ -579,10 +565,8 @@ export function LandingPage() {
       <div className="lg:hidden fixed bottom-0 left-0 right-0 bg-white border-t shadow-2xl z-50 p-4">
         <div className="flex items-center gap-4">
           <div>
-            <div className="text-2xl font-black leading-none">
-              US$ 5<span className="text-sm font-normal text-gray-500">/mês</span>
-            </div>
-            <div className="text-xs text-purple-600 font-medium">7 dias grátis</div>
+            <div className="text-2xl font-black leading-none">US$ 29</div>
+            <div className="text-xs text-purple-600 font-medium">acesso vitalício</div>
           </div>
           <Link to="/subscribe" className="flex-1">
             <Button className="w-full bg-purple-600 hover:bg-purple-700 font-bold py-5">

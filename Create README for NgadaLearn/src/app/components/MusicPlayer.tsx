@@ -131,21 +131,25 @@ async function filterEnglishEmbeddable(videos: YTVideo[]): Promise<YTVideo[]> {
   if (!latinOnly.length) return [];
   /* Passo 2 — verificar embeddable + idioma via Videos API */
   try {
-    const ids = latinOnly.map(v => v.id).join(",");
+    const ids  = latinOnly.map(v => v.id).join(",");
     const res  = await fetch(
       `https://www.googleapis.com/youtube/v3/videos?part=status,snippet&id=${ids}&key=${API_KEY}`
     );
     const data = await res.json();
-    const result: YTVideo[] = [];
-    for (const item of (data.items || [])) {
-      if (item.status?.embeddable === false) continue;
+    /* Indexar por ID para pesquisa O(1) */
+    const apiMap = new Map<string, any>((data.items || []).map((i: any) => [i.id, i]));
+
+    return latinOnly.filter(v => {
+      const item = apiMap.get(v.id);
+      /* Vídeo não devolvido pela API → dar benefício da dúvida e manter */
+      if (!item) return true;
+      /* Explicitamente não incorporável → excluir */
+      if (item.status?.embeddable === false) return false;
       const lang = item.snippet?.defaultAudioLanguage || item.snippet?.defaultLanguage || "";
-      /* Aceita en, en-US, en-GB… ou sem idioma definido (muitos vídeos ingleses não definem) */
-      if (lang && !lang.startsWith("en")) continue;
-      const vid = latinOnly.find(v => v.id === item.id);
-      if (vid) result.push(vid);
-    }
-    return result;
+      /* Só excluir se o idioma estiver definido e NÃO for inglês */
+      if (lang && !lang.startsWith("en")) return false;
+      return true;
+    });
   } catch { return latinOnly; }
 }
 
@@ -423,9 +427,12 @@ export function MusicPlayer() {
   const [speed,     setSpeed]     = useState<PlaybackRate>(1);
   const [isPlaying, setIsPlaying] = useState(false);
   const [vidError,  setVidError]  = useState(false);
-  const ytPlayer   = useRef<any>(null);
-  const speedRef   = useRef<PlaybackRate>(1);
-  const resultsRef = useRef<YTVideo[]>([]);      // sempre actualizado — acessível nos callbacks YT
+  const ytPlayer       = useRef<any>(null);
+  const speedRef       = useRef<PlaybackRate>(1);
+  const resultsRef     = useRef<YTVideo[]>([]);   // sempre actualizado — acessível nos callbacks YT
+  const selectedRef    = useRef<YTVideo|null>(null); // evita stale closures nos eventos YT
+  const errorTimeout   = useRef<ReturnType<typeof setTimeout>|null>(null);
+  const skipTimeoutRef = useRef<ReturnType<typeof setTimeout>|null>(null);
 
   /* Letras — raw text */
   const [rawEn, setRawEn] = useState("");
@@ -448,6 +455,22 @@ export function MusicPlayer() {
   /* Auto-busca de letra */
   const [fetchingLyrics, setFetchingLyrics] = useState(false);
   const [lyricsFetchMsg, setLyricsFetchMsg] = useState("");
+
+  /* ── Sync selectedRef (sempre atual para callbacks do YT) ────── */
+  useEffect(() => { selectedRef.current = selected; }, [selected]);
+
+  /* ── Helper: avançar para o próximo vídeo ou mostrar erro ─────── */
+  const skipToNextVideo = useCallback(() => {
+    if (errorTimeout.current)   { clearTimeout(errorTimeout.current);   errorTimeout.current   = null; }
+    if (skipTimeoutRef.current) { clearTimeout(skipTimeoutRef.current); skipTimeoutRef.current = null; }
+    const curId = selectedRef.current?.id;
+    if (!curId) return;
+    const list = resultsRef.current;
+    const idx  = list.findIndex(v => v.id === curId);
+    const nxt  = list[idx + 1];
+    if (nxt) { setSelected(nxt); setIsPlaying(false); setVidError(false); }
+    else     { setVidError(true); setIsPlaying(false); }
+  }, []);
 
   /* ── Parse de letras quando muda o raw text ────────────────────── */
   useEffect(() => {
@@ -481,7 +504,9 @@ export function MusicPlayer() {
     try {
       const params = new URLSearchParams({
         part:"snippet", q, type:"video",
-        videoCategoryId:"10", videoEmbeddable:"true",
+        videoCategoryId:"10",
+        videoEmbeddable:"true",
+        videoSyndicated:"true",          // pode ser reproduzido fora do YouTube
         maxResults:"20", key:API_KEY, relevanceLanguage:"en", safeSearch:"moderate",
       });
       const res  = await fetch(`https://www.googleapis.com/youtube/v3/search?${params}`);
@@ -532,33 +557,48 @@ export function MusicPlayer() {
       container.appendChild(div);
 
       ytPlayer.current = new window.YT.Player("yt-player-div", {
-        videoId:     selected!.id,
-        width:       "100%",
-        height:      "100%",
-        playerVars:  { rel: 0, modestbranding: 1, playsinline: 1, autoplay: 0 },
+        videoId:    selected!.id,
+        width:      "100%",
+        height:     "100%",
+        playerVars: {
+          rel:            0,
+          modestbranding: 1,
+          playsinline:    1,
+          autoplay:       0,
+          origin:         window.location.origin,
+        },
         events: {
           onReady: (e: any) => {
             e.target.setPlaybackRate(speedRef.current);
+            /* Timeout de segurança: se o vídeo não começar em 12s, avança */
+            if (errorTimeout.current) clearTimeout(errorTimeout.current);
+            errorTimeout.current = setTimeout(() => {
+              const state = ytPlayer.current?.getPlayerState?.() ?? -1;
+              if (state === -1 || state === 5) skipToNextVideo();
+            }, 12000);
           },
           onStateChange: (e: any) => {
-            /* 1 = PLAYING, 2 = PAUSED, 0 = ENDED */
             setIsPlaying(e.data === 1);
             if (e.data === 1) {
-              /* Reforçar velocidade sempre que começa a tocar */
               e.target.setPlaybackRate(speedRef.current);
+              /* Vídeo a tocar — limpar todos os timeouts de erro */
+              if (errorTimeout.current)   { clearTimeout(errorTimeout.current);   errorTimeout.current   = null; }
+              if (skipTimeoutRef.current) { clearTimeout(skipTimeoutRef.current); skipTimeoutRef.current = null; }
+            }
+            /* Estado -1 persistente = vídeo bloqueado */
+            if (e.data === -1) {
+              if (skipTimeoutRef.current) clearTimeout(skipTimeoutRef.current);
+              skipTimeoutRef.current = setTimeout(() => {
+                const st = ytPlayer.current?.getPlayerState?.() ?? -1;
+                if (st === -1) skipToNextVideo();
+              }, 4000);
+            } else {
+              if (skipTimeoutRef.current) { clearTimeout(skipTimeoutRef.current); skipTimeoutRef.current = null; }
             }
           },
           onError: () => {
-            /* Auto-avançar silenciosamente para o próximo vídeo */
-            const curId = selected!.id;
-            const list  = resultsRef.current;
-            const idx   = list.findIndex(v => v.id === curId);
-            const nxt   = list[idx + 1];
-            if (nxt) {
-              setSelected(nxt); setIsPlaying(false); setVidError(false);
-            } else {
-              setVidError(true); setIsPlaying(false);
-            }
+            /* Qualquer erro YT API → avançar silenciosamente */
+            skipToNextVideo();
           },
         },
       });
@@ -580,12 +620,12 @@ export function MusicPlayer() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selected?.id]);
 
-  /* ── Unmount: limpar player ─────────────────────────────────────── */
+  /* ── Unmount: limpar player e timeouts ─────────────────────────── */
   useEffect(() => {
     return () => {
-      if (ytPlayer.current) {
-        try { ytPlayer.current.destroy(); } catch(_) {}
-      }
+      if (ytPlayer.current) { try { ytPlayer.current.destroy(); } catch(_) {} }
+      if (errorTimeout.current)   clearTimeout(errorTimeout.current);
+      if (skipTimeoutRef.current) clearTimeout(skipTimeoutRef.current);
     };
   }, []);
 
@@ -651,12 +691,7 @@ export function MusicPlayer() {
     const l = lines[activeLine];
     return l?.en || "";
   }
-  function tryNextVideo() {
-    if (!selected) return;
-    const idx  = results.findIndex(v => v.id===selected.id);
-    const next = results[idx+1];
-    if (next) selectVideo(next);
-  }
+  function tryNextVideo() { skipToNextVideo(); }
 
   const wordCount = useMemo(
     () => lines.reduce((s,l) => s + l.highlighted.length, 0),

@@ -1,12 +1,12 @@
 /* ════════════════════════════════════════════════════════════════════
-   NgadaLearn — Middleware de Autenticação JWT
+   NgadaLearn — Middleware de Autenticação JWT (Neon PostgreSQL)
    ════════════════════════════════════════════════════════════════════ */
 
-const jwt = require("jsonwebtoken");
+const jwt            = require("jsonwebtoken");
 const { findUserById } = require("../utils/dataStore");
 
 // ── Verificar token JWT ───────────────────────────────────────────
-function authenticate(req, res, next) {
+async function authenticate(req, res, next) {
   const authHeader = req.headers.authorization;
 
   if (!authHeader || !authHeader.startsWith("Bearer ")) {
@@ -17,13 +17,12 @@ function authenticate(req, res, next) {
 
   try {
     const payload = jwt.verify(token, process.env.JWT_SECRET);
-    const user    = findUserById(payload.id);
+    const user    = await findUserById(payload.id);
 
     if (!user) {
       return res.status(401).json({ error: "Utilizador não encontrado." });
     }
 
-    // Anexar utilizador ao request (sem a password)
     const { passwordHash, ...safeUser } = user;
     req.user = safeUser;
     next();
@@ -48,10 +47,11 @@ function requireActiveAccess(req, res, next) {
   const user = req.user;
   if (!user) return res.status(401).json({ error: "Não autenticado." });
 
-  const isAdmin  = user.role === "admin";
+  const isAdmin   = user.role === "admin";
+  const isLifetime = user.plan === "lifetime";
   const hasAccess = user.accessExpiresAt && new Date(user.accessExpiresAt) > new Date();
 
-  if (!isAdmin && !hasAccess) {
+  if (!isAdmin && !isLifetime && !hasAccess) {
     return res.status(403).json({ error: "Subscrição expirada ou inactiva." });
   }
   next();

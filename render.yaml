@@ -5,8 +5,7 @@ services:
     region: frankfurt
     rootDir: backend
     buildCommand: npm install
-    # Seed cria o admin na 1ª arrancada e a cada reinício
-    startCommand: node src/scripts/seed.js && node src/server.js
+    startCommand: node src/server.js
     plan: free
     envVars:
       - key: NODE_ENV
@@ -14,13 +13,14 @@ services:
       - key: PORT
         value: 3001
       - key: JWT_SECRET
-        generateValue: true          # Render gera automaticamente
+        generateValue: true
       - key: JWT_EXPIRES_IN
         value: 7d
-      # FRONTEND_URL: origin do GitHub Pages (sem barra no final)
       - key: FRONTEND_URL
         value: https://fbarata03.github.io
-      # Definir manualmente no dashboard do Render:
+      # ⬇ Definir manualmente no dashboard do Render com a connection string da Neon
+      - key: DATABASE_URL
+        sync: false
       - key: ADMIN_EMAIL
         sync: false
       - key: ADMIN_PASSWORD

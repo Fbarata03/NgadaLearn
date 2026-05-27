@@ -1,21 +1,21 @@
 /* ════════════════════════════════════════════════════════════════════
    NgadaLearn — Backend API
-   Express + JWT + bcrypt
+   Express + JWT + bcrypt + Neon PostgreSQL
    ════════════════════════════════════════════════════════════════════ */
 
 require("dotenv").config();
-const express  = require("express");
-const cors     = require("cors");
-const path     = require("path");
+const express = require("express");
+const cors    = require("cors");
 
 const authRoutes  = require("./routes/auth");
 const userRoutes  = require("./routes/users");
-const { ensureDataDir } = require("./utils/dataStore");
+const { initDB }  = require("./utils/dataStore");
+const { seed }    = require("./scripts/seed");
 
 const app  = express();
 const PORT = process.env.PORT || 3001;
 
-// ── Middleware global ─────────────────────────────────────────────
+// ── CORS — permite localhost em dev + GitHub Pages em produção ────
 const ALLOWED_ORIGINS = [
   "http://localhost:5173",
   "http://localhost:4173",
@@ -25,7 +25,6 @@ const ALLOWED_ORIGINS = [
 
 app.use(cors({
   origin: (origin, callback) => {
-    /* Permite pedidos sem origin (ex: Postman, curl) e origens da lista */
     if (!origin || ALLOWED_ORIGINS.includes(origin)) {
       callback(null, true);
     } else {
@@ -34,10 +33,11 @@ app.use(cors({
   },
   credentials: true,
 }));
+
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// ── Log de pedidos (desenvolvimento) ─────────────────────────────
+// ── Log de pedidos (só em desenvolvimento) ────────────────────────
 if (process.env.NODE_ENV !== "production") {
   app.use((req, _res, next) => {
     console.log(`[${new Date().toISOString()}] ${req.method} ${req.path}`);
@@ -52,9 +52,10 @@ app.use("/api/users", userRoutes);
 // ── Health check ──────────────────────────────────────────────────
 app.get("/api/health", (_req, res) => {
   res.json({
-    status: "ok",
-    service: "NgadaLearn API",
-    version: "1.0.0",
+    status:    "ok",
+    service:   "NgadaLearn API",
+    version:   "2.0.0",
+    db:        "Neon PostgreSQL",
     timestamp: new Date().toISOString(),
   });
 });
@@ -70,10 +71,21 @@ app.use((err, _req, res, _next) => {
   res.status(500).json({ error: "Erro interno do servidor." });
 });
 
-// ── Iniciar servidor ──────────────────────────────────────────────
-ensureDataDir();
-app.listen(PORT, () => {
-  console.log(`\n🚀 NgadaLearn API a correr em http://localhost:${PORT}`);
-  console.log(`   Health: http://localhost:${PORT}/api/health`);
-  console.log(`   Ambiente: ${process.env.NODE_ENV || "development"}\n`);
-});
+// ── Arranque: inicializar BD → seed admin → iniciar servidor ──────
+async function start() {
+  try {
+    await initDB();          // criar tabelas se não existirem
+    await seed();            // garantir admin
+    app.listen(PORT, () => {
+      console.log(`\n🚀 NgadaLearn API em http://localhost:${PORT}`);
+      console.log(`   Health: http://localhost:${PORT}/api/health`);
+      console.log(`   BD:     Neon PostgreSQL`);
+      console.log(`   Env:    ${process.env.NODE_ENV || "development"}\n`);
+    });
+  } catch (err) {
+    console.error("❌ Falha ao iniciar servidor:", err);
+    process.exit(1);
+  }
+}
+
+start();

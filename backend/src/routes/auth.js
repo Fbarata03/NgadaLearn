@@ -1,9 +1,9 @@
 /* ════════════════════════════════════════════════════════════════════
-   NgadaLearn — Rotas de Autenticação
+   NgadaLearn — Rotas de Autenticação (Neon PostgreSQL)
    POST /api/auth/register
    POST /api/auth/login
    GET  /api/auth/me
-   POST /api/auth/logout
+   POST /api/auth/change-password
    ════════════════════════════════════════════════════════════════════ */
 
 const router  = require("express").Router();
@@ -19,7 +19,7 @@ const {
 } = require("../utils/dataStore");
 const { authenticate } = require("../middleware/authMiddleware");
 
-// ── Utilitário: gerar token JWT ───────────────────────────────────
+// ── Gerar token JWT ───────────────────────────────────────────────
 function generateToken(userId) {
   return jwt.sign(
     { id: userId },
@@ -28,7 +28,7 @@ function generateToken(userId) {
   );
 }
 
-// ── Utilitário: limpar campos sensíveis ───────────────────────────
+// ── Remover campo sensível ────────────────────────────────────────
 function safeUser(user) {
   const { passwordHash, ...rest } = user;
   return rest;
@@ -41,7 +41,6 @@ router.post("/register", async (req, res) => {
   try {
     const { name, email, password } = req.body;
 
-    // Validações básicas
     if (!name || !email || !password) {
       return res.status(400).json({ error: "Nome, email e password são obrigatórios." });
     }
@@ -49,28 +48,23 @@ router.post("/register", async (req, res) => {
       return res.status(400).json({ error: "A password deve ter pelo menos 6 caracteres." });
     }
 
-    // Verificar se o email já existe
-    const existing = findUserByEmail(email);
+    const existing = await findUserByEmail(email);
     if (existing) {
       return res.status(409).json({ error: "Este email já está registado." });
     }
 
-    // Hash da password
     const passwordHash = await bcrypt.hash(password, 12);
-
-    // Criar utilizador
-    const newUser = {
+    const newUser = await createUser({
       id:              uuidv4(),
       name:            name.trim(),
       email:           email.toLowerCase().trim(),
       passwordHash,
       role:            "student",
-      accessExpiresAt: null,  // sem acesso até pagar
+      plan:            "none",
+      accessExpiresAt: null,
       createdAt:       new Date().toISOString(),
       updatedAt:       new Date().toISOString(),
-    };
-
-    createUser(newUser);
+    });
 
     const token = generateToken(newUser.id);
 
@@ -96,7 +90,7 @@ router.post("/login", async (req, res) => {
       return res.status(400).json({ error: "Email e password são obrigatórios." });
     }
 
-    const user = findUserByEmail(email);
+    const user = await findUserByEmail(email);
     if (!user) {
       return res.status(401).json({ error: "Credenciais inválidas." });
     }
@@ -106,8 +100,7 @@ router.post("/login", async (req, res) => {
       return res.status(401).json({ error: "Credenciais inválidas." });
     }
 
-    // Actualizar última sessão
-    updateUser(user.id, { lastLoginAt: new Date().toISOString() });
+    await updateUser(user.id, { lastLoginAt: new Date().toISOString() });
 
     const token = generateToken(user.id);
 
@@ -143,17 +136,14 @@ router.post("/change-password", authenticate, async (req, res) => {
       return res.status(400).json({ error: "A nova password deve ter pelo menos 6 caracteres." });
     }
 
-    // Buscar utilizador com hash
-    const { findUserById: fu } = require("../utils/dataStore");
-    const userWithHash = fu(req.user.id);
-
+    const userWithHash = await findUserById(req.user.id);
     const match = await bcrypt.compare(currentPassword, userWithHash.passwordHash);
     if (!match) {
       return res.status(401).json({ error: "Password actual incorrecta." });
     }
 
     const newHash = await bcrypt.hash(newPassword, 12);
-    updateUser(req.user.id, { passwordHash: newHash });
+    await updateUser(req.user.id, { passwordHash: newHash });
 
     res.json({ message: "Password alterada com sucesso!" });
   } catch (err) {

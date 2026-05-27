@@ -1,84 +1,154 @@
 /* ════════════════════════════════════════════════════════════════════
-   NgadaLearn — Persistência de dados em ficheiro JSON
-   (sem base de dados — ideal para deploy simples)
+   NgadaLearn — Camada de dados: Neon PostgreSQL via pg
+   Substitui o antigo armazenamento em ficheiro JSON
    ════════════════════════════════════════════════════════════════════ */
 
-const fs   = require("fs");
-const path = require("path");
+const { Pool } = require("pg");
 
-const DATA_DIR   = path.join(__dirname, "..", "data");
-const USERS_FILE = path.join(DATA_DIR, "users.json");
+/* ── Pool de ligações ────────────────────────────────────────────── */
+const pool = new Pool({
+  connectionString: process.env.DATABASE_URL,
+  ssl: { rejectUnauthorized: false },   // obrigatório para Neon
+  max: 10,
+  idleTimeoutMillis: 30_000,
+  connectionTimeoutMillis: 5_000,
+});
 
-// ── Garante que a pasta data/ existe ─────────────────────────────
-function ensureDataDir() {
-  if (!fs.existsSync(DATA_DIR)) {
-    fs.mkdirSync(DATA_DIR, { recursive: true });
-    console.log("📁 Pasta data/ criada.");
+pool.on("error", (err) => {
+  console.error("Erro inesperado no pool PostgreSQL:", err);
+});
+
+/* ── Criar tabelas se não existirem ─────────────────────────────── */
+async function initDB() {
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS users (
+      id                TEXT        PRIMARY KEY,
+      name              TEXT        NOT NULL,
+      email             TEXT        UNIQUE NOT NULL,
+      password_hash     TEXT        NOT NULL,
+      role              TEXT        NOT NULL DEFAULT 'student',
+      plan              TEXT        NOT NULL DEFAULT 'none',
+      access_expires_at TIMESTAMPTZ,
+      last_login_at     TIMESTAMPTZ,
+      created_at        TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      updated_at        TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    );
+  `);
+  console.log("✅ Tabela users verificada/criada na Neon.");
+}
+
+/* ── Converter linha da BD para o formato da aplicação ───────────── */
+function rowToUser(row) {
+  if (!row) return null;
+  return {
+    id:              row.id,
+    name:            row.name,
+    email:           row.email,
+    passwordHash:    row.password_hash,
+    role:            row.role,
+    plan:            row.plan || "none",
+    accessExpiresAt: row.access_expires_at ? new Date(row.access_expires_at).toISOString() : null,
+    lastLoginAt:     row.last_login_at     ? new Date(row.last_login_at).toISOString()     : null,
+    createdAt:       new Date(row.created_at).toISOString(),
+    updatedAt:       new Date(row.updated_at).toISOString(),
+  };
+}
+
+/* ── Ler todos os utilizadores ────────────────────────────────────── */
+async function readUsers() {
+  const { rows } = await pool.query(
+    "SELECT * FROM users ORDER BY created_at DESC"
+  );
+  return rows.map(rowToUser);
+}
+
+/* ── Encontrar por email ─────────────────────────────────────────── */
+async function findUserByEmail(email) {
+  const { rows } = await pool.query(
+    "SELECT * FROM users WHERE LOWER(email) = LOWER($1) LIMIT 1",
+    [email.trim()]
+  );
+  return rowToUser(rows[0] || null);
+}
+
+/* ── Encontrar por ID ────────────────────────────────────────────── */
+async function findUserById(id) {
+  const { rows } = await pool.query(
+    "SELECT * FROM users WHERE id = $1 LIMIT 1",
+    [id]
+  );
+  return rowToUser(rows[0] || null);
+}
+
+/* ── Criar utilizador ────────────────────────────────────────────── */
+async function createUser(user) {
+  const { rows } = await pool.query(
+    `INSERT INTO users
+       (id, name, email, password_hash, role, plan, access_expires_at, created_at, updated_at)
+     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)
+     ON CONFLICT (email) DO NOTHING
+     RETURNING *`,
+    [
+      user.id,
+      user.name,
+      user.email.toLowerCase().trim(),
+      user.passwordHash,
+      user.role         || "student",
+      user.plan         || "none",
+      user.accessExpiresAt || null,
+      user.createdAt    || new Date().toISOString(),
+      user.updatedAt    || new Date().toISOString(),
+    ]
+  );
+  return rowToUser(rows[0] || null);
+}
+
+/* ── Actualizar utilizador ───────────────────────────────────────── */
+async function updateUser(id, updates) {
+  const fields = [];
+  const values = [];
+  let   idx    = 1;
+
+  const map = {
+    name:            "name",
+    passwordHash:    "password_hash",
+    role:            "role",
+    plan:            "plan",
+    accessExpiresAt: "access_expires_at",
+    lastLoginAt:     "last_login_at",
+  };
+
+  for (const [key, col] of Object.entries(map)) {
+    if (updates[key] !== undefined) {
+      fields.push(`${col} = $${idx++}`);
+      values.push(updates[key]);
+    }
   }
-  if (!fs.existsSync(USERS_FILE)) {
-    fs.writeFileSync(USERS_FILE, JSON.stringify([], null, 2), "utf8");
-    console.log("📄 Ficheiro users.json criado.");
-  }
+
+  fields.push(`updated_at = $${idx++}`);
+  values.push(new Date().toISOString());
+  values.push(id);   // WHERE id = $N
+
+  const { rows } = await pool.query(
+    `UPDATE users SET ${fields.join(", ")} WHERE id = $${idx} RETURNING *`,
+    values
+  );
+  return rowToUser(rows[0] || null);
 }
 
-// ── Ler todos os utilizadores ─────────────────────────────────────
-function readUsers() {
-  try {
-    const raw = fs.readFileSync(USERS_FILE, "utf8");
-    return JSON.parse(raw);
-  } catch {
-    return [];
-  }
-}
-
-// ── Guardar todos os utilizadores ────────────────────────────────
-function writeUsers(users) {
-  fs.writeFileSync(USERS_FILE, JSON.stringify(users, null, 2), "utf8");
-}
-
-// ── Encontrar utilizador por email ────────────────────────────────
-function findUserByEmail(email) {
-  return readUsers().find(
-    (u) => u.email.toLowerCase() === email.toLowerCase()
-  ) || null;
-}
-
-// ── Encontrar utilizador por ID ───────────────────────────────────
-function findUserById(id) {
-  return readUsers().find((u) => u.id === id) || null;
-}
-
-// ── Criar utilizador ──────────────────────────────────────────────
-function createUser(userData) {
-  const users = readUsers();
-  users.push(userData);
-  writeUsers(users);
-  return userData;
-}
-
-// ── Actualizar utilizador ─────────────────────────────────────────
-function updateUser(id, updates) {
-  const users = readUsers();
-  const idx   = users.findIndex((u) => u.id === id);
-  if (idx === -1) return null;
-  users[idx] = { ...users[idx], ...updates, updatedAt: new Date().toISOString() };
-  writeUsers(users);
-  return users[idx];
-}
-
-// ── Apagar utilizador ─────────────────────────────────────────────
-function deleteUser(id) {
-  const users   = readUsers();
-  const filtered = users.filter((u) => u.id !== id);
-  if (filtered.length === users.length) return false;
-  writeUsers(filtered);
-  return true;
+/* ── Apagar utilizador ───────────────────────────────────────────── */
+async function deleteUser(id) {
+  const { rowCount } = await pool.query(
+    "DELETE FROM users WHERE id = $1",
+    [id]
+  );
+  return rowCount > 0;
 }
 
 module.exports = {
-  ensureDataDir,
+  pool,
+  initDB,
   readUsers,
-  writeUsers,
   findUserByEmail,
   findUserById,
   createUser,

@@ -7,10 +7,133 @@ import { useAuth } from "../context/AuthContext";
 import {
   ASSIMIL_LESSONS, PIMSLEUR_LESSONS_LIST, LEITURAS_LIST, ALL_LESSONS,
 } from "../data/lessonsData";
+import { downloadCertificate } from "../utils/generateCertificate";
 import {
   BookOpen, Headphones, Award, TrendingUp, Calendar,
-  Target, Clock, Flame, ChevronRight, PlayCircle,
+  Target, Clock, Flame, ChevronRight, PlayCircle, Download, Lock,
 } from "lucide-react";
+
+const CERT_UNLOCK_AT = 50; // lições mínimas para desbloquear o certificado
+
+function CertificateSection({
+  name, level, totalCompleted, totalAll, totalMinutes,
+}: {
+  name: string; level: string; totalCompleted: number;
+  totalAll: number; totalMinutes: number;
+}) {
+  const unlocked = totalCompleted >= CERT_UNLOCK_AT;
+  const pctToUnlock = Math.min(Math.round((totalCompleted / CERT_UNLOCK_AT) * 100), 100);
+
+  const handleDownload = () => {
+    downloadCertificate({ name, level, totalCompleted, totalAll, totalMinutes });
+  };
+
+  return (
+    <div className={`rounded-2xl overflow-hidden border-2 ${unlocked ? "border-yellow-300 bg-gradient-to-br from-yellow-50 to-amber-50" : "border-gray-200 bg-white"}`}>
+      {/* Header */}
+      <div className={`px-6 py-4 flex items-center gap-3 ${unlocked ? "bg-gradient-to-r from-yellow-400 to-amber-400" : "bg-gray-100"}`}>
+        <div className={`w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 ${unlocked ? "bg-white/40" : "bg-gray-200"}`}>
+          {unlocked ? <Award className="w-6 h-6 text-yellow-800" /> : <Lock className="w-5 h-5 text-gray-500" />}
+        </div>
+        <div>
+          <p className={`font-black text-base ${unlocked ? "text-yellow-900" : "text-gray-700"}`}>
+            {unlocked ? "🎓 Certificado Disponível!" : "Certificado de Conclusão"}
+          </p>
+          <p className={`text-xs ${unlocked ? "text-yellow-800" : "text-gray-500"}`}>
+            {unlocked
+              ? `Parabéns! Concluíste ${totalCompleted} lições — Nível ${level}`
+              : `Completa ${CERT_UNLOCK_AT} lições para desbloquear`}
+          </p>
+        </div>
+        {unlocked && (
+          <span className="ml-auto bg-yellow-900/20 text-yellow-900 text-xs font-bold px-2.5 py-1 rounded-full">
+            DESBLOQUEADO
+          </span>
+        )}
+      </div>
+
+      <div className="px-6 py-5 flex flex-col sm:flex-row items-center gap-5">
+        {/* Pré-visualização do certificado */}
+        <div className={`w-full sm:w-64 h-36 rounded-xl flex items-center justify-center flex-shrink-0 border-2 relative overflow-hidden ${unlocked ? "border-yellow-300 bg-gradient-to-br from-purple-900 to-indigo-900" : "border-gray-200 bg-gray-50"}`}>
+          {unlocked ? (
+            <>
+              <div className="absolute inset-0 flex flex-col items-center justify-center text-white px-4 text-center">
+                <p className="text-[10px] text-purple-300 font-semibold tracking-widest">NgadaLearn</p>
+                <p className="font-black text-sm mt-1 leading-tight">CERTIFICADO</p>
+                <p className="font-black text-sm leading-tight">DE CONCLUSÃO</p>
+                <div className="w-16 h-px bg-yellow-400 my-1.5" />
+                <p className="text-yellow-300 font-bold text-xs truncate max-w-full px-2">{name}</p>
+                <p className="text-purple-300 text-[10px] mt-0.5">Nível {level}</p>
+              </div>
+              <div className="absolute top-2 left-2 w-2 h-2 border border-yellow-400/60" />
+              <div className="absolute top-2 right-2 w-2 h-2 border border-yellow-400/60" />
+              <div className="absolute bottom-2 left-2 w-2 h-2 border border-yellow-400/60" />
+              <div className="absolute bottom-2 right-2 w-2 h-2 border border-yellow-400/60" />
+            </>
+          ) : (
+            <div className="flex flex-col items-center gap-2 text-gray-300">
+              <Lock className="w-10 h-10" />
+              <p className="text-xs font-medium text-gray-400">
+                {totalCompleted}/{CERT_UNLOCK_AT} lições
+              </p>
+            </div>
+          )}
+        </div>
+
+        {/* Info + botão */}
+        <div className="flex-1 w-full">
+          {unlocked ? (
+            <>
+              <p className="text-sm text-gray-600 mb-4 leading-relaxed">
+                O teu certificado está pronto com o teu nome, nível e estatísticas de progresso. Descarrega e partilha no LinkedIn, CV ou redes sociais!
+              </p>
+              <div className="grid grid-cols-3 gap-3 mb-4 text-center">
+                <div className="bg-purple-50 rounded-xl p-2.5">
+                  <p className="font-black text-purple-700 text-lg">{totalCompleted}</p>
+                  <p className="text-[10px] text-gray-500">Lições</p>
+                </div>
+                <div className="bg-blue-50 rounded-xl p-2.5">
+                  <p className="font-black text-blue-700 text-lg">{Math.round(totalMinutes / 60)}h</p>
+                  <p className="text-[10px] text-gray-500">Estudo</p>
+                </div>
+                <div className="bg-green-50 rounded-xl p-2.5">
+                  <p className="font-black text-green-700 text-lg">{level}</p>
+                  <p className="text-[10px] text-gray-500">Nível</p>
+                </div>
+              </div>
+              <Button
+                onClick={handleDownload}
+                className="w-full bg-yellow-500 hover:bg-yellow-400 active:bg-yellow-600 text-yellow-900 font-black h-12 rounded-2xl text-sm gap-2"
+              >
+                <Download className="w-4 h-4" />
+                Baixar Certificado (PNG)
+              </Button>
+            </>
+          ) : (
+            <>
+              <p className="text-sm text-gray-500 mb-3">
+                Completa <strong className="text-gray-800">{CERT_UNLOCK_AT - totalCompleted} lições</strong> para receber o teu certificado.
+              </p>
+              <div className="mb-3">
+                <div className="flex items-center justify-between text-xs text-gray-500 mb-1">
+                  <span>{totalCompleted} concluídas</span>
+                  <span>{CERT_UNLOCK_AT} necessárias</span>
+                </div>
+                <Progress value={pctToUnlock} className="h-3" />
+                <p className="text-xs text-gray-400 mt-1">{pctToUnlock}% do caminho para o certificado</p>
+              </div>
+              <Link to="/lessons">
+                <Button variant="outline" className="w-full h-11 text-sm border-2 border-gray-200 rounded-2xl">
+                  Continuar a estudar →
+                </Button>
+              </Link>
+            </>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
 
 export function Dashboard() {
   const { user } = useAuth();
@@ -200,6 +323,15 @@ export function Dashboard() {
               </Link>
             </Card>
           </div>
+
+          {/* ── Certificado ── */}
+          <CertificateSection
+            name={user?.name || ""}
+            level={level}
+            totalCompleted={totalCompleted}
+            totalAll={totalAll}
+            totalMinutes={totalMinutes}
+          />
 
           {/* ── Conquistas ── */}
           <Card className="p-6 bg-white border-0 shadow-sm">

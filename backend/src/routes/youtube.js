@@ -6,7 +6,7 @@
 
 const router    = require("express").Router();
 const rateLimit = require("express-rate-limit");
-const { searchVideos, getVideoDetails, getStatus } = require("../services/youtubeService");
+const { searchVideos, getVideoDetails, getStatus, fetchTranscript } = require("../services/youtubeService");
 
 /* ── Rate limit específico para pesquisas YouTube ────────────────── */
 const searchLimiter = rateLimit({
@@ -97,6 +97,26 @@ router.get("/videos", detailsLimiter, async (req, res) => {
     }
     console.error("[YouTube /videos]", err.message);
     res.status(500).json({ items: [], error: "Erro ao obter detalhes." });
+  }
+});
+
+/* ════════════════════════════════════════════════════════════════════
+   GET /api/youtube/transcript/:videoId
+   Legendas temporizadas (timed text) — sem custo de quota
+   ════════════════════════════════════════════════════════════════════ */
+router.get("/transcript/:videoId", detailsLimiter, async (req, res) => {
+  const { videoId } = req.params;
+  if (!/^[a-zA-Z0-9_-]{11}$/.test(videoId)) {
+    return res.status(400).json({ error: "ID inválido.", segments: [] });
+  }
+  try {
+    const result = await fetchTranscript(videoId);
+    res.setHeader("Cache-Control",
+      result.data.length ? "public, max-age=21600" : "public, max-age=1800");
+    res.json({ segments: result.data, fromCache: result.fromCache });
+  } catch (err) {
+    console.error("[YouTube /transcript]", err.message);
+    res.json({ segments: [] });
   }
 });
 

@@ -65,6 +65,12 @@ interface SavedPhrase {
   pt: string;
 }
 
+interface TimedSub {
+  start: number;
+  dur:   number;
+  text:  string;
+}
+
 type PlaybackRate = 0.5 | 0.75 | 1;
 type Difficulty   = "Iniciante" | "Intermediário" | "Avançado";
 
@@ -374,16 +380,97 @@ function NowPlayingBar({clip,isPlaying,ccOn}:{clip:MovieClip;isPlaying:boolean;c
 }
 
 /* ════════════════════════════════════════════════════════════════════
-   CINEMA SUBTITLE DISPLAY — Legenda de filme animada profissional
+   WORD POPUP — clique numa palavra para ouvir e guardar no vocabulário
    ════════════════════════════════════════════════════════════════════ */
-function CinemaSubDisplay({ lines, active, isPlaying }: {
+function WordPopup({ word, pos, onSave, onClose }: {
+  word: string;
+  pos: { x: number; y: number };
+  onSave: (w: string) => void;
+  onClose: () => void;
+}) {
+  const speak = () => {
+    if (!window.speechSynthesis) return;
+    window.speechSynthesis.cancel();
+    const u = new SpeechSynthesisUtterance(word);
+    u.lang = "en-US"; u.rate = 0.8;
+    const pref = window.speechSynthesis.getVoices().find(
+      v => v.lang.startsWith("en") && (v.name.includes("Google") || v.name.includes("Samantha"))
+    );
+    if (pref) u.voice = pref;
+    window.speechSynthesis.speak(u);
+  };
+
+  // Pronúncia automática ao abrir
+  useEffect(() => { speak(); }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const left = Math.min(pos.x - 68, (typeof window !== "undefined" ? window.innerWidth : 800) - 148);
+  const top  = Math.max(pos.y - 118, 8);
+
+  return (
+    <div
+      style={{ position: "fixed", left, top, zIndex: 9999 }}
+      className="bg-gray-950 border border-amber-500/60 rounded-xl p-3 shadow-2xl w-36"
+      onClick={e => e.stopPropagation()}
+    >
+      <button onClick={onClose} className="absolute top-1 right-1.5 text-white/30 hover:text-white/80 text-xs transition-colors leading-none">✕</button>
+      <p className="font-black text-amber-300 text-base text-center mb-2">{word}</p>
+      <div className="flex gap-1">
+        <button
+          onClick={speak}
+          className="flex-1 py-1.5 bg-blue-600/50 hover:bg-blue-600 rounded-lg text-xs font-bold text-white transition-colors"
+        >
+          🔊 Ouvir
+        </button>
+        <button
+          onClick={() => { onSave(word); onClose(); }}
+          className="flex-1 py-1.5 bg-amber-600/50 hover:bg-amber-600 rounded-lg text-xs font-bold text-white transition-colors"
+        >
+          + Vocab
+        </button>
+      </div>
+      <p className="text-[9px] text-white/25 text-center mt-1.5">Clica fora para fechar</p>
+    </div>
+  );
+}
+
+/* ════════════════════════════════════════════════════════════════════
+   CINEMA SUBTITLE DISPLAY — Legenda de filme animada profissional
+   Suporta palavras clicáveis e modo tempo-real (isLive)
+   ════════════════════════════════════════════════════════════════════ */
+function CinemaSubDisplay({ lines, active, isPlaying, onWordClick, isLive }: {
   lines: string[]; active: number; isPlaying: boolean;
+  onWordClick?: (word: string, e: React.MouseEvent) => void;
+  isLive?: boolean;
 }) {
   if (!lines.length) return null;
   const prev = lines[active - 1];
   const curr = lines[active];
   const next = lines[active + 1];
   if (!curr) return null;
+
+  function renderWords(text: string, interactive = false) {
+    if (!interactive || !onWordClick) return <>{text}</>;
+    return (
+      <>
+        {text.split(/(\s+)/).map((part, i) =>
+          /^\s+$/.test(part) ? <span key={i}> </span> : (
+            <button
+              key={i}
+              onClick={e => {
+                const clean = part.replace(/[^a-zA-Z'-]/g, "").toLowerCase();
+                if (clean.length > 1) onWordClick(clean, e);
+              }}
+              style={{ background:"none", border:"none", cursor:"pointer", font:"inherit",
+                       color:"inherit", padding:"0 1px", borderRadius:3, display:"inline" }}
+              className="hover:text-amber-400 hover:underline underline-offset-2 transition-colors"
+            >
+              {part}
+            </button>
+          )
+        )}
+      </>
+    );
+  }
 
   return (
     <div className="relative overflow-hidden rounded-2xl shadow-2xl" style={{
@@ -412,7 +499,18 @@ function CinemaSubDisplay({ lines, active, isPlaying }: {
           {active+1} / {lines.length}
         </span>
         <div style={{flex:1,height:1,background:"linear-gradient(90deg,transparent,rgba(245,158,11,.25),transparent)"}} />
-        <span style={{fontSize:10,color:"rgba(245,158,11,.4)",letterSpacing:"0.08em"}}>✦ LEGENDA</span>
+        {isLive ? (
+          <span style={{
+            fontSize:9, fontWeight:700, letterSpacing:"0.1em",
+            background:"rgba(34,197,94,.2)", color:"#86efac",
+            border:"1px solid rgba(34,197,94,.35)", borderRadius:99,
+            padding:"2px 8px",
+          }}>
+            ● AO VIVO
+          </span>
+        ) : (
+          <span style={{fontSize:10,color:"rgba(245,158,11,.4)",letterSpacing:"0.08em"}}>✦ LEGENDA</span>
+        )}
       </div>
 
       {/* Linha anterior */}
@@ -423,9 +521,9 @@ function CinemaSubDisplay({ lines, active, isPlaying }: {
         </p>
       )}
 
-      {/* Linha activa */}
+      {/* Linha activa — palavras clicáveis */}
       <div key={`ms-${active}`} className="sub-in"
-        style={{textAlign:"center",padding:`${prev?"4px":"14px"} 20px ${next?"4px":"14px"}`,position:"relative",zIndex:10}}>
+        style={{textAlign:"center",padding:`${prev?"4px":"14px"} 20px ${next?"2px":"14px"}`,position:"relative",zIndex:10}}>
         <p style={{
           fontSize:"clamp(1.05rem,2.8vw,1.55rem)",
           fontWeight:800,
@@ -434,8 +532,13 @@ function CinemaSubDisplay({ lines, active, isPlaying }: {
           letterSpacing:"0.02em",
           textShadow:"0 2px 30px rgba(0,0,0,.9), 0 0 50px rgba(245,158,11,.25)",
         }}>
-          {curr}
+          {renderWords(curr, true)}
         </p>
+        {onWordClick && (
+          <p style={{fontSize:9,color:"rgba(255,255,255,.2)",marginTop:4}}>
+            Clica numa palavra para ouvir e guardar
+          </p>
+        )}
       </div>
 
       {/* Próxima linha */}
@@ -488,6 +591,16 @@ export function MoviesPlayer() {
   const [subRaw,    setSubRaw]    = useState("");
   const [subLines,  setSubLines]  = useState<string[]>([]);
   const [activeSub, setActiveSub] = useState(0);
+
+  /* Legendas temporizadas (tempo real) */
+  const [transcript,   setTranscript]   = useState<TimedSub[]>([]);
+  const [transLoading, setTransLoading] = useState(false);
+  const [liveSubIdx,   setLiveSubIdx]   = useState(-1);
+  const liveSubIdxRef  = useRef(-1);
+  const liveTimerRef   = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  /* Popup de palavra clicada */
+  const [wordPopup, setWordPopup] = useState<{ word: string; x: number; y: number } | null>(null);
 
   /* ── Sync selectedRef (sempre atual para callbacks do YT) ───── */
   useEffect(() => { selectedRef.current = selected; }, [selected]);
@@ -596,6 +709,51 @@ export function MoviesPlayer() {
 
   /* ── Sync resultsRef (para onError não fechar sobre estado stale) */
   useEffect(() => { resultsRef.current = results; }, [results]);
+
+  /* ── Buscar legendas temporizadas quando o vídeo muda ───────────── */
+  useEffect(() => {
+    if (!selected) { setTranscript([]); setLiveSubIdx(-1); liveSubIdxRef.current = -1; return; }
+    setTranscript([]); setLiveSubIdx(-1); liveSubIdxRef.current = -1;
+    setTransLoading(true);
+    fetch(`${BACKEND}/api/youtube/transcript/${selected.id}`)
+      .then(r => r.json())
+      .then(d => { setTranscript(d.segments || []); setTransLoading(false); })
+      .catch(() => setTransLoading(false));
+  }, [selected?.id]);
+
+  /* ── Polling de tempo: sync legendas em tempo real ──────────────── */
+  useEffect(() => {
+    if (liveTimerRef.current) clearInterval(liveTimerRef.current);
+    if (!isPlaying || !transcript.length) return;
+
+    liveTimerRef.current = setInterval(() => {
+      try {
+        const t = ytPlayer.current?.getCurrentTime?.() ?? 0;
+        // Pesquisa binária: último segmento com start <= t
+        let lo = 0, hi = transcript.length - 1, found = -1;
+        while (lo <= hi) {
+          const mid = (lo + hi) >> 1;
+          if (transcript[mid].start <= t) { found = mid; lo = mid + 1; }
+          else hi = mid - 1;
+        }
+        if (found !== liveSubIdxRef.current) {
+          liveSubIdxRef.current = found;
+          setLiveSubIdx(found);
+        }
+      } catch { /* player ainda não pronto */ }
+    }, 250);
+
+    return () => { if (liveTimerRef.current) clearInterval(liveTimerRef.current); };
+  }, [isPlaying, transcript]);
+
+  /* ── Auto-avançar legendas manuais quando não há transcript ─────── */
+  useEffect(() => {
+    if (!isPlaying || !subLines.length || transcript.length > 0) return;
+    const interval = setInterval(() => {
+      setActiveSub(p => (p < subLines.length - 1 ? p + 1 : p));
+    }, 5500);
+    return () => clearInterval(interval);
+  }, [isPlaying, subLines.length, transcript.length]);
 
   /* ── Cleanup ─────────────────────────────────────────────────── */
   useEffect(() => () => {
@@ -710,6 +868,23 @@ export function MoviesPlayer() {
   return (
     <>
       <style>{ANIM}</style>
+
+      {/* Popup de palavra clicada */}
+      {wordPopup && (
+        <>
+          <div className="fixed inset-0 z-[9998]" onClick={() => setWordPopup(null)} />
+          <WordPopup
+            word={wordPopup.word}
+            pos={{ x: wordPopup.x, y: wordPopup.y }}
+            onSave={w => {
+              setSavedVocab(p => [...p, { id: nextId.current++, en: w, pt: "" }]);
+              setTab("vocab");
+            }}
+            onClose={() => setWordPopup(null)}
+          />
+        </>
+      )}
+
       <div className="min-h-screen bg-gradient-to-br from-slate-950 via-amber-950/20 to-slate-950 text-white pb-14">
 
         {/* Header */}
@@ -898,10 +1073,31 @@ export function MoviesPlayer() {
               <NowPlayingBar clip={selected} isPlaying={isPlaying} ccOn={ccOn} />
             )}
 
-            {/* ✨ Legenda Animada Cinema */}
-            {subLines.length > 0 && (
-              <CinemaSubDisplay lines={subLines} active={activeSub} isPlaying={isPlaying} />
-            )}
+            {/* ✨ Legenda Interactiva (tempo real ou manual) */}
+            {(() => {
+              const hasLive   = transcript.length > 0 && liveSubIdx >= 0;
+              const hasManual = subLines.length > 0;
+              if (!hasLive && !hasManual) {
+                if (transLoading && selected) {
+                  return (
+                    <div className="flex items-center gap-2 text-xs text-amber-400/50 justify-center py-1">
+                      <div className="w-3 h-3 border border-amber-400/40 border-t-amber-400 rounded-full animate-spin" />
+                      A carregar legendas…
+                    </div>
+                  );
+                }
+                return null;
+              }
+              return (
+                <CinemaSubDisplay
+                  lines={hasLive ? transcript.map(s => s.text) : subLines}
+                  active={hasLive ? liveSubIdx : activeSub}
+                  isPlaying={isPlaying}
+                  isLive={hasLive}
+                  onWordClick={(word, e) => setWordPopup({ word, x: e.clientX, y: e.clientY })}
+                />
+              );
+            })()}
 
             {/* CC + Velocidade */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
@@ -1121,25 +1317,45 @@ export function MoviesPlayer() {
                   </div>
                 )}
 
-                {/* ── Legendas Animadas ── */}
+                {/* ── Legendas Interactivas ── */}
                 {tab==="subs" && (
                   <div className="space-y-3">
+
+                    {/* Estado das legendas automáticas */}
+                    {selected && (
+                      <div className={`rounded-lg px-3 py-2 text-xs flex items-center gap-2 ${
+                        transcript.length > 0
+                          ? "bg-green-500/15 border border-green-500/30 text-green-300"
+                          : transLoading
+                          ? "bg-amber-500/10 border border-amber-500/20 text-amber-400/70"
+                          : "bg-white/5 border border-white/10 text-white/40"
+                      }`}>
+                        {transcript.length > 0 ? (
+                          <><span className="animate-pulse">●</span> Legendas em tempo real activas — {transcript.length} linhas</>
+                        ) : transLoading ? (
+                          <><div className="w-3 h-3 border border-amber-400/50 border-t-amber-400 rounded-full animate-spin flex-shrink-0" /> A carregar legendas automáticas…</>
+                        ) : (
+                          <>○ Sem legendas automáticas — usa o campo abaixo</>
+                        )}
+                      </div>
+                    )}
+
                     <div>
                       <label className="text-[10px] font-bold text-amber-300 uppercase tracking-widest block mb-1">
-                        📋 Cola as legendas — uma frase por linha
+                        📋 Legendas manuais — uma frase por linha
                       </label>
                       <textarea value={subRaw} onChange={e=>setSubRaw(e.target.value)}
                         placeholder={"Life is like a box of chocolates.\nYou never know what you're gonna get.\nRun, Forrest, run!\n…"}
-                        rows={7}
+                        rows={6}
                         className="w-full bg-black/30 border border-white/10 rounded-lg px-3 py-2 text-sm text-white placeholder-white/25 resize-y focus:outline-none focus:border-amber-400 font-mono leading-7 transition-colors" />
                       {subRaw && (
                         <p className="text-[10px] text-amber-400/60 mt-1">
-                          ✓ {subLines.length} linhas carregadas
+                          ✓ {subLines.length} linhas · Auto-avança a cada ~5.5 s quando o vídeo está a reproduzir
                         </p>
                       )}
                     </div>
 
-                    {subLines.length > 0 && (
+                    {subLines.length > 0 && !transcript.length && (
                       <>
                         <div className="flex items-center gap-2">
                           <button onClick={()=>setActiveSub(p=>Math.max(0,p-1))}
@@ -1161,18 +1377,18 @@ export function MoviesPlayer() {
                           🗑️ Limpar Legendas
                         </button>
                         <p className="text-[11px] text-white/35 text-center">
-                          💡 A legenda animada aparece acima · Use ← → ou as teclas do teclado
+                          💡 Use ← → ou as teclas do teclado · Clica nas palavras para ouvir
                         </p>
                       </>
                     )}
 
-                    {!subRaw && (
-                      <div className="text-center py-4">
+                    {!subRaw && !transcript.length && (
+                      <div className="text-center py-3">
                         <p className="text-xs text-white/40 mb-2">Como usar:</p>
                         <div className="space-y-1 text-[11px] text-white/30 text-left">
-                          <p>1️⃣ Cola as legendas do filme (uma frase por linha)</p>
-                          <p>2️⃣ A legenda animada aparece em cima do player</p>
-                          <p>3️⃣ Navega com os botões ← → ou as teclas do teclado</p>
+                          <p>1️⃣ As legendas automáticas carregam sozinhas (quando disponíveis)</p>
+                          <p>2️⃣ Ou cola as legendas acima (uma frase por linha)</p>
+                          <p>3️⃣ Clica em qualquer palavra para ouvir a pronúncia e guardar no vocabulário</p>
                         </div>
                       </div>
                     )}

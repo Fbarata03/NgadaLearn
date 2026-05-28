@@ -184,4 +184,65 @@ function getStatus() {
   };
 }
 
-module.exports = { searchVideos, getVideoDetails, getStatus };
+/* ════════════════════════════════════════════════════════════════════
+   TRANSCRIPT  — legendas temporizadas via YouTube Timed Text API
+   (API não oficial; sem custo de quota)
+   ════════════════════════════════════════════════════════════════════ */
+const TRANSCRIPT_TTL    = 6 * 60 * 60 * 1000;  // 6 horas (sucesso)
+const TRANSCRIPT_FAIL   = 30 * 60 * 1000;       // 30 min  (falha)
+
+async function fetchTranscript(videoId) {
+  const cacheKey = `transcript:${videoId}`;
+  const cached   = cacheGet(cacheKey);
+  if (cached !== null) return { data: cached, fromCache: true };
+
+  const headers = {
+    "Accept-Language": "en-US,en;q=0.9",
+    "User-Agent":
+      "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 " +
+      "(KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
+  };
+
+  const attempts = [
+    `https://www.youtube.com/api/timedtext?v=${videoId}&lang=en&fmt=json3`,
+    `https://www.youtube.com/api/timedtext?v=${videoId}&lang=en&kind=asr&fmt=json3`,
+    `https://www.youtube.com/api/timedtext?v=${videoId}&lang=en-US&fmt=json3`,
+    `https://www.youtube.com/api/timedtext?v=${videoId}&lang=en-GB&fmt=json3`,
+  ];
+
+  for (const url of attempts) {
+    try {
+      const res = await fetch(url, { signal: AbortSignal.timeout(8000), headers });
+      if (!res.ok) continue;
+
+      const data = await res.json().catch(() => null);
+      if (!data?.events?.length) continue;
+
+      const segments = [];
+      for (const ev of data.events) {
+        if (!ev.segs?.length) continue;
+        const text = ev.segs
+          .map(s => (s.utf8 || "").replace(/\n/g, " "))
+          .join("")
+          .replace(/\s+/g, " ")
+          .trim();
+        if (!text) continue;
+        segments.push({
+          start: (ev.tStartMs  || 0)    / 1000,
+          dur:   Math.max((ev.dDurationMs || 2000) / 1000, 0.3),
+          text,
+        });
+      }
+
+      if (segments.length >= 3) {
+        cacheSet(cacheKey, segments, TRANSCRIPT_TTL);
+        return { data: segments, fromCache: false };
+      }
+    } catch { /* tenta o próximo URL */ }
+  }
+
+  cacheSet(cacheKey, [], TRANSCRIPT_FAIL);
+  return { data: [], fromCache: false };
+}
+
+module.exports = { searchVideos, getVideoDetails, getStatus, fetchTranscript };

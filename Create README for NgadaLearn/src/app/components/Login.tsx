@@ -152,12 +152,16 @@ export function Login() {
   ───────────────────────────────────────── */
   return (
     <div className="min-h-[100dvh] bg-gray-50 flex flex-col">
-      {/* Logo centrado no topo */}
-      <div className="flex items-center justify-center pt-safe pt-8 pb-6">
-        <Link to="/" className="flex items-center gap-2">
-          <GraduationCap className="w-9 h-9 text-purple-600" />
-          <span className="font-black text-2xl text-gray-900">NgadaLearn</span>
+      {/* Cabeçalho com botão de retroceder */}
+      <div className="flex items-center justify-between px-4 pt-safe pt-4 pb-3 border-b bg-white">
+        <Link to="/" className="p-2 -ml-2 text-gray-500 hover:text-gray-800">
+          <ArrowLeft className="w-5 h-5" />
         </Link>
+        <div className="flex items-center gap-2">
+          <GraduationCap className="w-6 h-6 text-purple-600" />
+          <span className="font-black text-base text-gray-900">NgadaLearn</span>
+        </div>
+        <div className="w-9" />
       </div>
 
       {/* Formulário */}

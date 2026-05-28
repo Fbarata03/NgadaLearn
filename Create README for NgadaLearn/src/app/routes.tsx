@@ -13,6 +13,7 @@ import { MusicPlayer } from "./components/MusicPlayer";
 import { MoviesPlayer } from "./components/MoviesPlayer";
 import { Subscribe } from "./components/Subscribe";
 import { Login } from "./components/Login";
+import { ResetPassword } from "./components/ResetPassword";
 import { Demo } from "./components/Demo";
 import { Admin } from "./components/Admin";
 import { ProtectedRoute } from "./components/ProtectedRoute";
@@ -142,6 +143,7 @@ export const router = createBrowserRouter([
       },
     ],
   },
-  // Login fora do RootLayout (página isolada)
+  // Login e reset-password fora do RootLayout (páginas isoladas)
   { path: "/login", Component: Login },
+  { path: "/reset-password", Component: ResetPassword },
 ], { basename: BASE });

@@ -102,6 +102,34 @@ app.use((err, _req, res, _next) => {
   res.status(500).json({ error: "Erro interno do servidor." });
 });
 
+// ── Keep-alive: auto-ping a cada 14 min para o Render não dormir ──
+function startKeepAlive(baseUrl) {
+  const https = require("https");
+  const http  = require("http");
+
+  const INTERVAL_MS = 14 * 60 * 1000; // 14 minutos
+
+  setInterval(() => {
+    const url = `${baseUrl}/api/health`;
+    const mod = url.startsWith("https") ? https : http;
+
+    const req = mod.get(url, (res) => {
+      console.log(`[keep-alive] ping ${url} → ${res.statusCode}`);
+    });
+
+    req.on("error", (err) => {
+      console.warn(`[keep-alive] ping falhou: ${err.message}`);
+    });
+
+    req.setTimeout(10000, () => {
+      console.warn("[keep-alive] ping timeout");
+      req.destroy();
+    });
+  }, INTERVAL_MS);
+
+  console.log(`   Keep-alive: ping a cada 14 min → ${baseUrl}/api/health`);
+}
+
 // ── Arranque: inicializar BD → seed admin → iniciar servidor ──────
 async function start() {
   try {
@@ -111,7 +139,14 @@ async function start() {
       console.log(`\n🚀 NgadaLearn API em http://localhost:${PORT}`);
       console.log(`   Health: http://localhost:${PORT}/api/health`);
       console.log(`   BD:     Neon PostgreSQL`);
-      console.log(`   Env:    ${process.env.NODE_ENV || "development"}\n`);
+      console.log(`   Env:    ${process.env.NODE_ENV || "development"}`);
+
+      // Activar keep-alive só no Render (RENDER_EXTERNAL_URL é definido automaticamente)
+      const renderUrl = process.env.RENDER_EXTERNAL_URL;
+      if (renderUrl) {
+        startKeepAlive(renderUrl);
+      }
+      console.log("");
     });
   } catch (err) {
     console.error("❌ Falha ao iniciar servidor:", err);

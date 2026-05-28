@@ -247,9 +247,9 @@ export function RootLayout() {
 
       {/* ── FOOTER ── */}
       <footer className="bg-gray-900 text-white mt-auto">
-        <div className="container mx-auto px-4 py-12">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-8 mb-10">
-            <div className="col-span-2 md:col-span-1">
+        <div className="container mx-auto px-4 py-8 sm:py-12">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6 sm:gap-8 mb-8">
+            <div className="col-span-1 sm:col-span-2 md:col-span-1">
               <div className="flex items-center gap-2 mb-4">
                 <GraduationCap className="w-7 h-7 text-purple-400" />
                 <span className="font-black text-lg">NgadaLearn</span>

@@ -428,7 +428,7 @@ export function LessonPlayer() {
   if (completed) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4">
-        <Card className="max-w-md w-full p-8 text-center shadow-xl rounded-2xl border-0">
+        <Card className="max-w-md w-full p-5 sm:p-8 text-center shadow-xl rounded-2xl border-0">
           <div className="w-20 h-20 bg-yellow-100 rounded-full flex items-center justify-center mx-auto mb-4">
             <Trophy className="w-10 h-10 text-yellow-500" />
           </div>
@@ -488,7 +488,7 @@ export function LessonPlayer() {
         </div>
       </div>
 
-      <div className="container mx-auto px-4 py-8 max-w-3xl">
+      <div className="container mx-auto px-4 py-5 sm:py-8 max-w-3xl">
         {/* Info da lição */}
         <div className="mb-6">
           <div className="flex items-center gap-2 mb-2">
@@ -598,7 +598,7 @@ export function LessonPlayer() {
         </Card>
 
         {/* ── EXERCÍCIOS ── */}
-        <Card className="p-6 border-0 shadow-sm rounded-2xl bg-white">
+        <Card className="p-4 sm:p-6 border-0 shadow-sm rounded-2xl bg-white">
           <div className="flex items-center justify-between mb-5">
             <h2 className="font-bold text-gray-800 flex items-center gap-2">
               <BookOpen className="w-4 h-4 text-purple-600" />

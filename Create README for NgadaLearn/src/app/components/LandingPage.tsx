@@ -506,9 +506,9 @@ export function LandingPage() {
             </section>
 
             {/* CTA final */}
-            <section className="bg-gradient-to-br from-purple-600 to-blue-700 rounded-2xl p-8 text-white text-center">
+            <section className="bg-gradient-to-br from-purple-600 to-blue-700 rounded-2xl p-6 sm:p-8 text-white text-center">
               <div className="text-5xl mb-4">🚀</div>
-              <h2 className="text-3xl font-black mb-3">Sua jornada começa hoje</h2>
+              <h2 className="text-2xl sm:text-3xl font-black mb-3">Sua jornada começa hoje</h2>
               <p className="text-purple-200 mb-6 max-w-md mx-auto">
                 Não adie mais. Com apenas US$ 20 você investe no inglês que abre portas para
                 empregos, viagens e oportunidades do mundo inteiro — para sempre.

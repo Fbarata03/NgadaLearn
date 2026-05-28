@@ -51,7 +51,7 @@ export function Login() {
           </p>
         </div>
 
-        <Card className="p-8 shadow-md border-0 rounded-2xl">
+        <Card className="p-5 sm:p-8 shadow-md border-0 rounded-2xl">
           <form onSubmit={handleSubmit} className="space-y-5">
             {/* E-mail */}
             <div>

@@ -70,8 +70,8 @@ export function Dashboard() {
                   </div>
                 )}
               </div>
-              <Link to="/lessons">
-                <Button size="lg" className="bg-white text-purple-700 hover:bg-gray-100 font-bold flex items-center gap-2">
+              <Link to="/lessons" className="w-full md:w-auto">
+                <Button size="lg" className="w-full md:w-auto bg-white text-purple-700 hover:bg-gray-100 font-bold flex items-center gap-2">
                   <PlayCircle className="w-5 h-5" />
                   {lastOpened ? "Continuar" : "Começar a Aprender"}
                 </Button>
@@ -86,7 +86,7 @@ export function Dashboard() {
                 <div className="w-10 h-10 bg-purple-100 rounded-xl flex items-center justify-center">
                   <BookOpen className="w-5 h-5 text-purple-600" />
                 </div>
-                <span className="text-3xl font-black text-gray-900">{totalCompleted}</span>
+                <span className="text-2xl sm:text-3xl font-black text-gray-900">{totalCompleted}</span>
               </div>
               <p className="text-xs text-gray-500 font-medium">Aulas Concluídas</p>
               <Progress value={pct} className="mt-2 h-1.5" />
@@ -98,7 +98,7 @@ export function Dashboard() {
                 <div className="w-10 h-10 bg-orange-100 rounded-xl flex items-center justify-center">
                   <Flame className="w-5 h-5 text-orange-500" />
                 </div>
-                <span className="text-3xl font-black text-gray-900">{streak}</span>
+                <span className="text-2xl sm:text-3xl font-black text-gray-900">{streak}</span>
               </div>
               <p className="text-xs text-gray-500 font-medium">Dias de Sequência 🔥</p>
               <p className="text-xs text-orange-500 mt-1 font-medium">
@@ -111,7 +111,7 @@ export function Dashboard() {
                 <div className="w-10 h-10 bg-green-100 rounded-xl flex items-center justify-center">
                   <Clock className="w-5 h-5 text-green-600" />
                 </div>
-                <span className="text-3xl font-black text-gray-900">{totalMinutes}</span>
+                <span className="text-2xl sm:text-3xl font-black text-gray-900">{totalMinutes}</span>
               </div>
               <p className="text-xs text-gray-500 font-medium">Minutos Estudados</p>
               <p className="text-xs text-gray-400 mt-1">≈ {Math.round(totalMinutes / 60)}h de estudo</p>
@@ -252,8 +252,8 @@ export function Dashboard() {
                     Cada aula te aproxima da fluência. Mantenha a sequência!
                   </p>
                 </div>
-                <Link to="/lessons">
-                  <Button size="lg" className="bg-white text-purple-700 hover:bg-gray-100 font-bold">
+                <Link to="/lessons" className="w-full md:w-auto">
+                  <Button size="lg" className="w-full md:w-auto bg-white text-purple-700 hover:bg-gray-100 font-bold">
                     Próxima Aula →
                   </Button>
                 </Link>

@@ -435,7 +435,7 @@ export function Subscribe() {
             </div>
           )}
 
-          <div className="grid lg:grid-cols-5 gap-8">
+          <div className="grid lg:grid-cols-5 gap-6 lg:gap-8">
             <div className="lg:col-span-3 space-y-5">
               <div>
                 <h1 className="text-2xl sm:text-3xl font-black mb-1">
@@ -449,7 +449,7 @@ export function Subscribe() {
               {/* ── ETAPA 1: Escolha do plano ── */}
               {step === "plan" && !isRenewal && (
                 <>
-                  <div className="grid sm:grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     {PLANS.map((p) => (
                       <div key={p.id} onClick={() => setSelectedPlan(p.id)}
                         className={`relative p-5 border-2 rounded-2xl cursor-pointer transition-all ${
@@ -489,7 +489,8 @@ export function Subscribe() {
 
                   <Button size="lg" className="w-full bg-purple-600 hover:bg-purple-700 py-6 text-lg font-bold"
                     onClick={() => setStep("payment")}>
-                    Continuar com {plan.label} — US$ {plan.price}{plan.period} →
+                    <span className="hidden sm:inline">Continuar com {plan.label} — US$ {plan.price}{plan.period} →</span>
+                    <span className="sm:hidden">Continuar — US$ {plan.price}{plan.period} →</span>
                   </Button>
 
                   <div className="text-center text-sm text-gray-600">

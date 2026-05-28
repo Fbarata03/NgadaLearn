@@ -83,14 +83,19 @@ async function withDedup(key, fetcher) {
 /* ── API wrapper com fallback ────────────────────────────────────── */
 async function apiFetch(url) {
   const apiKey = process.env.YOUTUBE_API_KEY;
-  if (!apiKey) throw new Error("YOUTUBE_API_KEY não configurada.");
+  if (!apiKey) throw new Error("YOUTUBE_API_KEY_MISSING");
   const fullUrl = `${url}&key=${apiKey}`;
   const res = await fetch(fullUrl, { signal: AbortSignal.timeout(8000) });
   if (!res.ok) {
     const body = await res.json().catch(() => ({}));
     const reason = body?.error?.errors?.[0]?.reason || "";
-    if (reason === "quotaExceeded" || res.status === 403) throw new Error("QUOTA_EXCEEDED");
-    throw new Error(`YouTube API ${res.status}: ${body?.error?.message || res.statusText}`);
+    const msg    = body?.error?.message || res.statusText;
+    console.error(`[YouTube API] status=${res.status} reason=${reason} msg=${msg}`);
+    if (reason === "quotaExceeded") throw new Error("QUOTA_EXCEEDED");
+    if (reason === "accessNotConfigured") throw new Error("API_NOT_ENABLED");
+    if (reason === "keyInvalid")          throw new Error("API_KEY_INVALID");
+    if (res.status === 403)               throw new Error("QUOTA_EXCEEDED");
+    throw new Error(`YouTube API ${res.status}: ${msg}`);
   }
   return res.json();
 }

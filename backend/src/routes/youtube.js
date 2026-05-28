@@ -53,12 +53,19 @@ router.get("/search", searchLimiter, async (req, res) => {
 
   } catch (err) {
     if (err.message === "QUOTA_EXCEEDED") {
-      return res.status(200).json({
-        videos:        [],
-        fromCache:     false,
-        quotaExceeded: true,
-        message:       "Quota da YouTube API temporariamente esgotada. Tente mais tarde.",
-      });
+      return res.status(200).json({ videos: [], fromCache: false, quotaExceeded: true });
+    }
+    if (err.message === "API_NOT_ENABLED") {
+      console.error("[YouTube] API não activada no Google Cloud para esta chave.");
+      return res.status(200).json({ videos: [], fromCache: false, apiNotEnabled: true });
+    }
+    if (err.message === "API_KEY_INVALID") {
+      console.error("[YouTube] Chave API inválida.");
+      return res.status(200).json({ videos: [], fromCache: false, keyInvalid: true });
+    }
+    if (err.message === "YOUTUBE_API_KEY_MISSING") {
+      console.error("[YouTube] YOUTUBE_API_KEY não definida no ambiente.");
+      return res.status(200).json({ videos: [], fromCache: false, keyMissing: true });
     }
     console.error("[YouTube /search]", err.message);
     res.status(500).json({ videos: [], error: "Erro ao pesquisar vídeos." });
@@ -117,6 +124,27 @@ router.get("/transcript/:videoId", detailsLimiter, async (req, res) => {
   } catch (err) {
     console.error("[YouTube /transcript]", err.message);
     res.json({ segments: [] });
+  }
+});
+
+/* ════════════════════════════════════════════════════════════════════
+   GET /api/youtube/ping  — testa a chave API directamente
+   ════════════════════════════════════════════════════════════════════ */
+router.get("/ping", async (req, res) => {
+  const apiKey = process.env.YOUTUBE_API_KEY;
+  if (!apiKey) return res.json({ ok: false, error: "YOUTUBE_API_KEY não definida no Render." });
+
+  try {
+    const url = `https://www.googleapis.com/youtube/v3/videos?part=id&id=dQw4w9WgXcQ&key=${apiKey}`;
+    const r   = await fetch(url, { signal: AbortSignal.timeout(8000) });
+    const body = await r.json();
+    if (!r.ok) {
+      const reason = body?.error?.errors?.[0]?.reason || r.status;
+      return res.json({ ok: false, status: r.status, reason, message: body?.error?.message });
+    }
+    res.json({ ok: true, keyActive: true, quotaStatus: getStatus().quota });
+  } catch (err) {
+    res.json({ ok: false, error: err.message });
   }
 });
 

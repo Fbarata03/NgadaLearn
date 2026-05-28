@@ -397,7 +397,7 @@ export function Subscribe() {
   const isRenewal = isAuthenticated && !isAccessActive && user?.plan === "monthly";
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 pb-20 sm:pb-0">
       {/* Barra de confiança */}
       <div className="bg-purple-700 text-white py-2.5">
         <div className="container mx-auto px-4 flex flex-wrap items-center justify-center gap-4 sm:gap-6 text-xs sm:text-sm">
@@ -406,6 +406,23 @@ export function Subscribe() {
           <span className="flex items-center gap-1.5"><Lock className="w-4 h-4" /> Sem taxas escondidas</span>
         </div>
       </div>
+
+      {/* Sticky bottom CTA — apenas mobile, apenas no passo 1 */}
+      {step === "plan" && !isRenewal && (
+        <div className="sm:hidden fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-gray-200 p-3 shadow-2xl">
+          <Button
+            size="lg"
+            className="w-full bg-purple-600 hover:bg-purple-700 py-4 text-base font-bold"
+            onClick={() => setStep("payment")}
+          >
+            Continuar com {plan.label} — US$ {plan.price}{plan.period} →
+          </Button>
+          <p className="text-center text-xs text-gray-400 mt-1.5">
+            Já tem conta?{" "}
+            <Link to="/login" className="text-purple-600 font-semibold">Entrar</Link>
+          </p>
+        </div>
+      )}
 
       <div className="container mx-auto px-4 py-8 sm:py-10">
         <div className="max-w-5xl mx-auto">

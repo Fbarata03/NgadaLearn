@@ -11,6 +11,7 @@ const bcrypt  = require("bcryptjs");
 const jwt     = require("jsonwebtoken");
 const { v4: uuidv4 } = require("uuid");
 
+const crypto = require("crypto");
 const {
   findUserByEmail,
   findUserById,
@@ -18,6 +19,10 @@ const {
   updateUser,
 } = require("../utils/dataStore");
 const { authenticate } = require("../middleware/authMiddleware");
+const { sendPasswordReset } = require("../utils/email");
+
+/* In-memory store: token → { userId, expires } */
+const resetTokens = new Map();
 
 // ── Gerar token JWT ───────────────────────────────────────────────
 function generateToken(userId) {
@@ -149,6 +154,78 @@ router.post("/change-password", authenticate, async (req, res) => {
   } catch (err) {
     console.error("Erro ao alterar password:", err);
     res.status(500).json({ error: "Erro ao alterar password." });
+  }
+});
+
+// ════════════════════════════════════════════════════════════════════
+// POST /api/auth/forgot-password
+// ════════════════════════════════════════════════════════════════════
+router.post("/forgot-password", async (req, res) => {
+  try {
+    const { email } = req.body;
+    const MSG = "Se este email estiver registado, receberá as instruções em breve.";
+
+    if (!email || !email.includes("@")) {
+      return res.status(400).json({ error: "Informe um email válido." });
+    }
+
+    const user = await findUserByEmail(email);
+    if (!user) return res.json({ message: MSG });
+
+    /* Gerar token seguro */
+    const token   = crypto.randomBytes(32).toString("hex");
+    const expires = Date.now() + 60 * 60 * 1000; // 1 hora
+    resetTokens.set(token, { userId: user.id, expires });
+
+    const base     = process.env.FRONTEND_URL || "https://www.ngadalearn.pt";
+    const resetUrl = `${base}/reset-password?token=${token}`;
+
+    /* Tentar enviar email */
+    try {
+      await sendPasswordReset({ to: user.email, name: user.name, resetUrl });
+    } catch (emailErr) {
+      console.warn("Erro ao enviar email de reset:", emailErr.message);
+    }
+
+    if (process.env.NODE_ENV !== "production") {
+      console.log(`[DEV] Reset URL para ${email}: ${resetUrl}`);
+    }
+
+    res.json({ message: MSG });
+  } catch (err) {
+    console.error("Erro em forgot-password:", err);
+    res.status(500).json({ error: "Erro ao processar pedido." });
+  }
+});
+
+// ════════════════════════════════════════════════════════════════════
+// POST /api/auth/reset-password
+// ════════════════════════════════════════════════════════════════════
+router.post("/reset-password", async (req, res) => {
+  try {
+    const { token, newPassword } = req.body;
+
+    if (!token || !newPassword) {
+      return res.status(400).json({ error: "Token e nova senha são obrigatórios." });
+    }
+    if (newPassword.length < 6) {
+      return res.status(400).json({ error: "A senha deve ter pelo menos 6 caracteres." });
+    }
+
+    const data = resetTokens.get(token);
+    if (!data || data.expires < Date.now()) {
+      resetTokens.delete(token);
+      return res.status(400).json({ error: "Link expirado ou inválido. Solicite um novo." });
+    }
+
+    const newHash = await bcrypt.hash(newPassword, 12);
+    await updateUser(data.userId, { passwordHash: newHash });
+    resetTokens.delete(token);
+
+    res.json({ message: "Senha redefinida com sucesso! Já pode entrar." });
+  } catch (err) {
+    console.error("Erro em reset-password:", err);
+    res.status(500).json({ error: "Erro ao redefinir senha." });
   }
 });
 

@@ -6,7 +6,7 @@ import { Button } from "./ui/button";
 import { Card } from "./ui/card";
 import { Progress } from "./ui/progress";
 import {
-  ChevronLeft, ChevronRight, Play, Pause, RotateCcw, Volume2,
+  ChevronRight, Play, Pause, RotateCcw, Volume2,
   CheckCircle2, XCircle, BookOpen, Headphones, Mic, Trophy,
   ArrowLeft, SkipForward,
 } from "lucide-react";
@@ -248,6 +248,8 @@ export function LessonPlayer() {
   const [audioProgress, setAudioProgress] = useState(0);
   const [audioDuration, setAudioDuration] = useState(0);
   const [audioError, setAudioError] = useState(false);
+  const [ttsPlaying, setTtsPlaying] = useState(false);
+  const [ttsProgress, setTtsProgress] = useState(0);
   const audioRef = useRef<HTMLAudioElement>(null);
 
   // Lógica de "Self-Healing": Tenta várias opções de caminhos de áudio
@@ -339,13 +341,55 @@ export function LessonPlayer() {
 
   const handleAudioError = () => {
     if (currentSrcIdx < audioSources.length - 1) {
-      // Se falhar, tenta o próximo caminho da lista
       setCurrentSrcIdx((prev) => prev + 1);
     } else {
       setAudioError(true);
       setAudioPlaying(false);
     }
   };
+
+  // TTS: lê o vocabulário da lição em inglês, um a um
+  const speakVocab = useCallback(() => {
+    if (!lesson?.vocab?.length || !window.speechSynthesis) return;
+    window.speechSynthesis.cancel();
+    setTtsPlaying(true);
+    setTtsProgress(0);
+
+    const items = lesson.vocab;
+    let idx = 0;
+
+    const speakNext = () => {
+      if (idx >= items.length) {
+        setTtsPlaying(false);
+        setTtsProgress(100);
+        return;
+      }
+      setTtsProgress(Math.round((idx / items.length) * 100));
+
+      const u = new SpeechSynthesisUtterance(items[idx].en);
+      u.lang  = "en-US";
+      u.rate  = 0.8;
+      u.pitch = 1;
+
+      const voices = window.speechSynthesis.getVoices();
+      const preferred = voices.find(v =>
+        v.lang.startsWith("en") &&
+        (v.name.includes("Google") || v.name.includes("Samantha") || v.name.includes("Daniel"))
+      );
+      if (preferred) u.voice = preferred;
+
+      u.onend   = () => { idx++; setTimeout(speakNext, 600); };
+      u.onerror = () => { idx++; setTimeout(speakNext, 300); };
+      window.speechSynthesis.speak(u);
+    };
+
+    speakNext();
+  }, [lesson]);
+
+  const stopTts = useCallback(() => {
+    window.speechSynthesis?.cancel();
+    setTtsPlaying(false);
+  }, []);
 
   const handleNext = () => {
     if (!lesson) return;
@@ -475,41 +519,81 @@ export function LessonPlayer() {
             preload="metadata"
           />
 
-          <div className="flex items-center gap-4 mb-4">
-            <button
-              onClick={toggleAudio}
-              className="w-12 h-12 bg-white/20 hover:bg-white/30 rounded-full flex items-center justify-center transition-all flex-shrink-0"
-            >
-              {audioPlaying ? <Pause className="w-6 h-6" /> : <Play className="w-6 h-6 ml-0.5" />}
-            </button>
-            <div className="flex-1">
-              <p className="text-sm font-bold truncate">{lesson.title} — {lesson.subtitle}</p>
-              <p className="text-xs text-gray-400">{catLabel} · {lesson.durationMin} min</p>
-            </div>
-            {audioError && (
-              <span className="text-xs text-red-400">⚠ Áudio não disponível</span>
-            )}
-          </div>
+          {!audioError ? (
+            <>
+              <div className="flex items-center gap-4 mb-4">
+                <button
+                  onClick={toggleAudio}
+                  className="w-12 h-12 bg-white/20 hover:bg-white/30 rounded-full flex items-center justify-center transition-all flex-shrink-0"
+                >
+                  {audioPlaying ? <Pause className="w-6 h-6" /> : <Play className="w-6 h-6 ml-0.5" />}
+                </button>
+                <div className="flex-1">
+                  <p className="text-sm font-bold truncate">{lesson.title} — {lesson.subtitle}</p>
+                  <p className="text-xs text-gray-400">{catLabel} · {lesson.durationMin} min</p>
+                </div>
+              </div>
+              <div
+                className="h-2 bg-white/20 rounded-full cursor-pointer mb-2"
+                onClick={seekAudio}
+              >
+                <div
+                  className="h-full bg-purple-400 rounded-full transition-all"
+                  style={{ width: audioDuration ? `${(audioProgress / audioDuration) * 100}%` : "0%" }}
+                />
+              </div>
+              <div className="flex justify-between text-xs text-gray-400">
+                <span>{formatTime(audioProgress)}</span>
+                <span>{formatTime(audioDuration)}</span>
+              </div>
+            </>
+          ) : (
+            /* TTS fallback — lê vocabulário em inglês via Web Speech API */
+            <>
+              <div className="flex items-center gap-3 mb-1">
+                <div className="w-8 h-8 bg-blue-500/30 rounded-full flex items-center justify-center flex-shrink-0">
+                  <Volume2 className="w-4 h-4 text-blue-300" />
+                </div>
+                <div className="flex-1">
+                  <p className="text-sm font-bold">Pronúncia do Vocabulário</p>
+                  <p className="text-xs text-blue-300">Síntese de voz · {lesson.vocab.length} palavras</p>
+                </div>
+                <span className="text-xs bg-blue-500/20 text-blue-300 px-2 py-0.5 rounded-full font-medium">TTS</span>
+              </div>
 
-          {/* Barra de progresso do áudio */}
-          <div
-            className="h-2 bg-white/20 rounded-full cursor-pointer mb-2"
-            onClick={seekAudio}
-          >
-            <div
-              className="h-full bg-purple-400 rounded-full transition-all"
-              style={{ width: audioDuration ? `${(audioProgress / audioDuration) * 100}%` : "0%" }}
-            />
-          </div>
-          <div className="flex justify-between text-xs text-gray-400">
-            <span>{formatTime(audioProgress)}</span>
-            <span>{formatTime(audioDuration)}</span>
-          </div>
-
-          {audioError && (
-            <p className="text-xs text-gray-400 mt-2 text-center">
-              ⚠ Áudio não encontrado. Verifica se a pasta <code className="bg-white/10 px-1 rounded">audio/</code> ou as originais (<code className="bg-white/10 px-1 rounded">Assimil/</code> e <code className="bg-white/10 px-1 rounded">PIMSLEUR/</code>) estão dentro de <code className="bg-white/10 px-1 rounded">public/</code>.
-            </p>
+              {lesson.vocab.length > 0 ? (
+                <>
+                  <button
+                    onClick={ttsPlaying ? stopTts : speakVocab}
+                    className={`w-full mt-3 py-2.5 rounded-xl font-bold flex items-center justify-center gap-2 transition-all text-sm ${
+                      ttsPlaying
+                        ? "bg-red-500/80 hover:bg-red-500/100 text-white"
+                        : "bg-blue-500/80 hover:bg-blue-500/100 text-white"
+                    }`}
+                  >
+                    {ttsPlaying ? (
+                      <><Pause className="w-4 h-4" /> Parar</>
+                    ) : (
+                      <><Play className="w-4 h-4" /> {ttsProgress === 100 ? "Repetir Pronúncia" : "Ouvir Pronúncia"}</>
+                    )}
+                  </button>
+                  <div className="mt-3 h-1.5 bg-white/20 rounded-full">
+                    <div
+                      className="h-full bg-blue-400 rounded-full transition-all duration-300"
+                      style={{ width: `${ttsProgress}%` }}
+                    />
+                  </div>
+                  <div className="flex justify-between text-xs text-gray-400 mt-1">
+                    <span>{ttsPlaying ? "A reproduzir..." : ttsProgress === 100 ? "Concluído" : "Pronto para ouvir"}</span>
+                    <span>{lesson.vocab.length} palavras</span>
+                  </div>
+                </>
+              ) : (
+                <p className="text-xs text-gray-400 mt-3 text-center">
+                  Sem vocabulário para reproduzir nesta lição.
+                </p>
+              )}
+            </>
           )}
         </Card>
 

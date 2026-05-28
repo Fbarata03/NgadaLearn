@@ -304,7 +304,7 @@ const DIFF_COLOR: Record<Difficulty,string> = {
   "Avançado":      "bg-red-500/20 text-red-300 border-red-500/30",
 };
 
-const API_KEY = "AIzaSyCWKQ6Ekd_DZvqVvwq-cWrUDHS7mF51ZhE";
+const BACKEND = import.meta.env.VITE_API_URL || "https://ngadalearn-api.onrender.com";
 const EQ_CLS  = ["meq1","meq2","meq3","meq4","meq5"];
 const EQ_COL  = ["#fbbf24","#f59e0b","#d97706","#fcd34d","#fef08a"];
 
@@ -318,12 +318,12 @@ function isOfficialChannel(ch: string): boolean {
   return OFFICIAL_SIGNALS.some(s => c.includes(s));
 }
 async function checkEmbeddable(ids: string[]): Promise<Set<string>> {
+  if (!ids.length) return new Set();
   try {
-    const params = new URLSearchParams({ part:"status", id:ids.join(","), key:API_KEY });
-    const res    = await fetch(`https://www.googleapis.com/youtube/v3/videos?${params}`);
-    const data   = await res.json();
+    const res  = await fetch(`${BACKEND}/api/youtube/videos?ids=${ids.join(",")}`);
+    const data = await res.json();
     return new Set<string>(
-      (data.items||[]).filter((i:any) => i.status?.embeddable !== false).map((i:any) => i.id)
+      (data.items || []).filter((i: any) => i.status?.embeddable !== false).map((i: any) => i.id)
     );
   } catch { return new Set(ids); }
 }
@@ -635,51 +635,28 @@ export function MoviesPlayer() {
     if (!raw.trim()) return;
     setLoading(true); setSearchErr(""); setResults([]);
 
-    /* Construir query robusta: força "official clip" ou "scene" */
-    const base = raw.toLowerCase();
-    const q = base.includes("clip") || base.includes("scene") || base.includes("official")
-      ? raw
-      : `${raw} official movie clip scene`;
-
     try {
-      const params = new URLSearchParams({
-        part:              "snippet",
-        q,
-        type:              "video",
-        videoCategoryId:   "1",           // Film & Animation
-        videoEmbeddable:   "true",
-        videoSyndicated:   "true",        // pode ser reproduzido fora do YT
-        videoDuration:     "short",       // < 4 min — cenas, não filmes inteiros
-        maxResults:        "25",
-        key:               API_KEY,
-        relevanceLanguage: "en",
-        safeSearch:        "moderate",
-        order:             "relevance",
-      });
-
-      const res  = await fetch(`https://www.googleapis.com/youtube/v3/search?${params}`);
-      if (!res.ok) { const e = await res.json(); throw new Error(e?.error?.message); }
+      const params = new URLSearchParams({ q: raw, type: "movies", max: "25" });
+      const res  = await fetch(`${BACKEND}/api/youtube/search?${params}`);
       const data = await res.json();
 
-      /* Mapear resultados */
-      const raw2: MovieClip[] = (data.items||[])
-        .filter((i:any) => !!i.id?.videoId)
-        .map((i:any) => ({
-          id:         i.id.videoId,
-          title:      i.snippet.title,
-          channel:    i.snippet.channelTitle,
-          thumbnail:  i.snippet.thumbnails?.medium?.url || "",
-          isOfficial: isOfficialChannel(i.snippet.channelTitle),
-        }));
+      if (data.quotaExceeded) {
+        setSearchErr("Quota do YouTube temporariamente esgotada. Tente novamente mais tarde.");
+        return;
+      }
 
-      /* Filtro client-side: excluir títulos de reacções/paródias */
-      const filtered = raw2.filter(v => !isBadTitle(v.title));
+      const raw2: MovieClip[] = (data.videos || []).map((v: any) => ({
+        id:         v.id,
+        title:      v.title,
+        channel:    v.channel,
+        thumbnail:  v.thumbnail,
+        isOfficial: isOfficialChannel(v.channel),
+      }));
 
-      /* Verificar embeddable */
-      const ok = await checkEmbeddable(filtered.map(v => v.id));
+      const filtered  = raw2.filter(v => !isBadTitle(v.title));
+      const ok        = await checkEmbeddable(filtered.map(v => v.id));
       const embeddable = filtered.filter(v => ok.has(v.id));
 
-      /* Priorizar canais oficiais */
       const sorted = [
         ...embeddable.filter(v => v.isOfficial),
         ...embeddable.filter(v => !v.isOfficial),
@@ -687,8 +664,8 @@ export function MoviesPlayer() {
 
       setResults(sorted.slice(0, 12));
       if (!sorted.length) setSearchErr("Nenhuma cena encontrada. Tenta outro título.");
-    } catch(e:any) {
-      setSearchErr(e.message || "Erro na pesquisa.");
+    } catch (e: unknown) {
+      setSearchErr(e instanceof Error ? e.message : "Erro na pesquisa.");
     } finally { setLoading(false); }
   }, []);
 

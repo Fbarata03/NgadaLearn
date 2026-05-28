@@ -81,7 +81,7 @@ interface LyricLine {
 }
 
 /* ── Constantes ───────────────────────────────────────────────────── */
-const API_KEY = "AIzaSyCWKQ6Ekd_DZvqVvwq-cWrUDHS7mF51ZhE";
+const BACKEND = import.meta.env.VITE_API_URL || "https://ngadalearn-api.onrender.com";
 const EQ_CLS  = ["eq1","eq2","eq3","eq4","eq5","eq6","eq7"];
 const EQ_COL  = ["#c084fc","#a855f7","#9333ea","#818cf8","#6366f1","#38bdf8","#a78bfa"];
 
@@ -123,30 +123,21 @@ function isNonEnglish(text: string): boolean {
   return /[Ѐ-ӿ؀-ۿ一-鿿぀-ヿ가-힯฀-๿]/.test(text);
 }
 
-/* Filtra: apenas música em inglês E embeddable */
+/* Filtra: apenas música embeddable (via backend proxy com cache) */
 async function filterEnglishEmbeddable(videos: YTVideo[]): Promise<YTVideo[]> {
   if (!videos.length) return [];
-  /* Passo 1 — excluir títulos/canais com caracteres não-latinos */
   const latinOnly = videos.filter(v => !isNonEnglish(v.title) && !isNonEnglish(v.channel));
   if (!latinOnly.length) return [];
-  /* Passo 2 — verificar embeddable + idioma via Videos API */
   try {
-    const ids  = latinOnly.map(v => v.id).join(",");
-    const res  = await fetch(
-      `https://www.googleapis.com/youtube/v3/videos?part=status,snippet&id=${ids}&key=${API_KEY}`
-    );
+    const ids = latinOnly.map(v => v.id).join(",");
+    const res = await fetch(`${BACKEND}/api/youtube/videos?ids=${ids}`);
     const data = await res.json();
-    /* Indexar por ID para pesquisa O(1) */
     const apiMap = new Map<string, any>((data.items || []).map((i: any) => [i.id, i]));
-
     return latinOnly.filter(v => {
       const item = apiMap.get(v.id);
-      /* Vídeo não devolvido pela API → dar benefício da dúvida e manter */
       if (!item) return true;
-      /* Explicitamente não incorporável → excluir */
       if (item.status?.embeddable === false) return false;
       const lang = item.snippet?.defaultAudioLanguage || item.snippet?.defaultLanguage || "";
-      /* Só excluir se o idioma estiver definido e NÃO for inglês */
       if (lang && !lang.startsWith("en")) return false;
       return true;
     });
@@ -500,28 +491,20 @@ export function MusicPlayer() {
   const searchVideos = useCallback(async (raw: string) => {
     if (!raw.trim()) return;
     setLoading(true); setError(""); setResults([]);
-    const q = raw.toLowerCase().includes("official") ? raw : `${raw} official english`;
     try {
-      const params = new URLSearchParams({
-        part:"snippet", q, type:"video",
-        videoCategoryId:"10",
-        videoEmbeddable:"true",
-        videoSyndicated:"true",          // pode ser reproduzido fora do YouTube
-        maxResults:"20", key:API_KEY, relevanceLanguage:"en", safeSearch:"moderate",
-      });
-      const res  = await fetch(`https://www.googleapis.com/youtube/v3/search?${params}`);
-      if (!res.ok) { const e = await res.json(); throw new Error(e?.error?.message); }
+      const params = new URLSearchParams({ q: raw, type: "music", max: "20" });
+      const res  = await fetch(`${BACKEND}/api/youtube/search?${params}`);
       const data = await res.json();
-      const raw2 = (data.items||[]).map((item:any) => ({
-        id: item.id.videoId, title: item.snippet.title,
-        channel: item.snippet.channelTitle,
-        thumbnail: item.snippet.thumbnails?.medium?.url || "",
-      }));
-      const filtered = await filterEnglishEmbeddable(raw2);
-      setResults(filtered.slice(0,12));
+      if (data.quotaExceeded) {
+        setError("Quota do YouTube temporariamente esgotada. Tente novamente mais tarde.");
+        return;
+      }
+      const videos: YTVideo[] = data.videos || [];
+      const filtered = await filterEnglishEmbeddable(videos);
+      setResults(filtered.slice(0, 12));
       if (!filtered.length) setError("Nenhum vídeo incorporável encontrado.");
-    } catch(e:any) {
-      setError(e.message || "Erro na pesquisa.");
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : "Erro na pesquisa.");
     } finally { setLoading(false); }
   }, []);
 

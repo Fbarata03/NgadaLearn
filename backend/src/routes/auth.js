@@ -177,18 +177,25 @@ router.post("/forgot-password", async (req, res) => {
     const expires = Date.now() + 60 * 60 * 1000; // 1 hora
     resetTokens.set(token, { userId: user.id, expires });
 
-    const base     = process.env.FRONTEND_URL || "https://www.ngadalearn.pt";
+    const base     = process.env.FRONTEND_URL || "https://ngadalearn.pt";
     const resetUrl = `${base}/reset-password?token=${token}`;
 
     /* Tentar enviar email */
+    let emailSent = false;
     try {
-      await sendPasswordReset({ to: user.email, name: user.name, resetUrl });
+      emailSent = await sendPasswordReset({ to: user.email, name: user.name, resetUrl });
     } catch (emailErr) {
       console.warn("Erro ao enviar email de reset:", emailErr.message);
     }
 
-    if (process.env.NODE_ENV !== "production") {
-      console.log(`[DEV] Reset URL para ${email}: ${resetUrl}`);
+    console.log(`[reset] URL para ${email}: ${resetUrl}`);
+
+    /* Se o email não foi enviado, devolve o link directamente na resposta */
+    if (!emailSent) {
+      return res.json({
+        message: "Não foi possível enviar o email. Use o link abaixo para redefinir a sua senha:",
+        resetUrl,
+      });
     }
 
     res.json({ message: MSG });

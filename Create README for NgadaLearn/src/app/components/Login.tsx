@@ -24,7 +24,11 @@ export function Login() {
   const [showForgot, setShowForgot] = useState(false);
   const [forgotEmail, setForgotEmail] = useState("");
   const [forgotLoading, setForgotLoading] = useState(false);
-  const [forgotStatus, setForgotStatus] = useState<{ type: "success" | "error"; msg: string } | null>(null);
+  const [forgotStatus, setForgotStatus] = useState<{
+    type: "success" | "error";
+    msg: string;
+    resetUrl?: string;
+  } | null>(null);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -59,7 +63,7 @@ export function Login() {
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Erro ao enviar email.");
-      setForgotStatus({ type: "success", msg: data.message });
+      setForgotStatus({ type: "success", msg: data.message, resetUrl: data.resetUrl });
     } catch (err) {
       setForgotStatus({
         type: "error",
@@ -90,8 +94,21 @@ export function Login() {
             {forgotStatus?.type === "success" ? (
               <div className="text-center py-4">
                 <CheckCircle className="w-14 h-14 text-green-500 mx-auto mb-4" />
-                <h2 className="text-lg font-bold text-gray-900 mb-2">Email enviado!</h2>
-                <p className="text-sm text-gray-600 mb-6">{forgotStatus.msg}</p>
+                <h2 className="text-lg font-bold text-gray-900 mb-2">
+                  {forgotStatus.resetUrl ? "Link gerado!" : "Email enviado!"}
+                </h2>
+                <p className="text-sm text-gray-600 mb-5">{forgotStatus.msg}</p>
+
+                {/* Link directo — aparece quando email não está configurado */}
+                {forgotStatus.resetUrl && (
+                  <a
+                    href={forgotStatus.resetUrl}
+                    className="block w-full bg-purple-600 hover:bg-purple-700 text-white font-bold py-3.5 px-4 rounded-xl text-center transition-colors mb-5"
+                  >
+                    🔑 Redefinir senha agora →
+                  </a>
+                )}
+
                 <button
                   onClick={() => { setShowForgot(false); setForgotStatus(null); setForgotEmail(""); }}
                   className="text-sm text-purple-600 hover:underline font-semibold flex items-center gap-1 mx-auto"

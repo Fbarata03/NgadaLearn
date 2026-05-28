@@ -38,10 +38,12 @@ export function Admin() {
   const [search,   setSearch]   = useState("");
   const [filter,   setFilter]   = useState<FilterType>("all");
   const [allUsers, setAllUsers] = useState<User[]>([]);
+  const [loading,  setLoading]  = useState(true);
   const [loadErr,  setLoadErr]  = useState("");
 
   useEffect(() => {
     if (!token) return;
+    setLoading(true);
     fetch(`${API_URL}/api/users`, {
       headers: { Authorization: `Bearer ${token}` },
     })
@@ -50,14 +52,22 @@ export function Admin() {
         if (d.users) setAllUsers(d.users.filter((u: User) => u.role !== "admin"));
         else setLoadErr("Erro ao carregar utilizadores.");
       })
-      .catch(() => setLoadErr("Sem ligação ao servidor."));
+      .catch(() => setLoadErr("Sem ligação ao servidor."))
+      .finally(() => setLoading(false));
   }, [token]);
 
-  // Estatísticas
   if (loadErr) {
     return (
       <div className="min-h-screen flex items-center justify-center text-red-600 text-sm">
         {loadErr}
+      </div>
+    );
+  }
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="animate-spin rounded-full h-8 w-8 border-2 border-purple-600 border-t-transparent" />
       </div>
     );
   }

@@ -4,25 +4,27 @@
    POST /api/auth/login
    GET  /api/auth/me
    POST /api/auth/change-password
+   POST /api/auth/forgot-password
+   POST /api/auth/reset-password
    ════════════════════════════════════════════════════════════════════ */
 
 const router  = require("express").Router();
 const bcrypt  = require("bcryptjs");
 const jwt     = require("jsonwebtoken");
+const crypto  = require("crypto");
 const { v4: uuidv4 } = require("uuid");
 
-const crypto = require("crypto");
 const {
   findUserByEmail,
   findUserById,
   createUser,
   updateUser,
+  saveResetToken,
+  getResetToken,
+  deleteResetToken,
 } = require("../utils/dataStore");
 const { authenticate } = require("../middleware/authMiddleware");
 const { sendPasswordReset } = require("../utils/email");
-
-/* In-memory store: token → { userId, expires } */
-const resetTokens = new Map();
 
 // ── Gerar token JWT ───────────────────────────────────────────────
 function generateToken(userId) {
@@ -172,10 +174,10 @@ router.post("/forgot-password", async (req, res) => {
     const user = await findUserByEmail(email);
     if (!user) return res.json({ message: MSG });
 
-    /* Gerar token seguro */
+    /* Gerar token seguro e persistir na BD */
     const token   = crypto.randomBytes(32).toString("hex");
     const expires = Date.now() + 60 * 60 * 1000; // 1 hora
-    resetTokens.set(token, { userId: user.id, expires });
+    await saveResetToken(token, user.id, expires);
 
     const base     = process.env.FRONTEND_URL || "https://ngadalearn.pt";
     const resetUrl = `${base}/reset-password?token=${token}`;
@@ -219,15 +221,15 @@ router.post("/reset-password", async (req, res) => {
       return res.status(400).json({ error: "A senha deve ter pelo menos 6 caracteres." });
     }
 
-    const data = resetTokens.get(token);
-    if (!data || data.expires < Date.now()) {
-      resetTokens.delete(token);
+    const data = await getResetToken(token);
+    if (!data || new Date(data.expires_at) < new Date()) {
+      await deleteResetToken(token);
       return res.status(400).json({ error: "Link expirado ou inválido. Solicite um novo." });
     }
 
     const newHash = await bcrypt.hash(newPassword, 12);
-    await updateUser(data.userId, { passwordHash: newHash });
-    resetTokens.delete(token);
+    await updateUser(data.user_id, { passwordHash: newHash });
+    await deleteResetToken(token);
 
     res.json({ message: "Senha redefinida com sucesso! Já pode entrar." });
   } catch (err) {

@@ -33,8 +33,14 @@ async function initDB() {
       created_at        TIMESTAMPTZ NOT NULL DEFAULT NOW(),
       updated_at        TIMESTAMPTZ NOT NULL DEFAULT NOW()
     );
+    CREATE TABLE IF NOT EXISTS reset_tokens (
+      token       TEXT        PRIMARY KEY,
+      user_id     TEXT        NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      expires_at  TIMESTAMPTZ NOT NULL,
+      created_at  TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    );
   `);
-  console.log("✅ Tabela users verificada/criada na Neon.");
+  console.log("✅ Tabelas users e reset_tokens verificadas/criadas na Neon.");
 }
 
 /* ── Converter linha da BD para o formato da aplicação ───────────── */
@@ -145,6 +151,28 @@ async function deleteUser(id) {
   return rowCount > 0;
 }
 
+/* ── Reset tokens (persistentes na BD) ──────────────────────────── */
+async function saveResetToken(token, userId, expiresMs) {
+  await pool.query(
+    `INSERT INTO reset_tokens (token, user_id, expires_at)
+     VALUES ($1, $2, $3)
+     ON CONFLICT (token) DO NOTHING`,
+    [token, userId, new Date(expiresMs).toISOString()]
+  );
+}
+
+async function getResetToken(token) {
+  const { rows } = await pool.query(
+    "SELECT user_id, expires_at FROM reset_tokens WHERE token = $1 LIMIT 1",
+    [token]
+  );
+  return rows[0] || null;
+}
+
+async function deleteResetToken(token) {
+  await pool.query("DELETE FROM reset_tokens WHERE token = $1", [token]);
+}
+
 module.exports = {
   pool,
   initDB,
@@ -154,4 +182,7 @@ module.exports = {
   createUser,
   updateUser,
   deleteUser,
+  saveResetToken,
+  getResetToken,
+  deleteResetToken,
 };

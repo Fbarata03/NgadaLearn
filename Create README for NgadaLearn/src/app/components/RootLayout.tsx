@@ -272,10 +272,14 @@ export function RootLayout() {
             <div>
               <h4 className="font-bold text-sm uppercase tracking-wider text-gray-300 mb-4">Suporte</h4>
               <ul className="space-y-2 text-sm text-gray-400">
-                <li><Link to="/" className="hover:text-white transition-colors">Central de Ajuda</Link></li>
-                <li><Link to="/" className="hover:text-white transition-colors">Contato</Link></li>
-                <li><Link to="/" className="hover:text-white transition-colors">Termos de Uso</Link></li>
-                <li><Link to="/" className="hover:text-white transition-colors">Privacidade</Link></li>
+                <li><Link to="/demo" className="hover:text-white transition-colors">Aula Gratuita</Link></li>
+                <li>
+                  <a href="mailto:suporte@ngadalearn.pt" className="hover:text-white transition-colors">
+                    Contacto
+                  </a>
+                </li>
+                <li><Link to="/subscribe" className="hover:text-white transition-colors">Comprar Acesso</Link></li>
+                <li><Link to="/login" className="hover:text-white transition-colors">Entrar na Conta</Link></li>
               </ul>
             </div>
 

@@ -14,7 +14,7 @@ const PLAN_PRICES  = { monthly: 500,    lifetime: 2000   };
 const PLAN_AMOUNTS = { monthly: "5,00", lifetime: "20,00" };
 
 function generateToken(userId) {
-  return jwt.sign({ id: userId }, process.env.JWT_SECRET, { expiresIn: "30d" });
+  return jwt.sign({ id: userId }, process.env.JWT_SECRET, { expiresIn: process.env.JWT_EXPIRES_IN || "7d" });
 }
 
 function safeUser(user) {

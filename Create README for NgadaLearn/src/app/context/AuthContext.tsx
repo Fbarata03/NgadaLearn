@@ -1,169 +1,152 @@
-import { createContext, useContext, useState, useEffect, ReactNode } from "react";
+import {
+  createContext, useContext, useState,
+  useEffect, useCallback, ReactNode,
+} from "react";
 
 /* ── Tipos públicos ── */
-export type PlanType = "monthly" | "lifetime";
+export type PlanType = "monthly" | "lifetime" | "none";
 
 export interface User {
-  name: string;
-  email: string;
-  plan: PlanType;
-  paymentDate: string; // ISO 8601
-  isAdmin: boolean;
+  id:              string;
+  name:            string;
+  email:           string;
+  plan:            PlanType;
+  role:            string;
+  accessExpiresAt: string | null;
+  createdAt?:      string;
+  lastLoginAt?:    string | null;
 }
 
-/* ── Tipo interno (com senha) ── */
-export interface StoredUser extends User {
-  password: string;
-}
-
-/* ── Context API ── */
 interface AuthContextType {
-  user: User | null;
-  isAuthenticated: boolean;
-  isAccessActive: boolean;   // false se plano mensal expirou
-  isAdmin: boolean;
-  login: (email: string, password: string) => { success: boolean; error?: string };
-  logout: () => void;
-  registerAndPay: (name: string, email: string, password: string, plan: PlanType) => void;
-  /** Usado na renovação do plano mensal */
-  renewMonthly: () => void;
-  /** Apenas para o admin */
-  getAllUsers: () => StoredUser[];
+  user:             User | null;
+  token:            string | null;
+  isAuthenticated:  boolean;
+  isAccessActive:   boolean;
+  isAdmin:          boolean;
+  login:            (email: string, password: string) => Promise<{ success: boolean; error?: string }>;
+  logout:           () => void;
+  activatePlan:     (userData: User, jwtToken: string) => void;
+  renewMonthly:     (userData: User, jwtToken: string) => void;
 }
 
-/* ── Helpers ── */
-const USERS_KEY   = "ngada_users";
-const SESSION_KEY = "ngada_session";
+/* ── Constantes ── */
+const TOKEN_KEY = "ngada_token";
+export const API_URL =
+  import.meta.env.VITE_API_URL || "https://ngadalearn-api.onrender.com";
 
-const ADMIN_SEED: StoredUser = {
-  name: "Fbarata03",
-  email: "Fbarata03@gmail.com",
-  password: "marias66s3",
-  plan: "lifetime",
-  paymentDate: new Date().toISOString(),
-  isAdmin: true,
-};
-
-function getUsers(): StoredUser[] {
-  try { return JSON.parse(localStorage.getItem(USERS_KEY) || "[]"); }
-  catch { return []; }
-}
-
-function saveUsers(users: StoredUser[]) {
-  localStorage.setItem(USERS_KEY, JSON.stringify(users));
-}
-
-function seedAdmin() {
-  const users = getUsers();
-  // Remove qualquer admin antigo e insere o seed actualizado
-  const filtered = users.filter((u) => !u.isAdmin);
-  filtered.unshift({ ...ADMIN_SEED, paymentDate: ADMIN_SEED.paymentDate || new Date().toISOString() });
-  saveUsers(filtered);
-}
-
-export function checkAccessActive(user: User | StoredUser): boolean {
+/* ── Helpers exportados (usados em Admin.tsx) ── */
+export function checkAccessActive(user: User): boolean {
   if (user.plan === "lifetime") return true;
-  if (user.plan === "monthly") {
-    const paid = new Date(user.paymentDate);
-    const expiry = new Date(paid);
-    expiry.setDate(expiry.getDate() + 30);
-    return new Date() < expiry;
+  if (user.plan === "monthly" && user.accessExpiresAt) {
+    return new Date() < new Date(user.accessExpiresAt);
   }
   return false;
 }
 
-/** Devolve a data de expiração para plano mensal */
-export function getExpiryDate(user: User | StoredUser): Date | null {
-  if (user.plan !== "monthly") return null;
-  const paid = new Date(user.paymentDate);
-  const expiry = new Date(paid);
-  expiry.setDate(expiry.getDate() + 30);
-  return expiry;
-}
-
-function getCurrentUser(): User | null {
-  try {
-    const email = localStorage.getItem(SESSION_KEY);
-    if (!email) return null;
-    const found = getUsers().find((u) => u.email === email);
-    if (!found) return null;
-    const { password: _, ...rest } = found;
-    void _;
-    return rest;
-  } catch { return null; }
+export function getExpiryDate(user: User): Date | null {
+  if (user.plan !== "monthly" || !user.accessExpiresAt) return null;
+  return new Date(user.accessExpiresAt);
 }
 
 /* ── Context ── */
 const AuthContext = createContext<AuthContextType | null>(null);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  // Seed admin na primeira carga
-  useEffect(() => { seedAdmin(); }, []);
+  const [token, setToken] = useState<string | null>(
+    () => localStorage.getItem(TOKEN_KEY)
+  );
+  const [user,    setUser]    = useState<User | null>(null);
+  const [loading, setLoading] = useState(true);
 
-  const [user, setUser] = useState<User | null>(getCurrentUser);
+  /* Guardar / limpar sessão */
+  const saveSession = useCallback((u: User | null, t: string | null) => {
+    if (t) localStorage.setItem(TOKEN_KEY, t);
+    else   localStorage.removeItem(TOKEN_KEY);
+    setToken(t);
+    setUser(u);
+  }, []);
 
-  const login = (email: string, password: string) => {
-    const found = getUsers().find(
-      (u) => u.email.toLowerCase() === email.toLowerCase() && u.password === password
-    );
-    if (!found) return { success: false, error: "E-mail ou senha incorretos." };
-    const { password: _, ...rest } = found;
-    void _;
-    setUser(rest);
-    localStorage.setItem(SESSION_KEY, found.email);
-    return { success: true };
+  /* Verificar token existente no arranque */
+  const verifyToken = useCallback(async (t: string) => {
+    try {
+      const res = await fetch(`${API_URL}/api/auth/me`, {
+        headers: { Authorization: `Bearer ${t}` },
+      });
+      if (!res.ok) throw new Error("token inválido");
+      const data = await res.json();
+      setUser(data.user);
+    } catch {
+      localStorage.removeItem(TOKEN_KEY);
+      setToken(null);
+      setUser(null);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    const saved = localStorage.getItem(TOKEN_KEY);
+    if (saved) {
+      verifyToken(saved);
+    } else {
+      setLoading(false);
+    }
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  /* Login via backend */
+  const login = async (
+    email: string,
+    password: string
+  ): Promise<{ success: boolean; error?: string }> => {
+    try {
+      const res  = await fetch(`${API_URL}/api/auth/login`, {
+        method:  "POST",
+        headers: { "Content-Type": "application/json" },
+        body:    JSON.stringify({ email, password }),
+      });
+      const data = await res.json();
+      if (!res.ok) return { success: false, error: data.error || "Credenciais inválidas." };
+      saveSession(data.user, data.token);
+      return { success: true };
+    } catch {
+      return { success: false, error: "Sem ligação ao servidor. Tente novamente." };
+    }
   };
 
-  const logout = () => {
-    setUser(null);
-    localStorage.removeItem(SESSION_KEY);
+  const logout = () => saveSession(null, null);
+
+  /* Chamado após pagamento bem-sucedido (novo utilizador) */
+  const activatePlan = (userData: User, jwtToken: string) => {
+    saveSession(userData, jwtToken);
   };
 
-  const registerAndPay = (name: string, email: string, password: string, plan: PlanType) => {
-    const users = getUsers();
-    const idx = users.findIndex((u) => u.email.toLowerCase() === email.toLowerCase());
-    const newUser: StoredUser = {
-      name,
-      email,
-      password,
-      plan,
-      paymentDate: new Date().toISOString(),
-      isAdmin: false,
-    };
-    if (idx >= 0) users[idx] = newUser;
-    else users.push(newUser);
-    saveUsers(users);
-    const { password: _, ...rest } = newUser;
-    void _;
-    setUser(rest);
-    localStorage.setItem(SESSION_KEY, email);
+  /* Chamado após renovação mensal bem-sucedida */
+  const renewMonthly = (userData: User, jwtToken: string) => {
+    saveSession(userData, jwtToken);
   };
-
-  const renewMonthly = () => {
-    if (!user) return;
-    const users = getUsers();
-    const idx = users.findIndex((u) => u.email === user.email);
-    if (idx < 0) return;
-    users[idx].paymentDate = new Date().toISOString();
-    saveUsers(users);
-    setUser({ ...user, paymentDate: users[idx].paymentDate });
-  };
-
-  const getAllUsers = (): StoredUser[] => getUsers();
 
   const isAccessActive = user ? checkAccessActive(user) : false;
+
+  /* Spinner enquanto verifica o token inicial */
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="animate-spin rounded-full h-8 w-8 border-2 border-purple-600 border-t-transparent" />
+      </div>
+    );
+  }
 
   return (
     <AuthContext.Provider value={{
       user,
+      token,
       isAuthenticated: !!user,
       isAccessActive,
-      isAdmin: user?.isAdmin ?? false,
+      isAdmin:         user?.role === "admin",
       login,
       logout,
-      registerAndPay,
+      activatePlan,
       renewMonthly,
-      getAllUsers,
     }}>
       {children}
     </AuthContext.Provider>

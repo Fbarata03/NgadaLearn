@@ -4,23 +4,33 @@
    ════════════════════════════════════════════════════════════════════ */
 
 require("dotenv").config();
-const express = require("express");
-const cors    = require("cors");
+const express   = require("express");
+const cors      = require("cors");
+const helmet    = require("helmet");
+const rateLimit = require("express-rate-limit");
 
-const authRoutes     = require("./routes/auth");
-const userRoutes     = require("./routes/users");
-const paymentRoutes  = require("./routes/payments");
-const { initDB }  = require("./utils/dataStore");
-const { seed }    = require("./scripts/seed");
+const authRoutes    = require("./routes/auth");
+const userRoutes    = require("./routes/users");
+const paymentRoutes = require("./routes/payments");
+const { initDB }    = require("./utils/dataStore");
+const { seed }      = require("./scripts/seed");
 
 const app  = express();
 const PORT = process.env.PORT || 3001;
 
-// ── CORS — permite localhost em dev + GitHub Pages em produção ────
+// ── Segurança — cabeçalhos HTTP ───────────────────────────────────
+app.use(helmet({
+  crossOriginResourcePolicy: { policy: "cross-origin" },
+  contentSecurityPolicy:     false,
+}));
+
+// ── CORS ──────────────────────────────────────────────────────────
 const ALLOWED_ORIGINS = [
   "http://localhost:5173",
   "http://localhost:4173",
   "https://fbarata03.github.io",
+  "https://www.ngadalearn.pt",
+  "https://ngadalearn.pt",
   ...(process.env.FRONTEND_URL ? [process.env.FRONTEND_URL] : []),
 ];
 
@@ -35,8 +45,25 @@ app.use(cors({
   credentials: true,
 }));
 
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+app.use(express.json({ limit: "10kb" }));
+app.use(express.urlencoded({ extended: true, limit: "10kb" }));
+
+// ── Rate Limiting ─────────────────────────────────────────────────
+const authLimiter = rateLimit({
+  windowMs:        15 * 60 * 1000,
+  max:             20,
+  message:         { error: "Demasiadas tentativas. Tente novamente em 15 minutos." },
+  standardHeaders: true,
+  legacyHeaders:   false,
+});
+
+const paymentLimiter = rateLimit({
+  windowMs:        60 * 60 * 1000,
+  max:             15,
+  message:         { error: "Limite de operações de pagamento atingido. Tente mais tarde." },
+  standardHeaders: true,
+  legacyHeaders:   false,
+});
 
 // ── Log de pedidos (só em desenvolvimento) ────────────────────────
 if (process.env.NODE_ENV !== "production") {
@@ -47,16 +74,16 @@ if (process.env.NODE_ENV !== "production") {
 }
 
 // ── Rotas da API ──────────────────────────────────────────────────
-app.use("/api/auth",     authRoutes);
+app.use("/api/auth",     authLimiter,    authRoutes);
 app.use("/api/users",    userRoutes);
-app.use("/api/payments", paymentRoutes);
+app.use("/api/payments", paymentLimiter, paymentRoutes);
 
 // ── Health check ──────────────────────────────────────────────────
 app.get("/api/health", (_req, res) => {
   res.json({
     status:    "ok",
     service:   "NgadaLearn API",
-    version:   "2.0.0",
+    version:   "3.0.0",
     db:        "Neon PostgreSQL",
     timestamp: new Date().toISOString(),
   });
@@ -69,7 +96,7 @@ app.use((_req, res) => {
 
 // ── Error handler ─────────────────────────────────────────────────
 app.use((err, _req, res, _next) => {
-  console.error("Erro interno:", err);
+  console.error("Erro interno:", err.message);
   res.status(500).json({ error: "Erro interno do servidor." });
 });
 

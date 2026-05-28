@@ -19,7 +19,7 @@ export function Login() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!email || !password) {
       setError("Preencha todos os campos.");
@@ -27,17 +27,13 @@ export function Login() {
     }
     setLoading(true);
     setError("");
-
-    // Simula latência de rede
-    setTimeout(() => {
-      const result = login(email, password);
-      if (result.success) {
-        navigate(from, { replace: true });
-      } else {
-        setError(result.error || "Erro ao entrar.");
-        setLoading(false);
-      }
-    }, 800);
+    const result = await login(email, password);
+    if (result.success) {
+      navigate(from, { replace: true });
+    } else {
+      setError(result.error || "Credenciais inválidas.");
+      setLoading(false);
+    }
   };
 
   return (

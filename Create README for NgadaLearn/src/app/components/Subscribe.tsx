@@ -12,7 +12,7 @@ import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { Label } from "./ui/label";
 import { Separator } from "./ui/separator";
-import { useAuth } from "../context/AuthContext";
+import { useAuth, API_URL } from "../context/AuthContext";
 import type { PlanType } from "../context/AuthContext";
 import {
   Check, Shield, Clock, Headphones, Award,
@@ -26,9 +26,6 @@ const stripePromise = loadStripe(
   "pk_test_51TbipT91laigJgQDKbz0z0Z1UTvAXIAQfQoYmgCb2JnUjZw6g1pEkpsbXY8nVGRcw1yTRkseQUVHuj2p4pNQgUbC00e7vQrnc0"
 );
 
-const API_URL =
-  import.meta.env.VITE_API_URL ||
-  "https://ngadalearn-api.onrender.com";
 
 /* ── Planos ── */
 const PLANS = [
@@ -109,7 +106,7 @@ function PaymentForm({
   const stripe    = useStripe();
   const elements  = useElements();
   const navigate  = useNavigate();
-  const { registerAndPay, renewMonthly, user } = useAuth();
+  const { activatePlan, renewMonthly, user, token } = useAuth();
 
   const plan = PLANS.find((p) => p.id === selectedPlan)!;
 
@@ -142,48 +139,81 @@ function PaymentForm({
     setProcessing(true);
 
     try {
+      const planToUse = isRenewal ? "monthly" : selectedPlan;
+      const emailToUse = isRenewal ? user?.email ?? "" : form.email;
+
       /* 1 — Criar PaymentIntent no backend */
-      const res = await fetch(`${API_URL}/api/payments/create-intent`, {
+      const intentRes = await fetch(`${API_URL}/api/payments/create-intent`, {
         method:  "POST",
         headers: { "Content-Type": "application/json" },
-        body:    JSON.stringify({ plan: isRenewal ? "monthly" : selectedPlan }),
+        body:    JSON.stringify({ plan: planToUse, email: emailToUse }),
       });
-
-      if (!res.ok) throw new Error("Erro ao iniciar pagamento.");
-
-      const { clientSecret } = await res.json();
+      if (!intentRes.ok) throw new Error("Erro ao iniciar pagamento. Verifique a sua ligação.");
+      const { clientSecret } = await intentRes.json();
 
       /* 2 — Confirmar pagamento com Stripe */
       const cardEl = elements.getElement(CardElement);
-      if (!cardEl) throw new Error("Cartão não encontrado.");
+      if (!cardEl) throw new Error("Elemento de cartão não encontrado.");
 
-      const result = await stripe.confirmCardPayment(clientSecret, {
+      const stripeResult = await stripe.confirmCardPayment(clientSecret, {
         payment_method: {
           card: cardEl,
           billing_details: {
-            name:  isRenewal ? user?.name  : form.name,
-            email: isRenewal ? user?.email : form.email,
+            name:  isRenewal ? (user?.name ?? "") : form.name,
+            email: emailToUse,
           },
         },
       });
 
-      if (result.error) {
-        setError(result.error.message || "Pagamento recusado.");
+      if (stripeResult.error) {
+        setError(stripeResult.error.message || "Pagamento recusado pelo banco.");
         setProcessing(false);
         return;
       }
 
-      /* 3 — Pagamento aprovado → activar conta */
+      const paymentIntentId = stripeResult.paymentIntent?.id;
+      if (!paymentIntentId) throw new Error("ID de pagamento em falta.");
+
+      /* 3 — Confirmar no backend → activar conta + recibo por email */
       if (isRenewal) {
-        renewMonthly();
+        const renewRes = await fetch(`${API_URL}/api/payments/renew`, {
+          method:  "POST",
+          headers: {
+            "Content-Type":  "application/json",
+            "Authorization": `Bearer ${token}`,
+          },
+          body: JSON.stringify({ paymentIntentId }),
+        });
+        if (!renewRes.ok) {
+          const d = await renewRes.json();
+          throw new Error(d.error || "Erro ao renovar plano.");
+        }
+        const { user: updatedUser, token: newToken } = await renewRes.json();
+        renewMonthly(updatedUser, newToken);
       } else {
-        registerAndPay(form.name, form.email, form.password, selectedPlan);
+        const confirmRes = await fetch(`${API_URL}/api/payments/confirm`, {
+          method:  "POST",
+          headers: { "Content-Type": "application/json" },
+          body:    JSON.stringify({
+            paymentIntentId,
+            name:     form.name,
+            email:    form.email,
+            password: form.password,
+            plan:     selectedPlan,
+          }),
+        });
+        if (!confirmRes.ok) {
+          const d = await confirmRes.json();
+          throw new Error(d.error || "Erro ao activar conta.");
+        }
+        const { user: newUser, token: newToken } = await confirmRes.json();
+        activatePlan(newUser, newToken);
       }
 
       navigate("/dashboard");
 
-    } catch (err: any) {
-      setError(err.message || "Erro inesperado. Tente novamente.");
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : "Erro inesperado. Tente novamente.");
       setProcessing(false);
     }
   };

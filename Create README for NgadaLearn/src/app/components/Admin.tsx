@@ -1,6 +1,6 @@
-import { useState } from "react";
-import { useAuth, checkAccessActive, getExpiryDate } from "../context/AuthContext";
-import type { StoredUser } from "../context/AuthContext";
+import { useState, useEffect } from "react";
+import { useAuth, checkAccessActive, getExpiryDate, API_URL } from "../context/AuthContext";
+import type { User } from "../context/AuthContext";
 import {
   Users,
   Crown,
@@ -14,7 +14,6 @@ import {
   ShieldCheck,
 } from "lucide-react";
 import { Input } from "./ui/input";
-import { Badge } from "./ui/badge";
 
 type FilterType = "all" | "lifetime" | "monthly_active" | "monthly_expired";
 
@@ -26,17 +25,7 @@ function formatDate(iso: string) {
   });
 }
 
-function formatDateTime(iso: string) {
-  return new Date(iso).toLocaleString("pt-PT", {
-    day: "2-digit",
-    month: "2-digit",
-    year: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
-}
-
-function daysLeft(user: StoredUser): number | null {
+function daysLeft(user: User): number | null {
   if (user.plan !== "monthly") return null;
   const expiry = getExpiryDate(user);
   if (!expiry) return null;
@@ -45,36 +34,55 @@ function daysLeft(user: StoredUser): number | null {
 }
 
 export function Admin() {
-  const { getAllUsers, user: currentUser } = useAuth();
-  const [search, setSearch] = useState("");
-  const [filter, setFilter] = useState<FilterType>("all");
+  const { user: currentUser, token } = useAuth();
+  const [search,   setSearch]   = useState("");
+  const [filter,   setFilter]   = useState<FilterType>("all");
+  const [allUsers, setAllUsers] = useState<User[]>([]);
+  const [loadErr,  setLoadErr]  = useState("");
 
-  const allUsers = getAllUsers().filter((u) => !u.isAdmin);
+  useEffect(() => {
+    if (!token) return;
+    fetch(`${API_URL}/api/users`, {
+      headers: { Authorization: `Bearer ${token}` },
+    })
+      .then((r) => r.json())
+      .then((d) => {
+        if (d.users) setAllUsers(d.users.filter((u: User) => u.role !== "admin"));
+        else setLoadErr("Erro ao carregar utilizadores.");
+      })
+      .catch(() => setLoadErr("Sem ligação ao servidor."));
+  }, [token]);
 
   // Estatísticas
+  if (loadErr) {
+    return (
+      <div className="min-h-screen flex items-center justify-center text-red-600 text-sm">
+        {loadErr}
+      </div>
+    );
+  }
+
   const total = allUsers.length;
   const lifetime = allUsers.filter((u) => u.plan === "lifetime").length;
   const monthlyActive = allUsers.filter(
-    (u) => u.plan === "monthly" && checkAccessActive(u)
+    (u: User) => u.plan === "monthly" && checkAccessActive(u)
   ).length;
   const monthlyExpired = allUsers.filter(
-    (u) => u.plan === "monthly" && !checkAccessActive(u)
+    (u: User) => u.plan === "monthly" && !checkAccessActive(u)
   ).length;
   const totalRevenue =
     lifetime * 20 + (monthlyActive + monthlyExpired) * 5;
 
   // Filtros
-  const filtered = allUsers.filter((u) => {
+  const filtered = allUsers.filter((u: User) => {
     const matchSearch =
       u.name.toLowerCase().includes(search.toLowerCase()) ||
       u.email.toLowerCase().includes(search.toLowerCase());
-
     const matchFilter =
       filter === "all" ||
-      (filter === "lifetime" && u.plan === "lifetime") ||
-      (filter === "monthly_active" && u.plan === "monthly" && checkAccessActive(u)) ||
+      (filter === "lifetime"        && u.plan === "lifetime") ||
+      (filter === "monthly_active"  && u.plan === "monthly" && checkAccessActive(u)) ||
       (filter === "monthly_expired" && u.plan === "monthly" && !checkAccessActive(u));
-
     return matchSearch && matchFilter;
   });
 
@@ -232,7 +240,7 @@ export function Admin() {
         </div>
 
         <p className="text-center text-xs text-gray-400 mt-6">
-          Dados armazenados localmente · Painel só visível para administradores
+          Dados em tempo real via Neon PostgreSQL · Painel restrito a administradores
         </p>
       </div>
     </div>
@@ -262,7 +270,7 @@ function StatCard({
   );
 }
 
-function PlanBadge({ user }: { user: StoredUser }) {
+function PlanBadge({ user }: { user: User }) {
   if (user.plan === "lifetime") {
     return (
       <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold bg-purple-100 text-purple-700">
@@ -277,7 +285,7 @@ function PlanBadge({ user }: { user: StoredUser }) {
   );
 }
 
-function StatusBadge({ user }: { user: StoredUser }) {
+function StatusBadge({ user }: { user: User }) {
   if (user.plan === "lifetime") {
     return (
       <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold bg-green-100 text-green-700">
@@ -301,7 +309,7 @@ function StatusBadge({ user }: { user: StoredUser }) {
   );
 }
 
-function UserRow({ user }: { user: StoredUser }) {
+function UserRow({ user }: { user: User }) {
   const expiry = getExpiryDate(user);
   return (
     <tr className="hover:bg-gray-50 transition-colors">
@@ -322,7 +330,7 @@ function UserRow({ user }: { user: StoredUser }) {
       <td className="px-4 py-4 text-gray-600">
         <div className="flex items-center gap-1.5">
           <Calendar className="w-3.5 h-3.5 text-gray-400" />
-          {formatDate(user.paymentDate)}
+          {user.createdAt ? formatDate(user.createdAt) : "—"}
         </div>
       </td>
       <td className="px-4 py-4 text-gray-600">
@@ -341,7 +349,7 @@ function UserRow({ user }: { user: StoredUser }) {
   );
 }
 
-function UserCard({ user }: { user: StoredUser }) {
+function UserCard({ user }: { user: User }) {
   const expiry = getExpiryDate(user);
   const active = checkAccessActive(user);
   return (
@@ -362,7 +370,7 @@ function UserCard({ user }: { user: StoredUser }) {
         <span><PlanBadge user={user} /></span>
         <span className="flex items-center gap-1">
           <Calendar className="w-3 h-3" />
-          {formatDate(user.paymentDate)}
+          {user.createdAt ? formatDate(user.createdAt) : "—"}
         </span>
         {expiry && (
           <span className={active ? "" : "text-red-500 font-semibold"}>

@@ -21,6 +21,7 @@ export function Login() {
   const [showPw,   setShowPw]   = useState(false);
   const [error,    setError]    = useState("");
   const [loading,  setLoading]  = useState(false);
+  const [slowServer, setSlowServer] = useState(false);
 
   /* ── Recuperar senha ── */
   const [showForgot,   setShowForgot]   = useState(false);
@@ -33,8 +34,11 @@ export function Login() {
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!email || !password) { setError("Preencha todos os campos."); return; }
-    setLoading(true); setError("");
+    setLoading(true); setError(""); setSlowServer(false);
+    const slowTimer = setTimeout(() => setSlowServer(true), 8000);
     const r = await login(email, password);
+    clearTimeout(slowTimer);
+    setSlowServer(false);
     if (r.success) navigate(from, { replace: true });
     else { setError(r.error || "Credenciais inválidas."); setLoading(false); }
   };
@@ -165,7 +169,7 @@ export function Login() {
       </div>
 
       {/* Formulário */}
-      <div className="flex-1 px-5 max-w-md mx-auto w-full">
+      <div className="flex-1 px-5 pt-10 pb-6 max-w-md mx-auto w-full">
         <div className="mb-6">
           <h1 className="text-2xl font-black text-gray-900">Entrar na conta</h1>
           <p className="text-sm text-gray-500 mt-1">Bem-vindo de volta! Continue a sua jornada.</p>
@@ -229,6 +233,13 @@ export function Login() {
               ? <span className="flex items-center gap-2"><span className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent" /> Entrando...</span>
               : "Entrar"}
           </Button>
+
+          {slowServer && (
+            <div className="flex items-center gap-2 p-3 bg-amber-50 border border-amber-200 rounded-xl text-xs text-amber-700">
+              <span className="animate-spin rounded-full h-3.5 w-3.5 border-2 border-amber-500 border-t-transparent flex-shrink-0" />
+              O servidor está a acordar, aguarde até 1 minuto na primeira vez...
+            </div>
+          )}
         </form>
 
         {/* Divisor */}

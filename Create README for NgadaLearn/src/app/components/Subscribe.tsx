@@ -77,6 +77,7 @@ function PaymentForm({
   const [processing, setProcessing] = useState(false);
   const [cardReady,  setCardReady]  = useState(false);
   const [showPw,     setShowPw]     = useState(false);
+  const [slowServer, setSlowServer] = useState(false);
 
   const set = (f: keyof typeof form) =>
     (e: React.ChangeEvent<HTMLInputElement>) =>
@@ -91,7 +92,8 @@ function PaymentForm({
       if (!form.email.includes("@"))   return setError("Informe um e-mail válido.");
       if (form.password.length < 6)    return setError("A senha deve ter pelo menos 6 caracteres.");
     }
-    setProcessing(true);
+    setProcessing(true); setSlowServer(false);
+    const slowTimer = setTimeout(() => setSlowServer(true), 8000);
     try {
       const planToUse  = isRenewal ? "monthly" : selectedPlan;
       const emailToUse = isRenewal ? user?.email ?? "" : form.email;
@@ -133,8 +135,12 @@ function PaymentForm({
         const { user: u, token: t } = await r.json();
         activatePlan(u, t);
       }
+      clearTimeout(slowTimer);
+      setSlowServer(false);
       navigate("/dashboard");
     } catch (err: unknown) {
+      clearTimeout(slowTimer);
+      setSlowServer(false);
       setError(err instanceof Error ? err.message : "Erro inesperado. Tente novamente.");
       setProcessing(false);
     }
@@ -241,6 +247,13 @@ function PaymentForm({
           : <><Lock className="w-4 h-4 mr-2" />{isRenewal ? "Renovar por US$ 5" : `Pagar US$ ${plan.price} e Activar`}</>
         }
       </Button>
+
+      {slowServer && (
+        <div className="flex items-center gap-2 p-3 bg-amber-50 border border-amber-200 rounded-xl text-xs text-amber-700">
+          <span className="animate-spin rounded-full h-3.5 w-3.5 border-2 border-amber-500 border-t-transparent flex-shrink-0" />
+          O servidor está a acordar, aguarde até 1 minuto na primeira vez...
+        </div>
+      )}
 
       {/* Selos */}
       <div className="flex items-center justify-center gap-4 text-xs text-gray-400">

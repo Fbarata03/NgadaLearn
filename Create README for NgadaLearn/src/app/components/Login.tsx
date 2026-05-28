@@ -79,7 +79,7 @@ export function Login() {
           <div className="w-9" />
         </div>
 
-        <div className="flex-1 flex flex-col justify-center px-5 py-6 max-w-md mx-auto w-full">
+        <div className="flex-1 flex flex-col px-5 pt-14 pb-6 max-w-md mx-auto w-full">
           {forgotStatus?.type === "success" ? (
             <div className="text-center">
               <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-5">

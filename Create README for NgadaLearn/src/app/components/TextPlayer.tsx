@@ -175,8 +175,8 @@ export function TextPlayer() {
     return (
       <div className="bg-gray-50 min-h-screen">
         <div className="container mx-auto px-4 py-8 max-w-2xl">
-          <button onClick={() => navigate("/lessons")} className="flex items-center gap-1.5 text-sm text-gray-600 hover:text-gray-900 mb-6">
-            <ChevronLeft className="w-4 h-4" /> Lições
+          <button onClick={() => navigate("/lessons")} className="flex items-center gap-1.5 text-sm font-semibold text-gray-600 hover:text-purple-700 transition-colors mb-4 min-h-[44px]">
+            <ChevronLeft className="w-5 h-5" /> Lições
           </button>
 
           {allDone ? (

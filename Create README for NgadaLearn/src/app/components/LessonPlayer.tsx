@@ -476,8 +476,8 @@ export function LessonPlayer() {
       {/* Header */}
       <div className="bg-white border-b sticky top-0 z-10 shadow-sm">
         <div className="container mx-auto px-4 py-3 flex items-center gap-4">
-          <Link to="/lessons" className="flex items-center gap-1 text-sm text-gray-600 hover:text-purple-700 font-medium">
-            <ArrowLeft className="w-4 h-4" /> Aulas
+          <Link to="/lessons" className="flex items-center gap-1.5 text-sm text-gray-600 hover:text-purple-700 font-semibold min-h-[44px] pr-3">
+            <ArrowLeft className="w-5 h-5" /> Aulas
           </Link>
           <div className="flex-1">
             <Progress value={progressPct} className="h-2" />

@@ -16,7 +16,7 @@ import { VOCABULARY } from "../data/vocabularyData";
 import {
   BookOpen, Headphones, Search, Play, CheckCircle2, Clock,
   ChevronDown, ChevronUp, MessageCircle, FileText,
-  BookMarked, MessageSquare, List, Music, Film,
+  BookMarked, MessageSquare, List, Music, Film, LayoutDashboard,
 } from "lucide-react";
 
 const TABS = [
@@ -471,6 +471,10 @@ export function Lessons() {
 
         {/* Header */}
         <div className="mb-6">
+          <Link to="/dashboard" className="inline-flex items-center gap-1.5 text-sm text-gray-500 hover:text-purple-600 transition-colors mb-3 min-h-[44px] -ml-1 px-1">
+            <LayoutDashboard className="w-4 h-4" />
+            Meu Progresso
+          </Link>
           <h1 className="text-3xl font-black text-gray-900 mb-1">Seu Plano de Estudos</h1>
           <p className="text-gray-600">
             {totalAll} conteúdos disponíveis · {totalCompleted} concluídos · {totalMinutes} min estudados

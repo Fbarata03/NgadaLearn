@@ -5,6 +5,7 @@
    ════════════════════════════════════════════════════════════════════ */
 
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
+import { Link } from "react-router";
 
 /* ── Declaração do namespace YT ──────────────────────────────────── */
 declare global {
@@ -888,13 +889,19 @@ export function MoviesPlayer() {
       <div className="min-h-screen bg-gradient-to-br from-slate-950 via-amber-950/20 to-slate-950 text-white pb-14">
 
         {/* Header */}
-        <div className="bg-gradient-to-r from-amber-800 via-orange-800 to-amber-900 py-4 sm:py-7 px-4 text-center shadow-xl">
-          <div className="flex items-center justify-center gap-2 sm:gap-3 mb-1">
-            <span className="text-2xl sm:text-4xl">🎬</span>
-            <h1 className="text-lg sm:text-3xl font-black tracking-tight">Filmes para Aprender Inglês</h1>
-            <span className="text-2xl sm:text-4xl">🎬</span>
+        <div className="bg-gradient-to-r from-amber-800 via-orange-800 to-amber-900 py-4 sm:py-7 px-4 shadow-xl">
+          <div className="relative flex items-center justify-center">
+            <Link to="/lessons" className="absolute left-0 flex items-center gap-1.5 text-amber-200 hover:text-white transition-colors py-2 px-1 -ml-1 min-h-[44px]">
+              <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7"/></svg>
+              <span className="text-sm font-semibold">Conteúdo</span>
+            </Link>
+            <div className="flex items-center gap-2 sm:gap-3 mb-1">
+              <span className="text-2xl sm:text-4xl">🎬</span>
+              <h1 className="text-lg sm:text-3xl font-black tracking-tight">Filmes para Aprender Inglês</h1>
+              <span className="text-2xl sm:text-4xl">🎬</span>
+            </div>
           </div>
-          <p className="text-amber-200 text-xs max-w-xl mx-auto">
+          <p className="text-amber-200 text-xs max-w-xl mx-auto text-center mt-1">
             Cenas de filmes reais · Legendas automáticas · Velocidade ajustável · Treino de vocabulário
           </p>
         </div>

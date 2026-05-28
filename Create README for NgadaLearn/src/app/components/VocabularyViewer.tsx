@@ -191,15 +191,11 @@ export function VocabularyViewer() {
     <div className="bg-gray-50 min-h-screen">
       <div className="container mx-auto px-4 py-8 max-w-4xl">
 
-        {/* Breadcrumb */}
-        <div className="flex items-center gap-2 mb-6 text-sm text-gray-500">
-          <Link to="/lessons" className="hover:text-rose-600 flex items-center gap-1 transition-colors">
-            <ArrowLeft className="w-4 h-4" />
-            Lições
-          </Link>
-          <span>/</span>
-          <span className="text-gray-700 font-medium">Vocabulário</span>
-        </div>
+        {/* Back */}
+        <Link to="/lessons" className="inline-flex items-center gap-1.5 text-sm font-semibold text-gray-600 hover:text-rose-600 transition-colors mb-5 min-h-[44px] -ml-1 px-1">
+          <ArrowLeft className="w-5 h-5" />
+          Lições
+        </Link>
 
         {/* Header */}
         <div className="mb-6">

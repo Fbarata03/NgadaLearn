@@ -253,9 +253,9 @@ export function ConversationPlayer() {
           <div className="flex items-center justify-between gap-3">
             <button
               onClick={() => navigate("/lessons")}
-              className="flex items-center gap-1.5 text-sm text-gray-600 hover:text-gray-900 transition-colors"
+              className="flex items-center gap-1.5 text-sm text-gray-600 hover:text-gray-900 transition-colors font-semibold min-h-[44px] pr-3"
             >
-              <ChevronLeft className="w-4 h-4" />
+              <ChevronLeft className="w-5 h-5" />
               Lições
             </button>
             <div className="text-center flex-1 min-w-0">

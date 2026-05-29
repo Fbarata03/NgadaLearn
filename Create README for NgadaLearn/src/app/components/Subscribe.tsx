@@ -16,10 +16,7 @@ import {
   AlertCircle, RefreshCw, CreditCard, ArrowLeft,
 } from "lucide-react";
 
-const stripePromise = loadStripe(
-  import.meta.env.VITE_STRIPE_PUBLIC_KEY ||
-  "pk_test_51TbipT91laigJgQDKbz0z0Z1UTvAXIAQfQoYmgCb2JnUjZw6g1pEkpsbXY8nVGRcw1yTRkseQUVHuj2p4pNQgUbC00e7vQrnc0"
-);
+const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLIC_KEY);
 
 const PLANS = [
   {

@@ -77,7 +77,7 @@ O token é obtido no login e válido por 7 dias.
 ```bash
 curl -X POST http://localhost:3001/api/auth/login \
   -H "Content-Type: application/json" \
-  -d '{"email":"Fbarata03@gmail.com","password":"marias66s3"}'
+  -d '{"email":"<seu-email-admin>","password":"<sua-password>"}'
 ```
 
 ### Conceder 30 dias de acesso

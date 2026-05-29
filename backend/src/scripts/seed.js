@@ -19,8 +19,12 @@ async function seed() {
   /* Garantir que a tabela existe */
   await initDB();
 
-  const email    = process.env.ADMIN_EMAIL    || "Fbarata03@gmail.com";
-  const password = process.env.ADMIN_PASSWORD || "marias66s3";
+  const email    = process.env.ADMIN_EMAIL;
+  const password = process.env.ADMIN_PASSWORD;
+
+  if (!email || !password) {
+    throw new Error("ADMIN_EMAIL e ADMIN_PASSWORD são obrigatórios no .env");
+  }
   const name     = "Administrador NgadaLearn";
 
   console.log("🌱 A verificar utilizador admin na Neon…");

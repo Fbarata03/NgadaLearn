@@ -136,10 +136,8 @@ xcopy /E /Y dist\assets ..\assets\
 
 ---
 
-## 🔐 Credenciais de Administrador
+## 🔐 Acesso de Administrador
 
-| Tipo | Email | Password |
-|------|-------|----------|
-| Admin | `Fbarata03@gmail.com` | `marias66s3` |
+As credenciais de administrador são definidas através das variáveis de ambiente do servidor (`ADMIN_EMAIL` e `ADMIN_PASSWORD` no ficheiro `.env`).
 
-> ⚠️ Mudar a password em produção!
+> ⚠️ Nunca expor credenciais reais num repositório público. Configurar o `.env` localmente ou nas variáveis de ambiente do Render.

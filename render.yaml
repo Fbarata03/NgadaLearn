@@ -17,7 +17,7 @@ services:
       - key: JWT_EXPIRES_IN
         value: 7d
       - key: FRONTEND_URL
-        value: https://ngadalearn.pt
+        value: https://www.ngadalearn.pt
       # ⬇ Definir manualmente no dashboard do Render com a connection string da Neon
       - key: DATABASE_URL
         sync: false

@@ -287,13 +287,22 @@ function InteractiveLyrics({
   );
 }
 
+/* ── Decodifica entidades HTML (usada em componentes fora do MusicPlayer) */
+function htmlDecode(s: string) {
+  return s
+    .replace(/&#39;/g, "'").replace(/&quot;/g, '"')
+    .replace(/&amp;/g, "&").replace(/&lt;/g, "<").replace(/&gt;/g, ">");
+}
+
 /* ── Barra "Now Playing" com a linha activa ───────────────────────── */
 function NowPlayingBar({video, isPlaying, activeLyric}:
   {video: YTVideo; isPlaying: boolean; activeLyric: string}) {
 
+  const safeTitle   = htmlDecode(video.title);
+  const safeChannel = htmlDecode(video.channel);
   const text = activeLyric
     ? `${activeLyric}   •   ${activeLyric}   •   `
-    : `${video.title} — ${video.channel}   •   ${video.title} — ${video.channel}   •   `;
+    : `${safeTitle} — ${safeChannel}   •   ${safeTitle} — ${safeChannel}   •   `;
 
   return (
     <div className="slide-up flex items-center gap-3 bg-black/60 backdrop-blur
@@ -754,23 +763,52 @@ export function MusicPlayer() {
     try { ytPlayer.current?.setPlaybackRate(speed); } catch(_) {}
   }, [speed]);
 
-  /* ── Auto-busca de letra: Letras.mus.br (EN+PT) → lyrics.ovh fallback ── */
-  function parseArtistTitle(vTitle: string): { artist: string; title: string } | null {
-    const clean = vTitle
+  /* ── Limpa ruído de títulos do YouTube ─────────────────────────── */
+  function cleanTitle(s: string) {
+    return htmlDecode(s)
       .replace(/\([^)]*official[^)]*\)/gi, "")
       .replace(/\[[^\]]*official[^\]]*\]/gi, "")
       .replace(/official music video|official video|official audio|music video|lyric video/gi, "")
       .replace(/\([^)]*lyrics?[^)]*\)/gi, "")
       .replace(/\s+/g, " ").trim();
-    const di = clean.indexOf(" - ");
-    if (di > 0) return { artist: clean.slice(0, di).trim(), title: clean.slice(di + 3).trim() };
+  }
+
+  /* ── Extrai {artist, title} de várias convenções do YouTube ─────── */
+  function parseArtistTitle(
+    vTitle: string,
+    vChannel?: string
+  ): { artist: string; title: string } | null {
+    const title   = cleanTitle(vTitle);
+    const channel = vChannel ? htmlDecode(vChannel) : "";
+
+    /* 1. "Artista - Música" ou "Artista — Música" no título */
+    for (const sep of [" - ", " — ", " – "]) {
+      const idx = title.indexOf(sep);
+      if (idx > 0) {
+        return { artist: title.slice(0, idx).trim(), title: title.slice(idx + sep.length).trim() };
+      }
+    }
+
+    /* 2. Canal "Artista - Topic" (YouTube Music) → artista vem do canal */
+    if (channel) {
+      const topicMatch = channel.match(/^(.+?)\s*-\s*Topic$/i);
+      if (topicMatch) {
+        return { artist: topicMatch[1].trim(), title: title };
+      }
+      /* 3. Canal é só o nome do artista (sem "Topic") e título é a música */
+      if (!channel.toLowerCase().includes("vevo") && title && !title.includes(" - ")) {
+        const chan = channel.replace(/\s*VEVO\s*$/i, "").trim();
+        if (chan) return { artist: chan, title };
+      }
+    }
+
     return null;
   }
 
-  async function fetchAutoLyrics(vTitle: string) {
-    const parsed = parseArtistTitle(vTitle);
+  async function fetchAutoLyrics(vTitle: string, vChannel?: string) {
+    const parsed = parseArtistTitle(vTitle, vChannel);
     if (!parsed) {
-      setLyricsFetchMsg("❌ Título no formato 'Artista - Música' não detectado. Cola manualmente.");
+      setLyricsFetchMsg("❌ Artista não detectado. Cola manualmente ou renomeia no formato 'Artista - Música'.");
       return;
     }
     setFetchingLyrics(true);
@@ -1109,7 +1147,7 @@ export function MusicPlayer() {
                       {selected && (
                         <div className="md:col-span-2 flex flex-wrap items-center gap-2 p-3 bg-purple-900/30 border border-purple-500/20 rounded-xl">
                           <button
-                            onClick={() => { setLyricsFetchMsg(""); fetchAutoLyrics(selected.title); }}
+                            onClick={() => { setLyricsFetchMsg(""); fetchAutoLyrics(selected.title, selected.channel); }}
                             disabled={fetchingLyrics}
                             className="bg-gradient-to-r from-purple-600 to-violet-600 hover:from-purple-500 hover:to-violet-500 disabled:opacity-50 px-4 py-2 rounded-xl text-xs font-black transition-all flex items-center gap-2 shadow-lg">
                             {fetchingLyrics ? "⏳ A buscar no Letras.mus.br…" : "✨ Buscar Letra + Tradução PT"}

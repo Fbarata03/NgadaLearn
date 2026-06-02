@@ -49,6 +49,9 @@ const ANIM = `
 }
 @keyframes subShimmer{0%{background-position:0% 50%}100%{background-position:300% 50%}}
 .sub-in{animation:subIn .48s cubic-bezier(.34,1.56,.64,1) both}
+
+@keyframes livePulse{0%,100%{opacity:1}50%{opacity:.45}}
+.live-badge{animation:livePulse 1.4s ease-in-out infinite}
 `;
 
 /* ── Tipos ───────────────────────────────────────────────────────── */
@@ -479,6 +482,16 @@ function CinemaSubDisplay({ lines, active, isPlaying, onWordClick, isLive }: {
       border: "1px solid rgba(245,158,11,.35)",
       boxShadow: "0 0 40px rgba(180,83,9,.15), inset 0 0 60px rgba(180,83,9,.04)",
     }}>
+      {/* Barra de progresso */}
+      <div style={{height:3,background:"rgba(245,158,11,.1)",borderRadius:"2px 2px 0 0"}}>
+        <div style={{
+          height:"100%",
+          width:`${Math.round(((active+1)/lines.length)*100)}%`,
+          background:"linear-gradient(90deg,#f59e0b,#d97706)",
+          borderRadius:2,
+          transition:"width 0.2s ease",
+        }} />
+      </div>
       {/* Orb de fundo */}
       <div style={{position:"absolute",inset:0,overflow:"hidden",pointerEvents:"none"}}>
         <div style={{position:"absolute",top:"15%",left:"10%",width:110,height:110,borderRadius:"50%",
@@ -501,16 +514,16 @@ function CinemaSubDisplay({ lines, active, isPlaying, onWordClick, isLive }: {
         </span>
         <div style={{flex:1,height:1,background:"linear-gradient(90deg,transparent,rgba(245,158,11,.25),transparent)"}} />
         {isLive ? (
-          <span style={{
+          <span className="live-badge" style={{
             fontSize:9, fontWeight:700, letterSpacing:"0.1em",
-            background:"rgba(34,197,94,.2)", color:"#86efac",
-            border:"1px solid rgba(34,197,94,.35)", borderRadius:99,
+            background:"rgba(34,197,94,.15)", color:"#4ade80",
+            border:"1px solid rgba(34,197,94,.4)", borderRadius:99,
             padding:"2px 8px",
           }}>
             ● AO VIVO
           </span>
         ) : (
-          <span style={{fontSize:10,color:"rgba(245,158,11,.4)",letterSpacing:"0.08em"}}>✦ LEGENDA</span>
+          <span style={{fontSize:10,color:"rgba(245,158,11,.4)",letterSpacing:"0.08em"}}>✦ CC</span>
         )}
       </div>
 
@@ -599,6 +612,9 @@ export function MoviesPlayer() {
   const [liveSubIdx,   setLiveSubIdx]   = useState(-1);
   const liveSubIdxRef  = useRef(-1);
   const liveTimerRef   = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  /* Linhas do transcript memoizadas — evita recriar o array em cada render */
+  const transcriptLines = useMemo(() => transcript.map(s => s.text), [transcript]);
 
   /* Popup de palavra clicada */
   const [wordPopup, setWordPopup] = useState<{ word: string; x: number; y: number } | null>(null);
@@ -742,7 +758,7 @@ export function MoviesPlayer() {
           setLiveSubIdx(found);
         }
       } catch { /* player ainda não pronto */ }
-    }, 250);
+    }, 100);
 
     return () => { if (liveTimerRef.current) clearInterval(liveTimerRef.current); };
   }, [isPlaying, transcript]);
@@ -1080,31 +1096,28 @@ export function MoviesPlayer() {
               <NowPlayingBar clip={selected} isPlaying={isPlaying} ccOn={ccOn} />
             )}
 
-            {/* ✨ Legenda Interactiva (tempo real ou manual) */}
-            {(() => {
-              const hasLive   = transcript.length > 0 && liveSubIdx >= 0;
-              const hasManual = subLines.length > 0;
-              if (!hasLive && !hasManual) {
-                if (transLoading && selected) {
-                  return (
-                    <div className="flex items-center gap-2 text-xs text-amber-400/50 justify-center py-1">
-                      <div className="w-3 h-3 border border-amber-400/40 border-t-amber-400 rounded-full animate-spin" />
-                      A carregar legendas…
-                    </div>
-                  );
-                }
-                return null;
-              }
-              return (
-                <CinemaSubDisplay
-                  lines={hasLive ? transcript.map(s => s.text) : subLines}
-                  active={hasLive ? liveSubIdx : activeSub}
-                  isPlaying={isPlaying}
-                  isLive={hasLive}
-                  onWordClick={(word, e) => setWordPopup({ word, x: e.clientX, y: e.clientY })}
-                />
-              );
-            })()}
+            {/* ✨ Legenda: tempo real → manual → loading */}
+            {transcript.length > 0 ? (
+              <CinemaSubDisplay
+                lines={transcriptLines}
+                active={Math.max(0, liveSubIdx)}
+                isPlaying={isPlaying}
+                isLive
+                onWordClick={(word, e) => setWordPopup({ word, x: e.clientX, y: e.clientY })}
+              />
+            ) : subLines.length > 0 ? (
+              <CinemaSubDisplay
+                lines={subLines}
+                active={activeSub}
+                isPlaying={isPlaying}
+                onWordClick={(word, e) => setWordPopup({ word, x: e.clientX, y: e.clientY })}
+              />
+            ) : transLoading && selected ? (
+              <div className="flex items-center gap-2 text-xs text-amber-400/50 justify-center py-2">
+                <div className="w-3 h-3 border border-amber-400/40 border-t-amber-400 rounded-full animate-spin" />
+                A carregar legendas automáticas…
+              </div>
+            ) : null}
 
             {/* CC + Velocidade */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">

@@ -13,6 +13,7 @@ const authRoutes    = require("./routes/auth");
 const userRoutes    = require("./routes/users");
 const paymentRoutes = require("./routes/payments");
 const youtubeRoutes = require("./routes/youtube");
+const lyricsRoutes  = require("./routes/lyrics");
 const { initDB }    = require("./utils/dataStore");
 const { seed }      = require("./scripts/seed");
 
@@ -79,6 +80,7 @@ app.use("/api/auth",     authLimiter,    authRoutes);
 app.use("/api/users",    userRoutes);
 app.use("/api/payments", paymentLimiter, paymentRoutes);
 app.use("/api/youtube",  youtubeRoutes);
+app.use("/api/lyrics",   lyricsRoutes);
 
 // ── Health check ──────────────────────────────────────────────────
 app.get("/api/health", (_req, res) => {

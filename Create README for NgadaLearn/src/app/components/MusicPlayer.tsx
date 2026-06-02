@@ -64,6 +64,9 @@ const ANIM_STYLE = `
 @keyframes shimmerText{0%{background-position:0% 50%}100%{background-position:300% 50%}}
 @keyframes waveFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-4px)}}
 .cinema-in{animation:cinemaIn .52s cubic-bezier(.34,1.56,.64,1) both}
+
+@keyframes livePulse{0%,100%{opacity:1}50%{opacity:.45}}
+.live-badge{animation:livePulse 1.4s ease-in-out infinite}
 `;
 
 /* ── Tipos ────────────────────────────────────────────────────────── */
@@ -79,6 +82,12 @@ interface LyricLine {
   pt: string;
   difficulty: Difficulty;
   highlighted: number[];   // índices de palavras marcadas
+}
+
+interface TimedSub {
+  start: number;
+  dur:   number;
+  text:  string;
 }
 
 /* ── Constantes ───────────────────────────────────────────────────── */
@@ -405,6 +414,83 @@ function CinemaLyricDisplay({ lines, activeLine, isPlaying }: {
 }
 
 /* ════════════════════════════════════════════════════════════════════
+   CINEMA TRANSCRIPT — CC automático em tempo real (música)
+   ════════════════════════════════════════════════════════════════════ */
+function CinemaTranscript({ lines, active, isPlaying }: {
+  lines: string[]; active: number; isPlaying: boolean;
+}) {
+  if (!lines.length) return null;
+  const idx  = Math.max(0, active);
+  const curr = lines[idx];
+  const next = lines[idx + 1];
+  if (!curr) return null;
+
+  return (
+    <div className="relative overflow-hidden rounded-2xl shadow-xl" style={{
+      background: "linear-gradient(135deg,rgba(12,4,45,.97) 0%,rgba(45,12,85,.97) 50%,rgba(20,5,60,.97) 100%)",
+      border: "1px solid rgba(168,85,247,.3)",
+      boxShadow: "0 0 30px rgba(109,40,217,.12)",
+    }}>
+      {/* Barra de progresso */}
+      <div style={{height:3,background:"rgba(168,85,247,.1)",borderRadius:"2px 2px 0 0"}}>
+        <div style={{
+          height:"100%",
+          width:`${Math.round(((idx+1)/lines.length)*100)}%`,
+          background:"linear-gradient(90deg,#a855f7,#7c3aed)",
+          transition:"width 0.2s ease",
+          borderRadius:2,
+        }} />
+      </div>
+
+      <div className="flex items-center gap-3 px-4 pt-2 pb-1">
+        {isPlaying ? (
+          <div className="flex items-end gap-0.5" style={{height:12}}>
+            {["eq1","eq3","eq5"].map(cls => (
+              <div key={cls} className={cls} style={{width:2,borderRadius:2,backgroundColor:"#c084fc",minHeight:2}} />
+            ))}
+          </div>
+        ) : <span style={{fontSize:12}}>🎤</span>}
+        <span style={{fontSize:9,fontFamily:"monospace",color:"rgba(168,85,247,.5)",letterSpacing:"0.1em"}}>
+          {idx+1} / {lines.length}
+        </span>
+        <div style={{flex:1,height:1,background:"linear-gradient(90deg,transparent,rgba(168,85,247,.2),transparent)"}} />
+        <span className="live-badge" style={{
+          fontSize:9, fontWeight:700, letterSpacing:"0.1em",
+          background:"rgba(34,197,94,.12)", color:"#4ade80",
+          border:"1px solid rgba(34,197,94,.3)", borderRadius:99,
+          padding:"2px 8px",
+        }}>● CC AO VIVO</span>
+      </div>
+
+      <div key={`ct-${idx}`} className="cinema-in" style={{
+        textAlign:"center", padding:`4px 16px ${next ? "4px" : "12px"}`,
+      }}>
+        <p style={{
+          fontSize:"clamp(.9rem,2.2vw,1.25rem)",
+          fontWeight:800, lineHeight:1.35, letterSpacing:"0.01em",
+          background:"linear-gradient(90deg,#e879f9 0%,#a855f7 40%,#818cf8 70%,#a855f7 90%,#e879f9 100%)",
+          backgroundSize:"300% 100%",
+          animation:"shimmerText 4s linear infinite",
+          WebkitBackgroundClip:"text",
+          backgroundClip:"text",
+          color:"transparent",
+        }}>
+          {curr}
+        </p>
+      </div>
+
+      {next && (
+        <p style={{textAlign:"center",padding:"2px 20px 10px",fontSize:12,
+          color:"rgba(255,255,255,.2)",fontStyle:"italic",
+          overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>
+          {next}
+        </p>
+      )}
+    </div>
+  );
+}
+
+/* ════════════════════════════════════════════════════════════════════
    COMPONENTE PRINCIPAL
    ════════════════════════════════════════════════════════════════════ */
 export function MusicPlayer() {
@@ -447,6 +533,14 @@ export function MusicPlayer() {
   /* Auto-busca de letra */
   const [fetchingLyrics, setFetchingLyrics] = useState(false);
   const [lyricsFetchMsg, setLyricsFetchMsg] = useState("");
+
+  /* Transcript em tempo real (CC automático) */
+  const [transcript,    setTranscript]    = useState<TimedSub[]>([]);
+  const [transLoading,  setTransLoading]  = useState(false);
+  const [liveSubIdx,    setLiveSubIdx]    = useState(-1);
+  const liveSubIdxRef  = useRef(-1);
+  const liveTimerRef   = useRef<ReturnType<typeof setInterval> | null>(null);
+  const transcriptLines = useMemo(() => transcript.map(s => s.text), [transcript]);
 
   /* ── Sync selectedRef (sempre atual para callbacks do YT) ────── */
   useEffect(() => { selectedRef.current = selected; }, [selected]);
@@ -604,17 +698,55 @@ export function MusicPlayer() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selected?.id]);
 
-  /* ── Unmount: limpar player e timeouts ─────────────────────────── */
+  /* ── Unmount: limpar player, timeouts e polling ─────────────────── */
   useEffect(() => {
     return () => {
       if (ytPlayer.current) { try { ytPlayer.current.destroy(); } catch(_) {} }
       if (errorTimeout.current)   clearTimeout(errorTimeout.current);
       if (skipTimeoutRef.current) clearTimeout(skipTimeoutRef.current);
+      if (liveTimerRef.current)   clearInterval(liveTimerRef.current);
     };
   }, []);
 
   /* ── Sincronizar resultsRef com o estado ────────────────────────── */
   useEffect(() => { resultsRef.current = results; }, [results]);
+
+  /* ── Buscar transcript quando o vídeo muda ──────────────────────── */
+  useEffect(() => {
+    if (!selected) {
+      setTranscript([]); setLiveSubIdx(-1); liveSubIdxRef.current = -1;
+      return;
+    }
+    setTranscript([]); setLiveSubIdx(-1); liveSubIdxRef.current = -1;
+    setTransLoading(true);
+    fetch(`${BACKEND}/api/youtube/transcript/${selected.id}`)
+      .then(r => r.json())
+      .then(d => { setTranscript(d.segments || []); })
+      .catch(() => {})
+      .finally(() => setTransLoading(false));
+  }, [selected?.id]);
+
+  /* ── Polling: sync CC em tempo real (100ms) ─────────────────────── */
+  useEffect(() => {
+    if (liveTimerRef.current) clearInterval(liveTimerRef.current);
+    if (!isPlaying || !transcript.length) return;
+    liveTimerRef.current = setInterval(() => {
+      try {
+        const t = ytPlayer.current?.getCurrentTime?.() ?? 0;
+        let lo = 0, hi = transcript.length - 1, found = -1;
+        while (lo <= hi) {
+          const mid = (lo + hi) >> 1;
+          if (transcript[mid].start <= t) { found = mid; lo = mid + 1; }
+          else hi = mid - 1;
+        }
+        if (found !== liveSubIdxRef.current) {
+          liveSubIdxRef.current = found;
+          setLiveSubIdx(found);
+        }
+      } catch { /* player ainda não pronto */ }
+    }, 100);
+    return () => { if (liveTimerRef.current) clearInterval(liveTimerRef.current); };
+  }, [isPlaying, transcript]);
 
   /* ── Velocidade — aplica imediatamente ao player ─────────────────── */
   useEffect(() => {
@@ -622,7 +754,7 @@ export function MusicPlayer() {
     try { ytPlayer.current?.setPlaybackRate(speed); } catch(_) {}
   }, [speed]);
 
-  /* ── Auto-busca de letra via lyrics.ovh (API gratuita) ─────────── */
+  /* ── Auto-busca de letra: Letras.mus.br (EN+PT) → lyrics.ovh fallback ── */
   function parseArtistTitle(vTitle: string): { artist: string; title: string } | null {
     const clean = vTitle
       .replace(/\([^)]*official[^)]*\)/gi, "")
@@ -637,21 +769,51 @@ export function MusicPlayer() {
 
   async function fetchAutoLyrics(vTitle: string) {
     const parsed = parseArtistTitle(vTitle);
-    if (!parsed) { setLyricsFetchMsg("❌ Formato do título indetectável. Cola manualmente."); return; }
-    setFetchingLyrics(true); setLyricsFetchMsg("");
+    if (!parsed) {
+      setLyricsFetchMsg("❌ Título no formato 'Artista - Música' não detectado. Cola manualmente.");
+      return;
+    }
+    setFetchingLyrics(true);
+    setLyricsFetchMsg("");
+    const { artist, title } = parsed;
+
     try {
-      const { artist, title } = parsed;
-      const res  = await fetch(`https://api.lyrics.ovh/v1/${encodeURIComponent(artist)}/${encodeURIComponent(title)}`);
-      const data = await res.json();
+      /* ── 1ª tentativa: backend Letras.mus.br (EN + tradução PT) ── */
+      try {
+        const r1 = await fetch(
+          `${BACKEND}/api/lyrics/search?artist=${encodeURIComponent(artist)}&title=${encodeURIComponent(title)}`
+        );
+        if (r1.ok) {
+          const d = await r1.json();
+          if (d.en) {
+            setRawEn(d.en);
+            if (d.pt) setRawPt(d.pt);
+            setLyricsFetchMsg(
+              `✅ "${title}" carregada do Letras.mus.br${d.pt ? " com tradução PT 🇵🇹" : ""}!`
+            );
+            setTimeout(() => { setLyricsMode("view"); setLyricsFetchMsg(""); }, 900);
+            return;
+          }
+        }
+      } catch { /* falha silenciosa — tenta fallback */ }
+
+      /* ── 2ª tentativa: lyrics.ovh (só inglês) ─────────────────── */
+      const r2   = await fetch(
+        `https://api.lyrics.ovh/v1/${encodeURIComponent(artist)}/${encodeURIComponent(title)}`
+      );
+      const data = await r2.json();
       if (data.lyrics) {
         setRawEn(data.lyrics.replace(/\r\n/g, "\n").trim());
-        setLyricsFetchMsg(`✅ Letra de "${title}" carregada!`);
+        setLyricsFetchMsg(`✅ Letra de "${title}" carregada (sem tradução PT).`);
         setTimeout(() => { setLyricsMode("view"); setLyricsFetchMsg(""); }, 800);
       } else {
-        setLyricsFetchMsg("❌ Letra não encontrada. Cola manualmente abaixo.");
+        setLyricsFetchMsg("❌ Letra não encontrada. Tenta com o nome exacto ou cola manualmente.");
       }
-    } catch { setLyricsFetchMsg("❌ Erro ao buscar. Cola manualmente."); }
-    finally  { setFetchingLyrics(false); }
+    } catch {
+      setLyricsFetchMsg("❌ Erro de ligação. Cola manualmente abaixo.");
+    } finally {
+      setFetchingLyrics(false);
+    }
   }
 
   /* ── Handlers ────────────────────────────────────────────────────── */
@@ -833,7 +995,22 @@ export function MusicPlayer() {
               />
             )}
 
-            {/* ✨ Legenda Animada Cinema */}
+            {/* ✨ CC automático em tempo real (quando transcript disponível) */}
+            {transcript.length > 0 && (
+              <CinemaTranscript
+                lines={transcriptLines}
+                active={liveSubIdx}
+                isPlaying={isPlaying}
+              />
+            )}
+            {transLoading && selected && !transcript.length && (
+              <div className="flex items-center gap-2 text-xs text-purple-400/50 justify-center py-1">
+                <div className="w-3 h-3 border border-purple-400/40 border-t-purple-400 rounded-full animate-spin" />
+                A carregar legendas automáticas…
+              </div>
+            )}
+
+            {/* ✨ Legenda Animada Cinema (letra manual) */}
             {lines.length > 0 && (
               <CinemaLyricDisplay
                 lines={lines}
@@ -843,31 +1020,18 @@ export function MusicPlayer() {
             )}
 
             {/* Velocidade */}
-            <div className="bg-white/10 backdrop-blur rounded-xl p-4">
-              <div className="flex items-center justify-between mb-3">
-                <p className="text-xs font-bold text-purple-200 uppercase tracking-widest">
-                  🐢 Velocidade de Reprodução
-                </p>
-                <span className={`text-xs font-black px-2 py-0.5 rounded-full ${
-                  speed === 0.5  ? "bg-red-500/30 text-red-300"    :
-                  speed === 0.75 ? "bg-yellow-500/30 text-yellow-300" :
-                                   "bg-green-500/30 text-green-300"
-                }`}>
-                  {speed === 0.5  ? "Muito lento" :
-                   speed === 0.75 ? "Lento" :
-                                    "Normal"}
-                </span>
-              </div>
-              <div className="flex gap-2">
+            <div className="bg-white/10 backdrop-blur rounded-xl px-4 py-3 flex items-center gap-3">
+              <p className="text-xs font-bold text-purple-200 uppercase tracking-widest flex-shrink-0">🐢 Velocidade</p>
+              <div className="flex gap-1.5 flex-1">
                 {SPEED_OPTIONS.map(({label,value}) => (
                   <button
                     key={value}
                     onClick={() => setSpeed(value)}
-                    className={`flex-1 py-3 rounded-xl text-base font-black transition-all ${
+                    className={`flex-1 py-2 rounded-lg text-sm font-black transition-all ${
                       speed === value
-                        ? value === 0.5  ? "bg-red-600 text-white shadow-lg shadow-red-900/50 scale-105"
-                        : value === 0.75 ? "bg-yellow-600 text-white shadow-lg shadow-yellow-900/50 scale-105"
-                        :                  "bg-green-600 text-white shadow-lg shadow-green-900/50 scale-105"
+                        ? value === 0.5  ? "bg-red-600 text-white shadow-md scale-105"
+                        : value === 0.75 ? "bg-yellow-600 text-white shadow-md scale-105"
+                        :                  "bg-green-600 text-white shadow-md scale-105"
                         : "bg-white/10 hover:bg-white/20 text-white/70"
                     }`}
                   >
@@ -875,11 +1039,12 @@ export function MusicPlayer() {
                   </button>
                 ))}
               </div>
-              <p className="text-[11px] text-white/40 mt-2 text-center">
-                {speed === 0.5  && "🐢 Ótimo para perceber cada sílaba"}
-                {speed === 0.75 && "🚶 Bom equilíbrio entre clareza e ritmo"}
-                {speed === 1    && "🏃 Velocidade original da música"}
-              </p>
+              <span className={`text-[11px] font-bold flex-shrink-0 hidden sm:block ${
+                speed === 0.5  ? "text-red-300"    :
+                speed === 0.75 ? "text-yellow-300" : "text-green-300"
+              }`}>
+                {speed === 0.5 ? "Muito lento" : speed === 0.75 ? "Lento" : "Normal"}
+              </span>
             </div>
 
             {/* ── SECÇÃO PRINCIPAL: LETRAS / NOTAS ─────────────────── */}
@@ -947,7 +1112,7 @@ export function MusicPlayer() {
                             onClick={() => { setLyricsFetchMsg(""); fetchAutoLyrics(selected.title); }}
                             disabled={fetchingLyrics}
                             className="bg-gradient-to-r from-purple-600 to-violet-600 hover:from-purple-500 hover:to-violet-500 disabled:opacity-50 px-4 py-2 rounded-xl text-xs font-black transition-all flex items-center gap-2 shadow-lg">
-                            {fetchingLyrics ? "⏳ A buscar letra…" : "✨ Buscar Letra Automaticamente"}
+                            {fetchingLyrics ? "⏳ A buscar no Letras.mus.br…" : "✨ Buscar Letra + Tradução PT"}
                           </button>
                           {lyricsFetchMsg && (
                             <span className={`text-xs font-semibold ${lyricsFetchMsg.startsWith("✅") ? "text-green-300" : "text-red-300"}`}>
@@ -956,7 +1121,7 @@ export function MusicPlayer() {
                           )}
                           {!lyricsFetchMsg && !fetchingLyrics && (
                             <span className="text-xs text-white/35">
-                              Funciona com títulos no formato "Artista - Música" · ou cola manualmente abaixo
+                              Letras.mus.br · formato "Artista - Música" · preenche EN + PT automaticamente
                             </span>
                           )}
                         </div>

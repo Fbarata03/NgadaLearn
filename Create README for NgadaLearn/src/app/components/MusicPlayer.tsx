@@ -179,11 +179,16 @@ function InteractiveLyrics({
   onWordClick: (lineId: number, wordIdx: number) => void;
   onDifficultyChange: (lineId: number, diff: Difficulty) => void;
 }) {
-  const activeRef = useRef<HTMLDivElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const activeRef    = useRef<HTMLDivElement>(null);
 
-  /* Scroll automático para a linha activa */
+  /* Scroll automático centrado DENTRO do painel (não rola a página) */
   useEffect(() => {
-    activeRef.current?.scrollIntoView({behavior:"smooth", block:"center"});
+    const container = containerRef.current;
+    const el        = activeRef.current;
+    if (!container || !el) return;
+    const top = el.offsetTop - container.offsetTop - container.clientHeight / 2 + el.clientHeight / 2;
+    container.scrollTo({ top: Math.max(0, top), behavior: "smooth" });
   }, [activeLine]);
 
   if (!lines.length)
@@ -195,7 +200,7 @@ function InteractiveLyrics({
     );
 
   return (
-    <div className="space-y-1 max-h-[40vh] lg:max-h-[52vh] overflow-y-auto pr-1 py-1">
+    <div ref={containerRef} className="space-y-1 max-h-[40vh] lg:max-h-[52vh] overflow-y-auto pr-1 py-1">
       {lines.map((line) => {
         const isActive = line.id === activeLine;
         const meta     = DIFF_META[line.difficulty];

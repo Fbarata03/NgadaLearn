@@ -32,7 +32,7 @@ router.post("/create-intent", async (req, res) => {
     const intent = await stripe.paymentIntents.create({
       amount:   PLAN_PRICES[plan],
       currency: "usd",
-      automatic_payment_methods: { enabled: true },
+      payment_method_types: ["card"],
       metadata: { plan },
       receipt_email: email || undefined,
     });

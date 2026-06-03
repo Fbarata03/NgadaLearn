@@ -89,6 +89,7 @@ function PaymentForm({
       if (!form.email.includes("@"))   return setError("Informe um e-mail válido.");
       if (form.password.length < 6)    return setError("A senha deve ter pelo menos 6 caracteres.");
     }
+    if (!cardReady) return setError("Por favor, preencha os dados do cartão de crédito corretamente antes de pagar.");
     setProcessing(true); setSlowServer(false);
     const slowTimer = setTimeout(() => setSlowServer(true), 8000);
     try {
@@ -237,7 +238,7 @@ function PaymentForm({
       )}
 
       {/* Botão pagar */}
-      <Button type="submit" size="lg" disabled={processing || !stripe || !cardReady}
+      <Button type="submit" size="lg" disabled={processing || !stripe}
         className="w-full bg-purple-600 hover:bg-purple-700 active:bg-purple-800 h-14 text-base font-bold rounded-2xl disabled:opacity-60">
         {processing
           ? <span className="flex items-center gap-2"><span className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent" /> A processar...</span>

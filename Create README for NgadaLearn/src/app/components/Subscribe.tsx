@@ -16,8 +16,7 @@ import {
   AlertCircle, RefreshCw, CreditCard, ArrowLeft,
 } from "lucide-react";
 
-const STRIPE_KEY    = import.meta.env.VITE_STRIPE_PUBLIC_KEY as string | undefined;
-const stripePromise = STRIPE_KEY?.startsWith("pk_") ? loadStripe(STRIPE_KEY) : null;
+const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLIC_KEY);
 
 const PLANS = [
   {
@@ -49,15 +48,9 @@ const PLANS = [
 ];
 
 const CARD_STYLE = {
-  hidePostalCode: true,
   style: {
-    base: {
-      fontSize: "16px",
-      color: "#1f2937",
-      "::placeholder": { color: "#9ca3af" },
-      iconColor: "#6b7280",
-    },
-    invalid: { color: "#ef4444", iconColor: "#ef4444" },
+    base: { fontSize: "16px", color: "#1f2937", fontFamily: "inherit", "::placeholder": { color: "#9ca3af" } },
+    invalid: { color: "#ef4444" },
   },
 };
 
@@ -214,7 +207,7 @@ function PaymentForm({
           </span>
           Dados do cartão
         </p>
-        <div className="border-2 rounded-xl p-4 bg-white focus-within:border-purple-400 transition-colors">
+        <div className="border-2 rounded-xl p-4 bg-gray-50 focus-within:border-purple-400 transition-colors">
           <CardElement
             options={CARD_STYLE}
             onChange={(e) => { setCardReady(e.complete); setError(e.error?.message || ""); }}
@@ -475,19 +468,9 @@ export function Subscribe() {
 
             {/* ── ETAPA 2 ── */}
             {(step === "payment" || isRenewal) && (
-              stripePromise ? (
-                <Elements stripe={stripePromise}>
-                  <PaymentForm selectedPlan={selectedPlan} isRenewal={isRenewal} onBack={() => setStep("plan")} />
-                </Elements>
-              ) : (
-                <div className="p-4 bg-red-50 border border-red-200 rounded-2xl text-sm text-red-700 flex items-start gap-2">
-                  <AlertCircle className="w-5 h-5 flex-shrink-0 mt-0.5" />
-                  <div>
-                    <p className="font-bold">Stripe não configurado</p>
-                    <p className="text-xs mt-1">A chave pública Stripe não está definida. Contacte o suporte: <strong>chanilson66@gmail.com</strong></p>
-                  </div>
-                </div>
-              )
+              <Elements stripe={stripePromise}>
+                <PaymentForm selectedPlan={selectedPlan} isRenewal={isRenewal} onBack={() => setStep("plan")} />
+              </Elements>
             )}
           </div>
 

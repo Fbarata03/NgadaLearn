@@ -93,6 +93,21 @@ app.get("/api/health", (_req, res) => {
   });
 });
 
+// ── Stripe diagnostics ────────────────────────────────────────────
+app.get("/api/stripe-status", async (_req, res) => {
+  const key = process.env.STRIPE_SECRET_KEY || "";
+  if (!key) return res.json({ ok: false, error: "STRIPE_SECRET_KEY não definida" });
+
+  const Stripe = require("stripe");
+  const stripe = Stripe(key);
+  try {
+    await stripe.paymentMethods.list({ limit: 1 });
+    res.json({ ok: true, mode: key.startsWith("sk_live_") ? "LIVE" : "TEST" });
+  } catch (err) {
+    res.json({ ok: false, mode: key.startsWith("sk_live_") ? "LIVE" : "TEST", error: err.message });
+  }
+});
+
 // ── 404 ───────────────────────────────────────────────────────────
 app.use((_req, res) => {
   res.status(404).json({ error: "Rota não encontrada." });

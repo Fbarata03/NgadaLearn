@@ -214,13 +214,11 @@ function PaymentForm({
           </span>
           Dados do cartão
         </p>
-        <div className="border-2 rounded-xl px-4 py-3.5 bg-white focus-within:border-purple-400 transition-colors min-h-[52px] flex items-center">
-          <div className="w-full">
-            <CardElement
-              options={CARD_STYLE}
-              onChange={(e) => { setCardReady(e.complete); setError(e.error?.message || ""); }}
-            />
-          </div>
+        <div className="border-2 rounded-xl p-4 bg-white focus-within:border-purple-400 transition-colors">
+          <CardElement
+            options={CARD_STYLE}
+            onChange={(e) => { setCardReady(e.complete); setError(e.error?.message || ""); }}
+          />
         </div>
         <div className="flex items-center gap-2 flex-wrap">
           <img src="https://js.stripe.com/v3/fingerprinted/img/visa-365725566f9578a9589553aa9296d178.svg" alt="Visa" className="h-4" />

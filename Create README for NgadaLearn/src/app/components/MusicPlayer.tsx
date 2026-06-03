@@ -200,7 +200,7 @@ function InteractiveLyrics({
     );
 
   return (
-    <div ref={containerRef} className="space-y-1 max-h-[40vh] lg:max-h-[52vh] overflow-y-auto pr-1 py-1">
+    <div ref={containerRef} className="space-y-1 overflow-y-auto pr-1 py-1" style={{maxHeight:"calc(100vh - 440px)", minHeight:80}}>
       {lines.map((line) => {
         const isActive = line.id === activeLine;
         const meta     = DIFF_META[line.difficulty];
@@ -893,32 +893,29 @@ export function MusicPlayer() {
   return (
     <>
       <style>{ANIM_STYLE}</style>
-      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-950 to-slate-900 text-white pb-12">
+      <div className="h-screen flex flex-col bg-gradient-to-br from-slate-900 via-purple-950 to-slate-900 text-white overflow-hidden">
 
-        {/* Header */}
-        <div className="bg-gradient-to-r from-purple-800 via-violet-700 to-indigo-800 py-4 sm:py-7 px-4 shadow-xl">
-          <div className="relative flex items-center justify-center">
-            <Link to="/lessons" className="absolute left-0 flex items-center gap-1.5 text-purple-200 hover:text-white transition-colors py-2 px-1 -ml-1 min-h-[44px]">
+        {/* Header — compacto */}
+        <div className="flex-shrink-0 bg-gradient-to-r from-purple-800 via-violet-700 to-indigo-800 px-4 shadow-xl" style={{height:48}}>
+          <div className="max-w-7xl mx-auto h-full relative flex items-center justify-center">
+            <Link to="/lessons" className="absolute left-0 flex items-center gap-1.5 text-purple-200 hover:text-white transition-colors">
               <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7"/></svg>
-              <span className="text-sm font-semibold">Conteúdo</span>
+              <span className="text-sm font-semibold hidden sm:inline">Conteúdo</span>
             </Link>
-            <div className="flex items-center gap-2 sm:gap-3 mb-1">
-              <span className="text-2xl sm:text-4xl">🎵</span>
-              <h1 className="text-lg sm:text-3xl font-black tracking-tight">Música para Aprender Inglês</h1>
-              <span className="text-2xl sm:text-4xl">🎵</span>
+            <div className="flex items-center gap-2">
+              <span className="text-xl">🎵</span>
+              <h1 className="text-sm sm:text-lg font-black tracking-tight">Música para Aprender Inglês</h1>
+              <span className="text-xl">🎵</span>
             </div>
           </div>
-          <p className="text-purple-200 text-xs max-w-xl mx-auto text-center mt-1">
-            Vídeos oficiais · Legenda interactiva linha a linha · Destaque de palavras · Karaoke automático
-          </p>
         </div>
 
-        <div className="max-w-7xl mx-auto px-4 py-6 grid grid-cols-1 lg:grid-cols-3 gap-5">
+        <div className="flex-1 min-h-0 max-w-7xl mx-auto w-full px-3 py-2 grid grid-cols-1 lg:grid-cols-3 gap-3">
 
           {/* ── Coluna Esquerda: pesquisa ─────────────────────────── */}
-          <div className="lg:col-span-1 space-y-4 order-2 lg:order-1">
+          <div className="lg:col-span-1 flex flex-col min-h-0 gap-2 order-2 lg:order-1">
             <form onSubmit={e=>{e.preventDefault();searchVideos(query);}}
-              className="bg-white/10 backdrop-blur rounded-xl p-4 space-y-3">
+              className="flex-shrink-0 bg-white/10 backdrop-blur rounded-xl p-3 space-y-2">
               <label className="block text-xs font-bold text-purple-200 uppercase tracking-widest">
                 🔍 Pesquisar Música Oficial
               </label>
@@ -948,10 +945,10 @@ export function MusicPlayer() {
               </div>
             )}
 
-            <div className="space-y-2 max-h-[40vh] lg:max-h-[62vh] overflow-y-auto pr-1">
+            <div className="flex-1 min-h-0 overflow-y-auto space-y-1.5 pr-1">
               {loading && (
-                <div className="text-center py-10">
-                  <div className="flex justify-center gap-1 mb-3">
+                <div className="text-center py-8">
+                  <div className="flex justify-center gap-1 mb-2">
                     {EQ_CLS.slice(0,5).map((cls,i) => (
                       <div key={i} className={cls} style={{width:6,backgroundColor:EQ_COL[i],borderRadius:3,minHeight:3}} />
                     ))}
@@ -963,28 +960,27 @@ export function MusicPlayer() {
                 const active = selected?.id === video.id;
                 return (
                   <button key={video.id} onClick={() => selectVideo(video)}
-                    className={`w-full text-left flex gap-3 p-3 rounded-xl transition-all border ${
+                    className={`w-full text-left flex gap-2.5 p-2.5 rounded-xl transition-all border ${
                       active
                         ? "bg-purple-600/50 border-purple-400 shadow-lg shadow-purple-900/50"
                         : "bg-white/5 hover:bg-white/10 border-transparent"
                     }`}>
                     <div className="relative flex-shrink-0">
-                      <img src={video.thumbnail} alt={video.title}
-                        className="w-20 h-14 object-cover rounded-lg" loading="lazy" />
+                      <img src={video.thumbnail} alt=""
+                        className="w-16 h-11 object-cover rounded-lg" loading="lazy" />
                       {active && isPlaying && (
                         <div className="absolute inset-0 bg-black/50 rounded-lg flex items-center justify-center">
-                          <div className="flex items-end gap-0.5" style={{height:14}}>
+                          <div className="flex items-end gap-0.5" style={{height:12}}>
                             {["eq1","eq3","eq5"].map(cls => (
-                              <div key={cls} className={cls} style={{width:3,backgroundColor:"#c084fc",borderRadius:2,minHeight:2}} />
+                              <div key={cls} className={cls} style={{width:2,backgroundColor:"#c084fc",borderRadius:2,minHeight:2}} />
                             ))}
                           </div>
                         </div>
                       )}
                     </div>
-                    <div className="overflow-hidden">
-                      <p className="text-sm font-semibold line-clamp-2 leading-snug">{video.title}</p>
-                      <p className="text-xs text-purple-300 mt-1 truncate">{video.channel}</p>
-                      <span className="text-[10px] bg-green-600/30 text-green-300 px-1.5 py-0.5 rounded-full">✓ official</span>
+                    <div className="overflow-hidden flex-1">
+                      <p className="text-xs font-semibold line-clamp-2 leading-snug">{htmlDecode(video.title)}</p>
+                      <p className="text-[11px] text-purple-300 mt-0.5 truncate">{htmlDecode(video.channel)}</p>
                     </div>
                   </button>
                 );
@@ -993,7 +989,7 @@ export function MusicPlayer() {
           </div>
 
           {/* ── Coluna Direita: player + legenda ──────────────────── */}
-          <div className="lg:col-span-2 space-y-4 order-1 lg:order-2">
+          <div className="lg:col-span-2 flex flex-col min-h-0 gap-2 order-1 lg:order-2">
 
             {/* Player — gerido pela YouTube IFrame API */}
             <div className={`rounded-2xl overflow-hidden shadow-2xl aspect-video relative bg-black ${isPlaying ? "player-glow" : ""}`}>
@@ -1091,12 +1087,12 @@ export function MusicPlayer() {
             </div>
 
             {/* ── SECÇÃO PRINCIPAL: LETRAS / NOTAS ─────────────────── */}
-            <div className="bg-white/10 backdrop-blur rounded-xl overflow-hidden">
+            <div className="flex-1 min-h-0 flex flex-col bg-white/10 backdrop-blur rounded-xl overflow-hidden">
 
               {/* Tabs */}
-              <div className="flex border-b border-white/10">
+              <div className="flex-shrink-0 flex border-b border-white/10">
                 <button onClick={()=>setTab("lyrics")}
-                  className={`flex-1 py-3 text-sm font-bold transition-colors ${
+                  className={`flex-1 py-2.5 text-sm font-bold transition-colors ${
                     tab==="lyrics"
                       ? "bg-purple-700/60 text-white border-b-2 border-purple-400"
                       : "text-white/50 hover:text-white hover:bg-white/5"
@@ -1104,7 +1100,7 @@ export function MusicPlayer() {
                   🎤 Legenda
                 </button>
                 <button onClick={()=>setTab("notes")}
-                  className={`flex-1 py-3 text-sm font-bold transition-colors ${
+                  className={`flex-1 py-2.5 text-sm font-bold transition-colors ${
                     tab==="notes"
                       ? "bg-indigo-700/60 text-white border-b-2 border-indigo-400"
                       : "text-white/50 hover:text-white hover:bg-white/5"
@@ -1112,6 +1108,8 @@ export function MusicPlayer() {
                   🗒️ Anotações
                 </button>
               </div>
+              {/* Conteúdo da aba — scrollável */}
+              <div className="flex-1 min-h-0 overflow-y-auto">
 
               {/* ── Aba LETRAS ────────────────────────────────────── */}
               {tab==="lyrics" && (
@@ -1176,8 +1174,8 @@ export function MusicPlayer() {
                         </label>
                         <textarea value={rawEn} onChange={e=>setRawEn(e.target.value)}
                           placeholder={"Cole a letra em inglês aqui,\numa linha por verso…"}
-                          rows={11}
-                          className="w-full bg-black/30 border border-white/10 rounded-xl p-3 text-sm text-white placeholder-white/25 resize-y focus:outline-none focus:border-purple-400 font-mono leading-7 transition-colors" />
+                          rows={7}
+                          className="w-full bg-black/30 border border-white/10 rounded-xl p-3 text-sm text-white placeholder-white/25 resize-none focus:outline-none focus:border-purple-400 font-mono leading-6 transition-colors" />
                       </div>
                       <div>
                         <label className="text-xs font-bold text-purple-300 uppercase tracking-widest block mb-2">
@@ -1185,8 +1183,8 @@ export function MusicPlayer() {
                         </label>
                         <textarea value={rawPt} onChange={e=>setRawPt(e.target.value)}
                           placeholder={"Traduz cada verso aqui\n(uma linha por verso)…"}
-                          rows={11}
-                          className="w-full bg-black/30 border border-white/10 rounded-xl p-3 text-sm text-white placeholder-white/25 resize-y focus:outline-none focus:border-purple-400 font-mono leading-7 transition-colors" />
+                          rows={7}
+                          className="w-full bg-black/30 border border-white/10 rounded-xl p-3 text-sm text-white placeholder-white/25 resize-none focus:outline-none focus:border-purple-400 font-mono leading-6 transition-colors" />
                       </div>
                       {rawEn && (
                         <div className="md:col-span-2 flex justify-end">
@@ -1275,14 +1273,14 @@ export function MusicPlayer() {
 
               {/* ── Aba NOTAS ─────────────────────────────────────── */}
               {tab==="notes" && (
-                <div className="p-4">
+                <div className="p-3">
                   <label className="text-xs font-bold text-indigo-300 uppercase tracking-widest block mb-2">
-                    🗒️ Bloco de Notas em Tempo Real
+                    🗒️ Anotações
                   </label>
                   <textarea value={notes} onChange={e=>setNotes(e.target.value)}
-                    placeholder={`Escreve enquanto ouves:\n• Palavras novas\n• Frases para memorizar\n• Pronúncias difíceis\n• Expressões idiomáticas…`}
-                    rows={14}
-                    className="w-full bg-black/30 border border-white/10 rounded-xl p-3 text-sm text-white placeholder-white/25 resize-y focus:outline-none focus:border-indigo-400 font-mono leading-7 transition-colors" />
+                    placeholder={`Palavras novas, frases, pronúncias difíceis…`}
+                    rows={8}
+                    className="w-full bg-black/30 border border-white/10 rounded-xl p-3 text-sm text-white placeholder-white/25 resize-none focus:outline-none focus:border-indigo-400 font-mono leading-7 transition-colors" />
                   {notes && (
                     <div className="flex justify-between items-center mt-2">
                       <span className="text-xs text-white/40">{notes.length} caracteres</span>
@@ -1298,24 +1296,12 @@ export function MusicPlayer() {
                   )}
                 </div>
               )}
-            </div>
+              </div>{/* fim conteúdo aba */}
+            </div>{/* fim painel letras */}
 
-            {/* Dicas */}
-            <div className="bg-gradient-to-r from-yellow-700/20 to-orange-700/20 border border-yellow-500/20 rounded-xl p-4">
-              <p className="text-xs font-bold text-yellow-300 uppercase tracking-widest mb-2">💡 Como usar a Legenda Interactiva</p>
-              <ul className="text-xs text-white/70 space-y-1">
-                <li>1️⃣ Cola a letra em inglês na aba "Editar Letra" (uma linha por verso)</li>
-                <li>2️⃣ Clica em "Ver Legenda Interactiva"</li>
-                <li>3️⃣ Clica em cada <strong>linha</strong> para activar — vai aparecer na barra "Now Playing"</li>
-                <li>4️⃣ Clica em <strong>palavras individuais</strong> 🟡 para marcar vocabulário novo</li>
-                <li>5️⃣ Usa <strong>Auto Karaoke</strong> para avançar automaticamente (3s / 5s / 8s / 12s)</li>
-                <li>6️⃣ Marca cada linha com ⭐ (difícil) ou ✅ (aprendi)</li>
-              </ul>
-            </div>
-
-          </div>
-        </div>
-      </div>
+          </div>{/* fim coluna direita */}
+        </div>{/* fim grid */}
+      </div>{/* fim root */}
     </>
   );
 }

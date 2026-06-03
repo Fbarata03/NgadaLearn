@@ -902,34 +902,31 @@ export function MoviesPlayer() {
         </>
       )}
 
-      <div className="min-h-screen bg-gradient-to-br from-slate-950 via-amber-950/20 to-slate-950 text-white pb-14">
+      <div className="h-screen flex flex-col bg-gradient-to-br from-slate-950 via-amber-950/20 to-slate-950 text-white overflow-hidden">
 
-        {/* Header */}
-        <div className="bg-gradient-to-r from-amber-800 via-orange-800 to-amber-900 py-4 sm:py-7 px-4 shadow-xl">
-          <div className="relative flex items-center justify-center">
-            <Link to="/lessons" className="absolute left-0 flex items-center gap-1.5 text-amber-200 hover:text-white transition-colors py-2 px-1 -ml-1 min-h-[44px]">
+        {/* Header — compacto */}
+        <div className="flex-shrink-0 bg-gradient-to-r from-amber-800 via-orange-800 to-amber-900 px-4 shadow-xl" style={{height:48}}>
+          <div className="max-w-7xl mx-auto h-full relative flex items-center justify-center">
+            <Link to="/lessons" className="absolute left-0 flex items-center gap-1.5 text-amber-200 hover:text-white transition-colors">
               <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7"/></svg>
-              <span className="text-sm font-semibold">Conteúdo</span>
+              <span className="text-sm font-semibold hidden sm:inline">Conteúdo</span>
             </Link>
-            <div className="flex items-center gap-2 sm:gap-3 mb-1">
-              <span className="text-2xl sm:text-4xl">🎬</span>
-              <h1 className="text-lg sm:text-3xl font-black tracking-tight">Filmes para Aprender Inglês</h1>
-              <span className="text-2xl sm:text-4xl">🎬</span>
+            <div className="flex items-center gap-2">
+              <span className="text-xl">🎬</span>
+              <h1 className="text-sm sm:text-lg font-black tracking-tight">Filmes para Aprender Inglês</h1>
+              <span className="text-xl">🎬</span>
             </div>
           </div>
-          <p className="text-amber-200 text-xs max-w-xl mx-auto text-center mt-1">
-            Cenas de filmes reais · Legendas automáticas · Velocidade ajustável · Treino de vocabulário
-          </p>
         </div>
 
-        <div className="max-w-7xl mx-auto px-4 py-6 grid grid-cols-1 lg:grid-cols-3 gap-5">
+        <div className="flex-1 min-h-0 max-w-7xl mx-auto w-full px-3 py-2 grid grid-cols-1 lg:grid-cols-3 gap-3">
 
           {/* ── COLUNA ESQUERDA ──────────────────────────────────── */}
-          <div className="lg:col-span-1 space-y-4 order-2 lg:order-1">
+          <div className="lg:col-span-1 flex flex-col min-h-0 gap-2 order-2 lg:order-1">
 
             {/* Pesquisa */}
             <form onSubmit={e=>{e.preventDefault();searchClips(query);}}
-              className="bg-white/8 backdrop-blur rounded-xl p-4 space-y-3 border border-amber-500/10">
+              className="flex-shrink-0 bg-white/8 backdrop-blur rounded-xl p-3 space-y-2 border border-amber-500/10">
               <label className="block text-xs font-bold text-amber-300 uppercase tracking-widest">
                 🔍 Pesquisar Cenas de Filmes
               </label>
@@ -947,54 +944,38 @@ export function MoviesPlayer() {
               </p>
             </form>
 
-            {/* Sugestões curadas */}
-            <div className="bg-white/8 backdrop-blur rounded-xl p-4 border border-amber-500/10">
-              <p className="text-xs font-bold text-amber-300 uppercase tracking-widest mb-3">
-                🎞️ Filmes Recomendados
-              </p>
-
-              {/* Filtro género */}
-              <div className="flex flex-wrap gap-1 mb-3">
-                {GENRES.map(g => (
-                  <button key={g} onClick={()=>setGenreFilter(g)}
-                    className={`text-xs px-2 py-1 rounded-full transition-colors font-semibold ${
-                      genreFilter===g
-                        ? "bg-amber-600 text-white"
-                        : "bg-white/10 text-white/60 hover:text-white"
-                    }`}>
-                    {g}
-                  </button>
-                ))}
+            {/* Sugestões curadas — compacto */}
+            <div className="flex-shrink-0 bg-white/8 backdrop-blur rounded-xl p-3 border border-amber-500/10">
+              <div className="flex items-center justify-between mb-2">
+                <p className="text-xs font-bold text-amber-300 uppercase tracking-widest">🎞️ Recomendados</p>
+                <div className="flex flex-wrap gap-1">
+                  {GENRES.map(g => (
+                    <button key={g} onClick={()=>setGenreFilter(g)}
+                      className={`text-[10px] px-1.5 py-0.5 rounded-full transition-colors font-semibold ${
+                        genreFilter===g ? "bg-amber-600 text-white" : "bg-white/10 text-white/60 hover:text-white"
+                      }`}>{g}</button>
+                  ))}
+                </div>
               </div>
-
-              <div className="space-y-1.5 max-h-48 lg:max-h-64 overflow-y-auto pr-1">
+              <div className="space-y-1 max-h-32 overflow-y-auto pr-1">
                 {filteredCurated.map(m => (
                   <button key={m.label}
                     onClick={()=>{
-                      setQuery(m.label);
-                      searchClips(m.query);
-                      /* Pré-carregar legendas icónicas se existirem */
+                      setQuery(m.label); searchClips(m.query);
                       const subs = MOVIE_SUBTITLES[m.label];
-                      if (subs) {
-                        setSubRaw(subs);
-                        setActiveSub(0);
-                        setTab("subs");
-                      }
+                      if (subs) { setSubRaw(subs); setActiveSub(0); setTab("subs"); }
                     }}
-                    className="w-full text-left flex items-center gap-2.5 p-2.5 rounded-lg bg-white/5 hover:bg-amber-600/20 border border-transparent hover:border-amber-500/30 transition-all">
-                    <span className="text-lg flex-shrink-0">{m.icon}</span>
+                    className="w-full text-left flex items-center gap-2 p-1.5 rounded-lg bg-white/5 hover:bg-amber-600/20 border border-transparent hover:border-amber-500/30 transition-all">
+                    <span className="text-sm flex-shrink-0">{m.icon}</span>
                     <div className="flex-1 min-w-0">
                       <p className="text-xs font-bold truncate">{m.label}</p>
-                      <p className="text-[10px] text-white/40 truncate">{m.tip}</p>
                     </div>
-                    <div className="flex flex-col items-end gap-0.5 flex-shrink-0">
-                      <span className={`text-[10px] px-1.5 py-0.5 rounded-full border ${DIFF_COLOR[m.diff]}`}>
+                    <div className="flex gap-1 flex-shrink-0">
+                      <span className={`text-[9px] px-1 py-0.5 rounded border ${DIFF_COLOR[m.diff]}`}>
                         {m.diff === "Iniciante" ? "A1" : m.diff === "Intermediário" ? "B1" : "C1"}
                       </span>
                       {MOVIE_SUBTITLES[m.label] && (
-                        <span className="text-[9px] bg-amber-500/20 text-amber-300 px-1 py-0.5 rounded font-bold">
-                          📺 CC
-                        </span>
+                        <span className="text-[9px] bg-amber-500/20 text-amber-300 px-1 py-0.5 rounded font-bold">CC</span>
                       )}
                     </div>
                   </button>
@@ -1002,22 +983,22 @@ export function MoviesPlayer() {
               </div>
             </div>
 
-            {/* Resultados */}
+            {/* Resultados — flex-1 scrollável */}
             {searchErr && (
-              <div className="bg-red-500/15 border border-red-400/30 rounded-xl p-3 text-xs text-red-300">
+              <div className="bg-red-500/15 border border-red-400/30 rounded-xl p-2 text-xs text-red-300 flex-shrink-0">
                 ⚠️ {searchErr}
               </div>
             )}
 
-            <div className="space-y-2 max-h-[45vh] overflow-y-auto pr-1">
+            <div className="flex-1 min-h-0 overflow-y-auto space-y-1.5 pr-1">
               {loading && (
-                <div className="text-center py-8">
-                  <div className="flex justify-center gap-1 mb-3">
+                <div className="text-center py-6">
+                  <div className="flex justify-center gap-1 mb-2">
                     {EQ_CLS.map((cls,i) => (
-                      <div key={i} className={cls} style={{width:7,backgroundColor:EQ_COL[i],borderRadius:3,minHeight:3}} />
+                      <div key={i} className={cls} style={{width:6,backgroundColor:EQ_COL[i],borderRadius:3,minHeight:3}} />
                     ))}
                   </div>
-                  <p className="text-xs text-amber-300">A filtrar cenas de filmes…</p>
+                  <p className="text-xs text-amber-300">A filtrar…</p>
                 </div>
               )}
 
@@ -1025,32 +1006,36 @@ export function MoviesPlayer() {
                 const active = selected?.id === clip.id;
                 return (
                   <button key={clip.id} onClick={()=>{ setSelected(clip); setIsPlaying(false); setVidError(false); }}
-                    className={`w-full text-left flex gap-3 p-3 rounded-xl transition-all border ${
+                    className={`w-full text-left flex gap-2.5 p-2.5 rounded-xl transition-all border ${
                       active
                         ? "bg-amber-600/40 border-amber-400 shadow-lg shadow-amber-900/40"
                         : "bg-white/5 hover:bg-white/10 border-transparent hover:border-amber-500/20"
                     }`}>
                     <div className="relative flex-shrink-0">
-                      <img src={clip.thumbnail} alt={clip.title}
-                        className="w-20 h-14 object-cover rounded-lg" loading="lazy" />
+                      <img src={clip.thumbnail} alt=""
+                        className="w-16 h-11 object-cover rounded-lg" loading="lazy" />
                       {active && isPlaying && (
                         <div className="absolute inset-0 bg-black/50 rounded-lg flex items-center justify-center">
-                          <div className="flex items-end gap-0.5" style={{height:14}}>
+                          <div className="flex items-end gap-0.5" style={{height:12}}>
                             {["meq1","meq3","meq5"].map(cls => (
-                              <div key={cls} className={cls} style={{width:3,backgroundColor:"#fbbf24",borderRadius:2,minHeight:2}} />
+                              <div key={cls} className={cls} style={{width:2,backgroundColor:"#fbbf24",borderRadius:2,minHeight:2}} />
                             ))}
                           </div>
                         </div>
                       )}
                     </div>
-                    <div className="overflow-hidden">
-                      <p className="text-sm font-semibold line-clamp-2 leading-snug">{clip.title}</p>
-                      <p className="text-xs text-amber-300/70 mt-0.5 truncate">{clip.channel}</p>
-                      <div className="flex gap-1 mt-1">
+                    <div className="overflow-hidden flex-1">
+                      <p className="text-xs font-semibold line-clamp-2 leading-snug">
+                        {clip.title.replace(/&#39;/g,"'").replace(/&amp;/g,"&").replace(/&quot;/g,'"')}
+                      </p>
+                      <p className="text-[11px] text-amber-300/70 mt-0.5 truncate">
+                        {clip.channel.replace(/&#39;/g,"'").replace(/&amp;/g,"&")}
+                      </p>
+                      <div className="flex gap-1 mt-0.5">
                         {clip.isOfficial && (
-                          <span className="text-[10px] bg-amber-500/20 text-amber-300 px-1.5 py-0.5 rounded-full">✓ Oficial</span>
+                          <span className="text-[9px] bg-amber-500/20 text-amber-300 px-1 py-0.5 rounded-full">✓ Oficial</span>
                         )}
-                        <span className="text-[10px] bg-blue-500/20 text-blue-300 px-1.5 py-0.5 rounded-full">CC</span>
+                        <span className="text-[9px] bg-blue-500/20 text-blue-300 px-1 py-0.5 rounded-full">CC</span>
                       </div>
                     </div>
                   </button>
@@ -1060,7 +1045,7 @@ export function MoviesPlayer() {
           </div>
 
           {/* ── COLUNA DIREITA ────────────────────────────────────── */}
-          <div className="lg:col-span-2 space-y-4 order-1 lg:order-2">
+          <div className="lg:col-span-2 flex flex-col min-h-0 gap-2 order-1 lg:order-2">
 
             {/* Player */}
             <div className={`rounded-2xl overflow-hidden shadow-2xl aspect-video bg-black relative ${isPlaying ? "movie-glow" : ""}`}>
@@ -1186,18 +1171,18 @@ export function MoviesPlayer() {
             </div>
 
             {/* Vocabulário + Frases + Notas */}
-            <div className="bg-white/8 backdrop-blur rounded-xl overflow-hidden border border-amber-500/10">
+            <div className="flex-1 min-h-0 flex flex-col bg-white/8 backdrop-blur rounded-xl overflow-hidden border border-amber-500/10">
 
               {/* Tabs */}
-              <div className="flex border-b border-white/10">
+              <div className="flex-shrink-0 flex border-b border-white/10">
                 {([
-                  { id:"vocab",   icon:"📖", label:"Vocabulário" },
+                  { id:"vocab",   icon:"📖", label:"Vocab" },
                   { id:"phrases", icon:"💬", label:"Frases" },
                   { id:"notes",   icon:"🗒️", label:"Notas" },
                   { id:"subs",    icon:"📺", label:"Legendas" },
                 ] as const).map(t => (
                   <button key={t.id} onClick={()=>setTab(t.id)}
-                    className={`flex-1 py-3 text-xs font-bold transition-colors ${
+                    className={`flex-1 py-2 text-xs font-bold transition-colors ${
                       tab===t.id
                         ? "bg-amber-700/50 text-white border-b-2 border-amber-400"
                         : "text-white/50 hover:text-white hover:bg-white/5"
@@ -1207,7 +1192,7 @@ export function MoviesPlayer() {
                 ))}
               </div>
 
-              <div className="p-4">
+              <div className="flex-1 min-h-0 overflow-y-auto p-3">
 
                 {/* ── Vocabulário ── */}
                 {tab==="vocab" && (
@@ -1415,25 +1400,11 @@ export function MoviesPlayer() {
                   </div>
                 )}
               </div>
-            </div>
+            </div>{/* fim painel tabs */}
 
-            {/* Dicas */}
-            <div className="bg-gradient-to-r from-amber-700/15 to-orange-700/15 border border-amber-500/15 rounded-xl p-4">
-              <p className="text-xs font-bold text-amber-300 uppercase tracking-widest mb-2">
-                💡 Como aprender com filmes
-              </p>
-              <ul className="text-xs text-white/65 space-y-1">
-                <li>1️⃣ Vê a cena <strong>uma vez sem parar</strong> para perceber o contexto</li>
-                <li>2️⃣ Ativa as <strong>legendas em inglês</strong> (CC ON) e vê novamente a <strong>0.75×</strong></li>
-                <li>3️⃣ Para em palavras desconhecidas e guarda-as no <strong>Vocabulário</strong></li>
-                <li>4️⃣ Repete as falas em voz alta para treinar <strong>pronúncia e entoação</strong></li>
-                <li>5️⃣ Guarda as frases mais memoráveis para rever depois</li>
-              </ul>
-            </div>
-
-          </div>
-        </div>
-      </div>
+          </div>{/* fim coluna direita */}
+        </div>{/* fim grid */}
+      </div>{/* fim root */}
     </>
   );
 }

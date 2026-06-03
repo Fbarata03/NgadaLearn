@@ -25,27 +25,19 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '20'
-          cache: 'npm'
-          cache-dependency-path: 'Create README for NgadaLearn/package-lock.json'
 
       - name: Install dependencies
         working-directory: 'Create README for NgadaLearn'
         run: npm ci
 
-      - name: Build (produção)
+      - name: Build
         working-directory: 'Create README for NgadaLearn'
         env:
           VITE_STRIPE_PUBLIC_KEY: ${{ secrets.VITE_STRIPE_PUBLIC_KEY }}
           VITE_API_URL: ${{ secrets.VITE_API_URL }}
         run: npm run build
 
-      - name: Configure Pages
-        uses: actions/configure-pages@v5
-        with:
-          enablement: false
-        continue-on-error: true
-
-      - name: Upload Pages artifact
+      - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
           path: 'Create README for NgadaLearn/dist'

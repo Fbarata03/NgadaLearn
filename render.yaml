@@ -25,3 +25,6 @@ services:
         sync: false
       - key: ADMIN_PASSWORD
         sync: false
+      # ⬇ Chave secreta do Stripe (painel Stripe → Developers → API keys)
+      - key: STRIPE_SECRET_KEY
+        sync: false

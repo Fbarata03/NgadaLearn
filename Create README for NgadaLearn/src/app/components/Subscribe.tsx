@@ -99,7 +99,10 @@ function PaymentForm({
         method: "POST", headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ plan: planToUse, email: emailToUse }),
       });
-      if (!intentRes.ok) throw new Error("Erro ao iniciar pagamento. Verifique a sua ligação.");
+      if (!intentRes.ok) {
+        const errData = await intentRes.json().catch(() => ({}));
+        throw new Error(errData.error || "Erro ao iniciar pagamento. Verifique a sua ligação.");
+      }
       const { clientSecret } = await intentRes.json();
 
       const cardEl = elements.getElement(CardElement);
@@ -207,12 +210,15 @@ function PaymentForm({
           </span>
           Dados do cartão
         </p>
-        <div className="border-2 rounded-xl p-4 bg-gray-50 focus-within:border-purple-400 transition-colors">
+        <div className="border-2 border-gray-200 rounded-xl px-4 py-4 bg-white focus-within:border-purple-400 focus-within:shadow-sm transition-all">
           <CardElement
             options={CARD_STYLE}
             onChange={(e) => { setCardReady(e.complete); setError(e.error?.message || ""); }}
           />
         </div>
+        <p className="text-[11px] text-gray-400 flex items-center gap-1">
+          <Lock className="w-3 h-3" /> Número do cartão · Validade (MM/AA) · CVV — encriptação SSL 256-bit
+        </p>
         <div className="flex items-center gap-2 flex-wrap">
           <img src="https://js.stripe.com/v3/fingerprinted/img/visa-365725566f9578a9589553aa9296d178.svg" alt="Visa" className="h-4" />
           <img src="https://js.stripe.com/v3/fingerprinted/img/mastercard-4d8844094130711885b5e41b28c9848f.svg" alt="MC" className="h-4" />
@@ -246,9 +252,9 @@ function PaymentForm({
       </Button>
 
       {slowServer && (
-        <div className="flex items-center gap-2 p-3 bg-amber-50 border border-amber-200 rounded-xl text-xs text-amber-700">
-          <span className="animate-spin rounded-full h-3.5 w-3.5 border-2 border-amber-500 border-t-transparent flex-shrink-0" />
-          O servidor está a acordar, aguarde até 1 minuto na primeira vez...
+        <div className="flex items-center gap-2 p-3 bg-purple-50 border border-purple-100 rounded-xl text-xs text-purple-600">
+          <span className="animate-spin rounded-full h-3.5 w-3.5 border-2 border-purple-400 border-t-transparent flex-shrink-0" />
+          A verificar pagamento com segurança...
         </div>
       )}
 
@@ -468,7 +474,7 @@ export function Subscribe() {
 
             {/* ── ETAPA 2 ── */}
             {(step === "payment" || isRenewal) && (
-              <Elements stripe={stripePromise}>
+              <Elements stripe={stripePromise} options={{ locale: "pt-BR" }}>
                 <PaymentForm selectedPlan={selectedPlan} isRenewal={isRenewal} onBack={() => setStep("plan")} />
               </Elements>
             )}

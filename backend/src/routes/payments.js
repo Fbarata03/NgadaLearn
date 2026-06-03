@@ -5,7 +5,10 @@ const bcrypt   = require("bcryptjs");
 const jwt      = require("jsonwebtoken");
 const { v4: uuidv4 } = require("uuid");
 
-const stripe = Stripe(process.env.STRIPE_SECRET_KEY);
+if (!process.env.STRIPE_SECRET_KEY) {
+  console.error("❌ STRIPE_SECRET_KEY não está definida nas variáveis de ambiente!");
+}
+const stripe = Stripe(process.env.STRIPE_SECRET_KEY || "");
 const { sendReceipt } = require("../utils/email");
 const { findUserByEmail, createUser, updateUser } = require("../utils/dataStore");
 const { authenticate } = require("../middleware/authMiddleware");
@@ -38,8 +41,9 @@ router.post("/create-intent", async (req, res) => {
     });
     res.json({ clientSecret: intent.client_secret });
   } catch (err) {
-    console.error("Stripe create-intent:", err.message);
-    res.status(500).json({ error: "Erro ao iniciar pagamento." });
+    console.error("Stripe create-intent erro:", err.message);
+    const msg = err.message || "Erro ao iniciar pagamento.";
+    res.status(500).json({ error: msg });
   }
 });
 

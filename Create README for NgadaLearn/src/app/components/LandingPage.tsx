@@ -146,7 +146,6 @@ const REVIEWS = [
 
 /* ─── Component ─── */
 /* Vídeo promocional — altera este ID para qualquer vídeo do YouTube */
-const PROMO_VIDEO_ID = "d0yGdNEWdn0";
 
 export function LandingPage() {
   const [openFaq,     setOpenFaq]     = useState<number | null>(null);
@@ -621,13 +620,14 @@ export function LandingPage() {
                 ✕ Fechar
               </button>
             </div>
-            {/* Player YouTube */}
-            <div className="aspect-video rounded-2xl overflow-hidden shadow-2xl border border-white/10">
-              <iframe
-                src={`https://www.youtube.com/embed/${PROMO_VIDEO_ID}?autoplay=1&rel=0&modestbranding=1`}
+            {/* Player — vídeo local */}
+            <div className="aspect-video rounded-2xl overflow-hidden shadow-2xl border border-white/10 bg-black">
+              <video
                 className="w-full h-full"
-                allow="autoplay; fullscreen; picture-in-picture"
-                allowFullScreen
+                controls
+                autoPlay
+                playsInline
+                src="/demo.mp4"
                 title="Demonstração NgadaLearn"
               />
             </div>

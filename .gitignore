@@ -8,6 +8,9 @@ dist/
 .vite/
 *.local
 
+# Vídeos grandes (acima do limite de 100 MB do GitHub)
+Create README for NgadaLearn/public/demo.mp4
+
 # Variáveis de ambiente (nunca commitar)
 .env
 .env.local

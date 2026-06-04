@@ -626,10 +626,13 @@ export function LandingPage() {
                 className="w-full h-full"
                 controls
                 autoPlay
+                muted
                 playsInline
+                preload="auto"
                 src="/demo.mp4"
-                title="Demonstração NgadaLearn"
-              />
+              >
+                O teu browser não suporta vídeo HTML5.
+              </video>
             </div>
             {/* CTA abaixo do vídeo */}
             <div className="mt-4 flex flex-col sm:flex-row items-center gap-3 justify-center">

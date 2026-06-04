@@ -151,6 +151,7 @@ export function LandingPage() {
   const [openFaq,     setOpenFaq]     = useState<number | null>(null);
   const [openSection, setOpenSection] = useState<number | null>(0);
   const [videoOpen,   setVideoOpen]   = useState(false);
+  const [videoError,  setVideoError]  = useState(false);
 
   return (
     <div className="w-full">
@@ -654,17 +655,33 @@ export function LandingPage() {
             </div>
             {/* Player — vídeo local */}
             <div className="aspect-video rounded-2xl overflow-hidden shadow-2xl border border-white/10 bg-black">
-              <video
-                className="w-full h-full"
-                controls
-                autoPlay
-                muted
-                playsInline
-                preload="auto"
-                src="/demo.mp4"
-              >
-                O teu browser não suporta vídeo HTML5.
-              </video>
+              {!videoError ? (
+                <video
+                  className="w-full h-full"
+                  controls
+                  autoPlay
+                  muted
+                  playsInline
+                  preload="auto"
+                  onError={() => setVideoError(true)}
+                >
+                  <source src="/demo.mp4" type="video/mp4" />
+                  O teu browser não suporta vídeo HTML5.
+                </video>
+              ) : (
+                <div className="w-full h-full flex flex-col items-center justify-center gap-4 text-center p-6 text-white">
+                  <span className="text-4xl">😔</span>
+                  <div>
+                    <p className="font-semibold">Não foi possível carregar o vídeo.</p>
+                    <p className="text-sm text-gray-300">Tenta novamente ou abre a aula gratuita.</p>
+                  </div>
+                  <Link to="/demo" onClick={() => setVideoOpen(false)}>
+                    <Button className="bg-purple-600 hover:bg-purple-500 font-bold px-6 py-3">
+                      Ver Aula Gratuita
+                    </Button>
+                  </Link>
+                </div>
+              )}
             </div>
             {/* CTA abaixo do vídeo */}
             <div className="mt-4 flex flex-col sm:flex-row items-center gap-3 justify-center">

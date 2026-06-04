@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+﻿import { useState, useEffect } from "react";
 import { Link } from "react-router";
 import { useAuth, checkAccessActive, getExpiryDate, API_URL } from "../context/AuthContext";
 import type { User } from "../context/AuthContext";
@@ -166,7 +166,7 @@ export function Admin() {
             <p className="text-purple-200 text-sm font-medium">Receita Total Estimada</p>
             <p className="text-4xl font-black mt-1">US$ {totalRevenue.toFixed(2)}</p>
             <p className="text-purple-300 text-xs mt-1">
-              {lifetime} × US$20 (vitalício) + {monthlyActive + monthlyExpired} × US$5 (mensal)
+              {lifetime} × US$150 (vitalício) + {monthlyActive + monthlyExpired} × US$15 (mensal)
             </p>
           </div>
           <Crown className="w-16 h-16 text-purple-400 opacity-40" />
@@ -396,3 +396,4 @@ function UserCard({ user }: { user: User }) {
     </div>
   );
 }
+

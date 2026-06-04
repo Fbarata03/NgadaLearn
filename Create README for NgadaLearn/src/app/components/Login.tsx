@@ -1,4 +1,4 @@
-import { useState } from "react";
+﻿import { useState } from "react";
 import { Link, useNavigate, useLocation } from "react-router";
 import { useAuth, API_URL } from "../context/AuthContext";
 import { Input } from "./ui/input";
@@ -253,7 +253,7 @@ export function Login() {
         <Link to="/subscribe">
           <Button variant="outline" size="lg"
             className="w-full h-13 text-base font-bold rounded-2xl border-2 border-purple-200 text-purple-700 hover:bg-purple-50">
-            Comprar acesso — US$ 20
+            Comprar acesso — a partir de US$ 15
           </Button>
         </Link>
 
@@ -264,3 +264,4 @@ export function Login() {
     </div>
   );
 }
+

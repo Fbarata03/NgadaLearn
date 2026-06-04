@@ -1,4 +1,4 @@
-import { useState } from "react";
+﻿import { useState } from "react";
 import { Link } from "react-router";
 import { Button } from "./ui/button";
 import { Card } from "./ui/card";
@@ -128,7 +128,7 @@ const REVIEWS = [
     avatar: "👨🏻",
     date: "há 1 mês",
     stars: 5,
-    text: "O NgadaFlow mudou completamente meu listening. Em 2 meses comecei a entender séries americanas sem legenda. Por US$ 5, é impossível encontrar algo melhor.",
+    text: "O NgadaFlow mudou completamente meu listening. Em 2 meses comecei a entender séries americanas sem legenda. Por US$ 15, é impossível encontrar algo melhor.",
     helpful: 89,
     badge: "Séries sem legenda",
   },
@@ -541,7 +541,7 @@ export function LandingPage() {
               <div className="text-5xl mb-4">🚀</div>
               <h2 className="text-2xl sm:text-3xl font-black mb-3">Sua jornada começa hoje</h2>
               <p className="text-purple-200 mb-6 max-w-md mx-auto">
-                Não adie mais. Com apenas US$ 20 você investe no inglês que abre portas para
+                Não adie mais. Com US$ 150 você investe no inglês que abre portas para
                 empregos, viagens e oportunidades do mundo inteiro — para sempre.
               </p>
               <Link to="/subscribe">
@@ -562,9 +562,9 @@ export function LandingPage() {
           <div className="hidden lg:block">
             <div className="sticky top-20 space-y-4">
               <Card className="p-6 shadow-xl border-2 border-gray-100">
-                <div className="text-xs text-gray-400 line-through mb-0.5">US$ 60</div>
-                <div className="text-4xl font-black mb-0.5">US$ 20</div>
-                <div className="text-purple-700 text-xs font-bold mb-5">pagamento único · acesso vitalício</div>
+                <div className="text-xs text-gray-400 line-through mb-0.5">US$ 300</div>
+                <div className="text-4xl font-black mb-0.5">US$ 150</div>
+                <div className="text-purple-700 text-xs font-bold mb-5">pagamento único · acesso para sempre</div>
 
                 <Link to="/subscribe" className="block mb-4">
                   <Button
@@ -615,7 +615,7 @@ export function LandingPage() {
       <div className="lg:hidden fixed bottom-0 left-0 right-0 bg-white border-t shadow-2xl z-50 p-4">
         <div className="flex items-center gap-4">
           <div>
-            <div className="text-2xl font-black leading-none">US$ 20</div>
+            <div className="text-2xl font-black leading-none">US$ 150</div>
             <div className="text-xs text-purple-600 font-medium">acesso vitalício</div>
           </div>
           <Link to="/subscribe" className="flex-1">
@@ -670,7 +670,7 @@ export function LandingPage() {
             <div className="mt-4 flex flex-col sm:flex-row items-center gap-3 justify-center">
               <Link to="/subscribe" onClick={() => setVideoOpen(false)}>
                 <Button className="bg-purple-600 hover:bg-purple-500 font-bold px-8 py-3 text-base">
-                  🚀 Garantir Acesso Agora — US$ 20
+                  🚀 Garantir Acesso Agora — US$ 150
                 </Button>
               </Link>
               <Link to="/demo" onClick={() => setVideoOpen(false)}
@@ -684,3 +684,4 @@ export function LandingPage() {
     </div>
   );
 }
+

@@ -1,4 +1,4 @@
-import { useState } from "react";
+﻿import { useState } from "react";
 import { Outlet, Link, useLocation, useNavigate } from "react-router";
 import { Button } from "./ui/button";
 import {
@@ -223,7 +223,7 @@ export function RootLayout() {
                   </Link>
                   <Link to="/subscribe" onClick={() => setMobileOpen(false)}>
                     <Button className="w-full bg-purple-600 hover:bg-purple-700 mt-1">
-                      Comprar Agora — US$ 20
+                      Começar Agora
                     </Button>
                   </Link>
                 </>
@@ -286,7 +286,7 @@ export function RootLayout() {
             <div>
               <h4 className="font-bold text-sm uppercase tracking-wider text-gray-300 mb-4">Acesso Vitalício</h4>
               <p className="text-sm text-gray-400 mb-4">
-                Acesso completo ao curso por apenas <strong className="text-white">US$ 20</strong> — pagamento único
+                Acesso completo ao curso por apenas <strong className="text-white">US$ 150</strong> — pagamento único
               </p>
               <Link to="/subscribe">
                 <Button size="sm" className="bg-purple-600 hover:bg-purple-700">
@@ -308,3 +308,4 @@ export function RootLayout() {
     </div>
   );
 }
+

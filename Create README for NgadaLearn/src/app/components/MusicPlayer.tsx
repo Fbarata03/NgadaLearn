@@ -893,7 +893,7 @@ export function MusicPlayer() {
   return (
     <>
       <style>{ANIM_STYLE}</style>
-      <div className="min-h-screen lg:h-screen flex flex-col bg-gradient-to-br from-slate-900 via-purple-950 to-slate-900 text-white lg:overflow-hidden">
+      <div className="min-h-screen lg:h-[calc(100vh-4rem)] flex flex-col bg-gradient-to-br from-slate-900 via-purple-950 to-slate-900 text-white lg:overflow-hidden">
 
         {/* Header — compacto */}
         <div className="flex-shrink-0 bg-gradient-to-r from-purple-800 via-violet-700 to-indigo-800 px-4 shadow-xl" style={{height:48}}>

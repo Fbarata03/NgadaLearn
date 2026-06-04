@@ -902,7 +902,7 @@ export function MoviesPlayer() {
         </>
       )}
 
-      <div className="min-h-screen lg:h-screen flex flex-col bg-gradient-to-br from-slate-950 via-amber-950/20 to-slate-950 text-white lg:overflow-hidden">
+      <div className="min-h-screen lg:h-[calc(100vh-4rem)] flex flex-col bg-gradient-to-br from-slate-950 via-amber-950/20 to-slate-950 text-white lg:overflow-hidden">
 
         {/* Header — compacto */}
         <div className="flex-shrink-0 bg-gradient-to-r from-amber-800 via-orange-800 to-amber-900 px-4 shadow-xl" style={{height:48}}>

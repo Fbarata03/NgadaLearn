@@ -13,8 +13,8 @@ const { sendReceipt } = require("../utils/email");
 const { findUserByEmail, createUser, updateUser } = require("../utils/dataStore");
 const { authenticate } = require("../middleware/authMiddleware");
 
-const PLAN_PRICES  = { monthly: 500,    lifetime: 2000   };
-const PLAN_AMOUNTS = { monthly: "5,00", lifetime: "20,00" };
+const PLAN_PRICES  = { monthly: 1500,     lifetime: 15000    };
+const PLAN_AMOUNTS = { monthly: "15,00",  lifetime: "150,00" };
 
 function generateToken(userId) {
   return jwt.sign({ id: userId }, process.env.JWT_SECRET, { expiresIn: process.env.JWT_EXPIRES_IN || "7d" });
@@ -141,7 +141,7 @@ router.post("/renew", authenticate, async (req, res) => {
       to:               user.email,
       name:             user.name,
       plan:             "monthly",
-      amount:           "5,00",
+      amount:           "15,00",
       paymentIntentId,
     }).catch((err) => console.error("Erro ao enviar email renovação:", err.message));
 

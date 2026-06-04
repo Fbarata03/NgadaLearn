@@ -23,8 +23,8 @@ const PLANS = [
     id: "monthly" as PlanType,
     label: "Mensal",
     labelFull: "Plano Mensal",
-    price: "5", priceOld: "15", period: "/mês",
-    badge: "ACESSÍVEL", badgeColor: "bg-blue-600",
+    price: "15", priceOld: "30", period: "/mês",
+    badge: "FLEXÍVEL", badgeColor: "bg-blue-600",
     selected: "border-blue-400 bg-blue-50",
     unselected: "border-gray-200 bg-white",
     description: "Acesso completo por 30 dias.",
@@ -36,8 +36,8 @@ const PLANS = [
     id: "lifetime" as PlanType,
     label: "Vitalício",
     labelFull: "Plano Vitalício",
-    price: "20", priceOld: "60", period: " único",
-    badge: "MELHOR", badgeColor: "bg-purple-600",
+    price: "150", priceOld: "300", period: " único",
+    badge: "MELHOR VALOR", badgeColor: "bg-purple-600",
     selected: "border-purple-400 bg-purple-50",
     unselected: "border-gray-200 bg-white",
     description: "Pague uma vez, acesso para sempre.",
@@ -157,7 +157,7 @@ function PaymentForm({
           <p className="text-xs text-purple-600 mt-0.5">{isRenewal ? "30 dias renovados" : plan.note}</p>
         </div>
         <div className="text-right">
-          <p className="text-2xl font-black text-purple-700">US$ {isRenewal ? "5" : plan.price}</p>
+          <p className="text-2xl font-black text-purple-700">US$ {isRenewal ? "15" : plan.price}</p>
           <p className="text-xs text-gray-500">{isRenewal ? "/mês" : plan.period}</p>
         </div>
       </div>
@@ -232,7 +232,7 @@ function PaymentForm({
       {/* Total */}
       <div className="flex items-center justify-between bg-gray-50 rounded-xl px-4 py-3">
         <span className="font-bold text-gray-800">Total</span>
-        <span className="text-xl font-black text-purple-700">US$ {isRenewal ? "5" : plan.price},00</span>
+        <span className="text-xl font-black text-purple-700">US$ {isRenewal ? "15" : plan.price},00</span>
       </div>
 
       {error && (
@@ -247,7 +247,7 @@ function PaymentForm({
         className="w-full bg-purple-600 hover:bg-purple-700 active:bg-purple-800 h-14 text-base font-bold rounded-2xl disabled:opacity-60">
         {processing
           ? <span className="flex items-center gap-2"><span className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent" /> A processar...</span>
-          : <><Lock className="w-4 h-4 mr-2" />{isRenewal ? "Renovar por US$ 5" : `Pagar US$ ${plan.price} e Activar`}</>
+          : <><Lock className="w-4 h-4 mr-2" />{isRenewal ? "Renovar por US$ 15" : `Pagar US$ ${plan.price} e Activar`}</>
         }
       </Button>
 
@@ -376,92 +376,115 @@ export function Subscribe() {
             {/* ── ETAPA 1 ── */}
             {step === "plan" && !isRenewal && (
               <>
-                {/* Cards lado a lado */}
-                <div className="grid grid-cols-2 gap-3">
-                  {PLANS.map((p) => {
+                {/* Cards de plano — empilhados, design premium */}
+                <div className="space-y-3">
+
+                  {/* ── Plano Vitalício (destaque) ── */}
+                  {(() => {
+                    const p = PLANS[1]; // lifetime
                     const active = selectedPlan === p.id;
                     return (
                       <button
-                        key={p.id}
                         type="button"
                         onClick={() => setSelectedPlan(p.id)}
-                        className={`relative text-left p-3 sm:p-5 border-2 rounded-2xl transition-all active:scale-[0.98] ${
-                          active ? p.selected + " shadow-md" : p.unselected
+                        className={`w-full text-left rounded-2xl transition-all active:scale-[0.99] overflow-hidden border-2 ${
+                          active ? "border-purple-500 shadow-xl shadow-purple-100" : "border-gray-200 hover:border-purple-300"
                         }`}
                       >
-                        {/* Badge */}
-                        <span className={`absolute top-0 right-0 ${p.badgeColor} text-white text-[9px] sm:text-[11px] font-bold px-2 py-0.5 rounded-bl-lg rounded-tr-xl`}>
-                          {p.badge}
-                        </span>
-
-                        {/* Radio */}
-                        <div className={`w-4 h-4 rounded-full border-2 mb-2 flex items-center justify-center ${
-                          active ? "border-purple-600 bg-purple-600" : "border-gray-300 bg-white"
-                        }`}>
-                          {active && <div className="w-1.5 h-1.5 bg-white rounded-full" />}
+                        {/* Faixa topo */}
+                        <div className="bg-gradient-to-r from-purple-600 to-indigo-600 px-5 py-2 flex items-center justify-between">
+                          <span className="text-white text-xs font-black tracking-wider uppercase">⭐ Recomendado — Melhor Valor</span>
+                          <span className="bg-white/25 text-white text-[10px] font-bold px-2 py-0.5 rounded-full">POUPA 50%</span>
                         </div>
-
-                        <p className="font-black text-sm sm:text-base leading-tight">{p.label}</p>
-                        <p className="text-[10px] text-gray-400 mt-0.5 hidden sm:block">{p.description}</p>
-
-                        <div className="mt-2">
-                          <span className="text-[10px] text-gray-400 line-through">US$ {p.priceOld}</span>
-                          <div className="text-xl sm:text-2xl font-black text-gray-900 leading-tight">
-                            US$ {p.price}
-                            <span className="text-xs font-normal text-gray-500">{p.period}</span>
-                          </div>
-                        </div>
-
-                        {/* Features (só desktop) */}
-                        <div className="mt-2 space-y-1 hidden sm:block">
-                          {p.features.map((f) => (
-                            <div key={f} className="flex items-start gap-1.5 text-xs text-gray-600">
-                              <Check className="w-3 h-3 text-green-500 flex-shrink-0 mt-0.5" />{f}
+                        {/* Corpo */}
+                        <div className={`p-5 ${active ? "bg-purple-50" : "bg-white"}`}>
+                          <div className="flex items-start justify-between gap-4">
+                            <div className="flex-1">
+                              <div className="flex items-center gap-2 mb-1">
+                                <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 ${
+                                  active ? "border-purple-600 bg-purple-600" : "border-gray-300"
+                                }`}>
+                                  {active && <div className="w-2 h-2 bg-white rounded-full" />}
+                                </div>
+                                <span className="font-black text-lg text-gray-900">Plano Vitalício</span>
+                              </div>
+                              <p className="text-sm text-gray-500 mb-3">Pague uma vez, acesso para sempre. Nunca paga novamente.</p>
+                              <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
+                                {p.features.map((f) => (
+                                  <div key={f} className="flex items-center gap-1.5 text-sm text-gray-700">
+                                    <Check className="w-4 h-4 text-purple-600 flex-shrink-0" />{f}
+                                  </div>
+                                ))}
+                              </div>
                             </div>
-                          ))}
+                            {/* Preço */}
+                            <div className="text-right flex-shrink-0">
+                              <div className="text-sm text-gray-400 line-through">US$ {p.priceOld}</div>
+                              <div className="text-4xl font-black text-purple-700 leading-none">US$ {p.price}</div>
+                              <div className="text-xs text-gray-500 mt-0.5">pagamento único</div>
+                              <div className="mt-2 bg-green-100 text-green-700 text-xs font-bold px-2 py-1 rounded-lg">
+                                = US$ 1,25/mês por 10 anos
+                              </div>
+                            </div>
+                          </div>
+                          <p className="text-xs font-semibold text-purple-700 mt-3 pt-3 border-t border-purple-100">
+                            ✓ Pagamento único — sem mensalidades, sem surpresas
+                          </p>
                         </div>
-
-                        <p className={`text-[10px] sm:text-xs mt-2 font-semibold ${p.noteColor}`}>{p.note}</p>
                       </button>
                     );
-                  })}
-                </div>
+                  })()}
 
-                {/* Features resumidas no mobile */}
-                <div className="sm:hidden grid grid-cols-2 gap-2">
-                  {plan.features.map((f) => (
-                    <div key={f} className="flex items-center gap-1.5 text-xs text-gray-600">
-                      <Check className="w-3.5 h-3.5 text-green-500 flex-shrink-0" />{f}
-                    </div>
-                  ))}
-                </div>
-
-                {/* Depoimentos compactos no mobile */}
-                <div className="sm:hidden bg-white rounded-2xl p-4 border border-gray-100">
-                  <p className="text-xs font-bold text-gray-500 mb-3">O QUE DIZEM OS ALUNOS</p>
-                  <div className="space-y-2.5">
-                    {[
-                      { av: "👩🏽", name: "Maria S.", text: "Consegui emprego internacional em 3 meses!" },
-                      { av: "👨🏻", name: "João C.", text: "Assisto séries sem legenda agora!" },
-                    ].map((r) => (
-                      <div key={r.name} className="flex items-start gap-2">
-                        <span className="text-lg leading-none">{r.av}</span>
-                        <div>
-                          <div className="flex gap-0.5 mb-0.5">
-                            {[...Array(5)].map((_, i) => <Star key={i} className="w-2.5 h-2.5 fill-yellow-400 text-yellow-400" />)}
+                  {/* ── Plano Mensal ── */}
+                  {(() => {
+                    const p = PLANS[0]; // monthly
+                    const active = selectedPlan === p.id;
+                    return (
+                      <button
+                        type="button"
+                        onClick={() => setSelectedPlan(p.id)}
+                        className={`w-full text-left rounded-2xl transition-all active:scale-[0.99] border-2 ${
+                          active ? "border-blue-400 shadow-md shadow-blue-50 bg-blue-50" : "border-gray-200 bg-white hover:border-blue-300"
+                        }`}
+                      >
+                        <div className="p-5">
+                          <div className="flex items-center justify-between gap-4">
+                            <div className="flex items-center gap-3 flex-1 min-w-0">
+                              <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 ${
+                                active ? "border-blue-500 bg-blue-500" : "border-gray-300"
+                              }`}>
+                                {active && <div className="w-2 h-2 bg-white rounded-full" />}
+                              </div>
+                              <div>
+                                <div className="flex items-center gap-2">
+                                  <span className="font-black text-base text-gray-900">Plano Mensal</span>
+                                  <span className="bg-blue-100 text-blue-700 text-[10px] font-bold px-1.5 py-0.5 rounded-full">FLEXÍVEL</span>
+                                </div>
+                                <p className="text-xs text-gray-500 mt-0.5">Acesso completo por 30 dias · Cancela quando quiser</p>
+                              </div>
+                            </div>
+                            <div className="text-right flex-shrink-0">
+                              <div className="text-xs text-gray-400 line-through">US$ {p.priceOld}</div>
+                              <div className="text-2xl font-black text-gray-900">US$ {p.price}<span className="text-sm font-normal text-gray-500">/mês</span></div>
+                            </div>
                           </div>
-                          <p className="text-xs text-gray-600 italic">"{r.text}"</p>
-                          <p className="text-[10px] text-gray-400 font-medium">{r.name}</p>
+                          <p className="text-xs font-semibold text-orange-600 mt-3 pt-3 border-t border-gray-100">
+                            ⚠ Acesso bloqueado após 30 dias sem renovação
+                          </p>
                         </div>
-                      </div>
-                    ))}
-                  </div>
+                      </button>
+                    );
+                  })()}
                 </div>
 
-                {/* CTA desktop */}
-                <div className="hidden sm:block space-y-3">
+                {/* CTA */}
+                <div className="space-y-3 pt-1">
                   <Button size="lg" onClick={() => setStep("payment")}
-                    className="w-full bg-purple-600 hover:bg-purple-700 h-14 text-lg font-bold rounded-2xl">
+                    className={`w-full h-14 text-base font-bold rounded-2xl ${
+                      selectedPlan === "lifetime"
+                        ? "bg-purple-600 hover:bg-purple-700"
+                        : "bg-blue-600 hover:bg-blue-700"
+                    }`}>
                     Continuar com {plan.labelFull} — US$ {plan.price}{plan.period} →
                   </Button>
                   <p className="text-center text-sm text-gray-500">
@@ -507,7 +530,7 @@ export function Subscribe() {
                   <span /><span className="text-center">Mensal</span><span className="text-center">Vitalício</span>
                 </div>
                 {[
-                  ["Preço",    "US$ 5/mês", "US$ 20"],
+                  ["Preço",    "US$ 15/mês", "US$ 150"],
                   ["Acesso",   "30 dias",   "Para sempre"],
                   ["Renovação","Necessária","Não precisa"],
                   ["Futuros",  "✓",         "✓ incluídos"],

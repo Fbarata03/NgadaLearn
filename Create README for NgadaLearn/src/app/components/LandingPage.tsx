@@ -148,10 +148,10 @@ const REVIEWS = [
 /* Vídeo promocional — altera este ID para qualquer vídeo do YouTube */
 
 export function LandingPage() {
-  const [openFaq,     setOpenFaq]     = useState<number | null>(null);
+  const [openFaq, setOpenFaq] = useState<number | null>(null);
   const [openSection, setOpenSection] = useState<number | null>(0);
-  const [videoOpen,   setVideoOpen]   = useState(false);
-  const [videoError,  setVideoError]  = useState(false);
+  const [videoOpen, setVideoOpen] = useState(false);
+  const [videoError, setVideoError] = useState(false);
 
   return (
     <div className="w-full">
@@ -227,7 +227,10 @@ export function LandingPage() {
             <div className="hidden lg:block">
               <Card className="p-6 bg-white text-gray-900 shadow-2xl">
                 {/* Thumbnail preview — clica para abrir vídeo */}
-                <button onClick={() => setVideoOpen(true)}
+                <button onClick={() => {
+                  setVideoError(false);
+                  setVideoOpen(true);
+                }}
                   className="w-full aspect-video rounded-lg mb-5 overflow-hidden relative cursor-pointer group block">
                   <div className="absolute inset-0 bg-gradient-to-br from-purple-900 via-indigo-900 to-slate-900 flex flex-col items-center justify-center gap-3">
                     {/* App feature pills */}
@@ -634,7 +637,7 @@ export function LandingPage() {
       {videoOpen && (
         <div
           className="fixed inset-0 z-[200] flex items-center justify-center p-4"
-          style={{background:"rgba(0,0,0,.88)"}}
+          style={{ background: "rgba(0,0,0,.88)" }}
           onClick={() => setVideoOpen(false)}
         >
           <div
@@ -663,6 +666,7 @@ export function LandingPage() {
                   muted
                   playsInline
                   preload="auto"
+                  onLoadedData={() => setVideoError(false)}
                   onError={() => setVideoError(true)}
                 >
                   <source src="/demo.mp4" type="video/mp4" />

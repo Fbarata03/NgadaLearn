@@ -207,18 +207,18 @@ export function LandingPage() {
               </div>
 
               {/* CTA móvel */}
-              <div className="lg:hidden space-y-3 pt-2">
+              <div className="lg:hidden space-y-2 pt-2">
                 <Link to="/subscribe">
-                  <Button
-                    size="lg"
-                    className="w-full bg-purple-600 hover:bg-purple-700 py-6 text-lg font-bold"
-                  >
-                    Garantir Acesso Vitalício — US$ 150
+                  <Button size="lg" className="w-full bg-purple-600 hover:bg-purple-700 py-5 text-base font-bold">
+                    Vitalício US$ 150 — Acesso para sempre →
                   </Button>
                 </Link>
-                <p className="text-center text-sm text-gray-400">
-                  Pagamento único · Acesso para sempre
-                </p>
+                <Link to="/subscribe">
+                  <Button variant="outline" size="lg" className="w-full border-2 border-gray-300 hover:border-purple-400 text-base font-bold py-5">
+                    Mensal US$ 15/mês →
+                  </Button>
+                </Link>
+                <p className="text-center text-xs text-gray-400">🔒 Pagamento seguro via Stripe</p>
               </div>
             </div>
 
@@ -252,23 +252,56 @@ export function LandingPage() {
                   </div>
                 </button>
 
-                <div className="mb-4">
-                  <div className="text-xs text-gray-400 line-through mb-0.5">US$ 300</div>
-                  <div className="text-4xl font-black text-purple-700">US$ 150</div>
-                  <div className="text-gray-500 text-xs font-semibold mt-0.5">pagamento único • acesso para sempre</div>
+                {/* ── Plano Vitalício — destaque ── */}
+                <div className="relative border-2 border-purple-500 rounded-2xl p-4 mb-3 bg-gradient-to-br from-purple-50 to-indigo-50">
+                  <div className="absolute -top-3 left-1/2 -translate-x-1/2">
+                    <span className="bg-purple-600 text-white text-[10px] font-black px-3 py-0.5 rounded-full tracking-wider">⭐ MELHOR VALOR</span>
+                  </div>
+                  <div className="flex items-center justify-between mt-1">
+                    <div>
+                      <p className="font-black text-gray-900 text-sm">Plano Vitalício</p>
+                      <p className="text-[11px] text-gray-500">Pague uma vez · Acesso para sempre</p>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-xs text-gray-400 line-through">US$ 300</p>
+                      <p className="text-2xl font-black text-purple-700 leading-tight">US$ 150</p>
+                    </div>
+                  </div>
+                  <Link to="/subscribe" className="block mt-3">
+                    <Button size="lg" className="w-full bg-purple-600 hover:bg-purple-700 py-3 text-sm font-bold rounded-xl">
+                      Garantir Acesso Vitalício →
+                    </Button>
+                  </Link>
                 </div>
 
-                <Link to="/subscribe" className="block mb-4">
-                  <Button
-                    size="lg"
-                    className="w-full bg-purple-600 hover:bg-purple-700 py-5 text-base font-bold"
-                  >
-                    Garantir Meu Acesso Agora
-                  </Button>
-                </Link>
+                {/* ── Divisor ── */}
+                <div className="flex items-center gap-2 mb-3">
+                  <div className="flex-1 h-px bg-gray-200" />
+                  <span className="text-[10px] text-gray-400 font-semibold">OU</span>
+                  <div className="flex-1 h-px bg-gray-200" />
+                </div>
+
+                {/* ── Plano Mensal ── */}
+                <div className="border border-gray-200 rounded-2xl p-4 mb-4 bg-white">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="font-bold text-gray-800 text-sm">Plano Mensal</p>
+                      <p className="text-[11px] text-gray-500">Acesso completo por 30 dias</p>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-xs text-gray-400 line-through">US$ 30</p>
+                      <p className="text-xl font-black text-gray-800 leading-tight">US$ 15<span className="text-xs font-normal text-gray-400">/mês</span></p>
+                    </div>
+                  </div>
+                  <Link to="/subscribe" className="block mt-3">
+                    <Button variant="outline" size="sm" className="w-full border-2 border-gray-300 hover:border-purple-400 hover:text-purple-700 text-sm font-bold rounded-xl py-2.5">
+                      Começar com Plano Mensal →
+                    </Button>
+                  </Link>
+                </div>
 
                 <p className="text-center text-xs text-gray-500 mb-5">
-                  🔒 Pagamento único e seguro via Stripe
+                  🔒 Pagamento 100% seguro via Stripe
                 </p>
 
                 <div className="space-y-2.5 text-sm text-gray-700 border-t pt-4">

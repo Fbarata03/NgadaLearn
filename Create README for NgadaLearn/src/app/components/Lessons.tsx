@@ -481,71 +481,89 @@ export function Lessons() {
           </p>
         </div>
 
-        {/* Estatísticas rápidas — clica em qualquer card para ir directo ao módulo */}
+        {/* ── Cards com imagem — linha 1 ── */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-3">
-          <button onClick={() => goToTab("assimil")}
-            className={`p-4 bg-purple-600 text-white border-0 rounded-xl text-center cursor-pointer transition-all hover:scale-105 hover:brightness-110 hover:shadow-xl shadow-md ${tab==="assimil"?"ring-4 ring-purple-300 scale-105":""}`}>
-            <p className="text-2xl font-black">{ASSIMIL_LESSONS.length}</p>
-            <p className="text-xs text-purple-200">Assimil</p>
-          </button>
-          <button onClick={() => goToTab("pimsleur")}
-            className={`p-4 bg-blue-600 text-white border-0 rounded-xl text-center cursor-pointer transition-all hover:scale-105 hover:brightness-110 hover:shadow-xl shadow-md ${tab==="pimsleur"?"ring-4 ring-blue-300 scale-105":""}`}>
-            <p className="text-2xl font-black">{PIMSLEUR_LESSONS_LIST.length}</p>
-            <p className="text-xs text-blue-200">Pimsleur</p>
-          </button>
-          <button onClick={() => goToTab("leituras")}
-            className={`p-4 bg-green-600 text-white border-0 rounded-xl text-center cursor-pointer transition-all hover:scale-105 hover:brightness-110 hover:shadow-xl shadow-md ${tab==="leituras"?"ring-4 ring-green-300 scale-105":""}`}>
-            <p className="text-2xl font-black">{LEITURAS_LIST.length}</p>
-            <p className="text-xs text-green-200">Leituras</p>
-          </button>
-          <button onClick={() => goToTab("conversacoes")}
-            className={`p-4 bg-orange-500 text-white border-0 rounded-xl text-center cursor-pointer transition-all hover:scale-105 hover:brightness-110 hover:shadow-xl shadow-md ${tab==="conversacoes"?"ring-4 ring-orange-300 scale-105":""}`}>
-            <p className="text-2xl font-black">{CONVERSATIONS.length}</p>
-            <p className="text-xs text-orange-100">Conversações</p>
-          </button>
-        </div>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
-          <button onClick={() => goToTab("textos")}
-            className={`p-4 bg-teal-600 text-white border-0 rounded-xl text-center cursor-pointer transition-all hover:scale-105 hover:brightness-110 hover:shadow-xl shadow-md ${tab==="textos"?"ring-4 ring-teal-300 scale-105":""}`}>
-            <p className="text-2xl font-black">{TEXTS.length}</p>
-            <p className="text-xs text-teal-100">Textos</p>
-          </button>
-          <button onClick={() => goToTab("gramatica")}
-            className={`p-4 bg-indigo-600 text-white border-0 rounded-xl text-center cursor-pointer transition-all hover:scale-105 hover:brightness-110 hover:shadow-xl shadow-md ${tab==="gramatica"?"ring-4 ring-indigo-300 scale-105":""}`}>
-            <p className="text-2xl font-black">{GRAMMAR_LESSONS.length}</p>
-            <p className="text-xs text-indigo-200">Gramática</p>
-          </button>
-          <button onClick={() => goToTab("frases")}
-            className={`p-4 bg-pink-500 text-white border-0 rounded-xl text-center cursor-pointer transition-all hover:scale-105 hover:brightness-110 hover:shadow-xl shadow-md ${tab==="frases"?"ring-4 ring-pink-300 scale-105":""}`}>
-            <p className="text-2xl font-black">{TOTAL_PHRASES}</p>
-            <p className="text-xs text-pink-100">Frases</p>
-          </button>
-          <button onClick={() => goToTab("vocabulario")}
-            className={`p-4 bg-rose-600 text-white border-0 rounded-xl text-center cursor-pointer transition-all hover:scale-105 hover:brightness-110 hover:shadow-xl shadow-md ${tab==="vocabulario"?"ring-4 ring-rose-300 scale-105":""}`}>
-            <p className="text-2xl font-black">{vocabTotal}</p>
-            <p className="text-xs text-rose-200">Vocabulário</p>
-          </button>
-        </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-6">
-          <Link to="/music">
-            <Card className="p-4 bg-gradient-to-r from-violet-600 to-purple-700 text-white border-0 rounded-xl flex items-center gap-4 hover:from-violet-700 hover:to-purple-800 transition-all cursor-pointer h-full">
-              <div className="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center text-2xl flex-shrink-0">🎵</div>
-              <div>
-                <p className="font-black text-lg">Aulas de Música</p>
-                <p className="text-violet-200 text-xs">Aprende inglês com música do YouTube · Controlo de velocidade · Letras + Traduções</p>
+          {[
+            { id: "assimil",      count: ASSIMIL_LESSONS.length,      label: "Assimil",      sub: "Método natural",  img: "photo-1481627834876-b7833e8f5570", grad: "from-purple-950/95 via-purple-700/50", ring: "ring-purple-300" },
+            { id: "pimsleur",     count: PIMSLEUR_LESSONS_LIST.length, label: "Pimsleur",    sub: "Áudio & fala",    img: "photo-1505740420928-5e560c06d30e", grad: "from-blue-950/95 via-blue-700/50",   ring: "ring-blue-300"   },
+            { id: "leituras",     count: LEITURAS_LIST.length,         label: "Leituras",    sub: "Vocabulário",     img: "photo-1456513080510-7bf3a84b82f8", grad: "from-green-950/95 via-green-700/50", ring: "ring-green-300"  },
+            { id: "conversacoes", count: CONVERSATIONS.length,         label: "Conversações",sub: "Diálogos reais",  img: "photo-1521737604893-d14cc237f11d", grad: "from-orange-950/95 via-orange-700/50",ring: "ring-orange-300" },
+          ].map(c => (
+            <button key={c.id} onClick={() => goToTab(c.id as TabId)}
+              className={`relative overflow-hidden rounded-2xl shadow-lg cursor-pointer transition-all duration-300 hover:scale-[1.03] hover:shadow-2xl aspect-[4/3] ${tab===c.id?"ring-4 "+c.ring+" scale-[1.03]":""}`}>
+              <img src={`https://images.unsplash.com/${c.img}?auto=format&fit=crop&w=400&q=70`}
+                alt={c.label} className="absolute inset-0 w-full h-full object-cover" loading="lazy" />
+              <div className={`absolute inset-0 bg-gradient-to-t ${c.grad} to-transparent`} />
+              <div className="absolute inset-0 flex flex-col justify-end p-3 text-left">
+                <p className="text-2xl sm:text-3xl font-black text-white drop-shadow-lg leading-none">{c.count}</p>
+                <p className="text-sm font-bold text-white/90 mt-0.5">{c.label}</p>
+                <p className="text-[11px] text-white/60 hidden sm:block">{c.sub}</p>
               </div>
-              <Music className="w-6 h-6 text-white/60 ml-auto flex-shrink-0" />
-            </Card>
+            </button>
+          ))}
+        </div>
+
+        {/* ── Cards com imagem — linha 2 ── */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
+          {[
+            { id: "textos",      count: TEXTS.length,        label: "Textos",      sub: "Com tradução",     img: "photo-1455390582262-044cdead277a", grad: "from-teal-950/95 via-teal-700/50",   ring: "ring-teal-300"   },
+            { id: "gramatica",   count: GRAMMAR_LESSONS.length,label: "Gramática", sub: "Do básico ao avançado", img: "photo-1503676260728-1c00da094a0b", grad: "from-indigo-950/95 via-indigo-700/50",ring: "ring-indigo-300" },
+            { id: "frases",      count: TOTAL_PHRASES,       label: "Frases",      sub: "17 categorias",    img: "photo-1499750310107-5fef28a66643", grad: "from-pink-950/95 via-pink-700/50",   ring: "ring-pink-300"   },
+            { id: "vocabulario", count: vocabTotal,           label: "Vocabulário", sub: "5 categorias",     img: "photo-1434030216411-0b793f4b4173", grad: "from-rose-950/95 via-rose-700/50",   ring: "ring-rose-300"   },
+          ].map(c => (
+            <button key={c.id} onClick={() => goToTab(c.id as TabId)}
+              className={`relative overflow-hidden rounded-2xl shadow-lg cursor-pointer transition-all duration-300 hover:scale-[1.03] hover:shadow-2xl aspect-[4/3] ${tab===c.id?"ring-4 "+c.ring+" scale-[1.03]":""}`}>
+              <img src={`https://images.unsplash.com/${c.img}?auto=format&fit=crop&w=400&q=70`}
+                alt={c.label} className="absolute inset-0 w-full h-full object-cover" loading="lazy" />
+              <div className={`absolute inset-0 bg-gradient-to-t ${c.grad} to-transparent`} />
+              <div className="absolute inset-0 flex flex-col justify-end p-3 text-left">
+                <p className="text-2xl sm:text-3xl font-black text-white drop-shadow-lg leading-none">{c.count}</p>
+                <p className="text-sm font-bold text-white/90 mt-0.5">{c.label}</p>
+                <p className="text-[11px] text-white/60 hidden sm:block">{c.sub}</p>
+              </div>
+            </button>
+          ))}
+        </div>
+
+        {/* ── Cards grandes: Música e Filmes ── */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+          <Link to="/music">
+            <div className={`relative overflow-hidden rounded-2xl shadow-xl cursor-pointer h-36 sm:h-44 transition-all duration-300 hover:scale-[1.02] hover:shadow-2xl ${tab==="musica"?"ring-4 ring-violet-300":""}`}>
+              <img src="https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?auto=format&fit=crop&w=800&q=75"
+                alt="Música" className="absolute inset-0 w-full h-full object-cover" loading="lazy" />
+              <div className="absolute inset-0 bg-gradient-to-r from-violet-950/95 via-violet-800/75 to-violet-700/30" />
+              <div className="absolute inset-0 flex items-center px-6 gap-4">
+                <div className="w-14 h-14 bg-white/15 backdrop-blur-sm rounded-2xl flex items-center justify-center text-3xl flex-shrink-0 border border-white/20">🎵</div>
+                <div className="flex-1">
+                  <p className="font-black text-xl sm:text-2xl text-white">Aulas de Música</p>
+                  <p className="text-violet-200 text-xs sm:text-sm mt-1 leading-relaxed">YouTube · Velocidade ajustável · Letras + Traduções PT</p>
+                  <div className="flex gap-2 mt-2 flex-wrap">
+                    <span className="text-[10px] bg-white/15 text-white px-2 py-0.5 rounded-full">🐢 0.5× / 0.75× / 1×</span>
+                    <span className="text-[10px] bg-white/15 text-white px-2 py-0.5 rounded-full">📝 CC ao vivo</span>
+                  </div>
+                </div>
+                <Music className="w-8 h-8 text-white/30 flex-shrink-0" />
+              </div>
+            </div>
           </Link>
           <Link to="/movies">
-            <Card className="p-4 bg-gradient-to-r from-amber-600 to-orange-700 text-white border-0 rounded-xl flex items-center gap-4 hover:from-amber-700 hover:to-orange-800 transition-all cursor-pointer h-full">
-              <div className="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center text-2xl flex-shrink-0">🎬</div>
-              <div>
-                <p className="font-black text-lg">Filmes em Inglês</p>
-                <p className="text-amber-100 text-xs">Trechos de filmes oficiais · Legendas CC · Vocabulário e anotações</p>
+            <div className={`relative overflow-hidden rounded-2xl shadow-xl cursor-pointer h-36 sm:h-44 transition-all duration-300 hover:scale-[1.02] hover:shadow-2xl ${tab==="filmes"?"ring-4 ring-amber-300":""}`}>
+              <img src="https://images.unsplash.com/photo-1440404653325-ab127d49abc1?auto=format&fit=crop&w=800&q=75"
+                alt="Filmes" className="absolute inset-0 w-full h-full object-cover" loading="lazy" />
+              <div className="absolute inset-0 bg-gradient-to-r from-amber-950/95 via-orange-900/75 to-orange-700/30" />
+              <div className="absolute inset-0 flex items-center px-6 gap-4">
+                <div className="w-14 h-14 bg-white/15 backdrop-blur-sm rounded-2xl flex items-center justify-center text-3xl flex-shrink-0 border border-white/20">🎬</div>
+                <div className="flex-1">
+                  <p className="font-black text-xl sm:text-2xl text-white">Filmes em Inglês</p>
+                  <p className="text-amber-200 text-xs sm:text-sm mt-1 leading-relaxed">Trechos oficiais · Legendas CC · Vocabulário</p>
+                  <div className="flex gap-2 mt-2 flex-wrap">
+                    <span className="text-[10px] bg-white/15 text-white px-2 py-0.5 rounded-full">🎭 12 filmes</span>
+                    <span className="text-[10px] bg-white/15 text-white px-2 py-0.5 rounded-full">📺 Legendas tempo real</span>
+                  </div>
+                </div>
+                <Film className="w-8 h-8 text-white/30 flex-shrink-0" />
               </div>
-              <Film className="w-6 h-6 text-white/60 ml-auto flex-shrink-0" />
-            </Card>
+            </div>
           </Link>
         </div>
 

@@ -616,20 +616,20 @@ export function LandingPage() {
       </div>
 
       {/* ── CTA Fixo móvel (bottom bar) ── */}
-      <div className="lg:hidden fixed bottom-0 left-0 right-0 bg-white border-t shadow-2xl z-50 p-4">
-        <div className="flex items-center gap-4">
+      <div className="lg:hidden fixed bottom-0 left-0 right-0 bg-white border-t shadow-xl z-50 p-3">
+        <div className="flex items-center gap-3">
           <div>
-            <div className="text-2xl font-black leading-none">US$ 150</div>
-            <div className="text-xs text-purple-600 font-medium">acesso vitalício</div>
+            <div className="text-xl font-black leading-none">US$ 150</div>
+            <div className="text-[11px] text-purple-600 font-medium">acesso vitalício</div>
           </div>
           <Link to="/subscribe" className="flex-1">
-            <Button className="w-full bg-purple-600 hover:bg-purple-700 font-bold py-5">
+            <Button className="w-full bg-purple-600 hover:bg-purple-700 font-bold py-3 text-sm">
               Começar Agora
             </Button>
           </Link>
         </div>
       </div>
-      <div className="lg:hidden h-24" />
+      <div className="lg:hidden h-20" />
 
       {/* ════════════════════════════════════════
           MODAL DE VÍDEO PROMOCIONAL

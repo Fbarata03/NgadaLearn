@@ -200,7 +200,7 @@ function InteractiveLyrics({
     );
 
   return (
-    <div ref={containerRef} className="space-y-1 overflow-y-auto pr-1 py-1" style={{maxHeight:"calc(100vh - 440px)", minHeight:80}}>
+    <div ref={containerRef} className="space-y-1 overflow-y-auto pr-1 py-1" style={{maxHeight:"clamp(240px, calc(100vh - 420px), 580px)", minHeight:80}}>
       {lines.map((line) => {
         const isActive = line.id === activeLine;
         const meta     = DIFF_META[line.difficulty];
@@ -893,7 +893,7 @@ export function MusicPlayer() {
   return (
     <>
       <style>{ANIM_STYLE}</style>
-      <div className="h-screen flex flex-col bg-gradient-to-br from-slate-900 via-purple-950 to-slate-900 text-white overflow-hidden">
+      <div className="min-h-screen lg:h-screen flex flex-col bg-gradient-to-br from-slate-900 via-purple-950 to-slate-900 text-white lg:overflow-hidden">
 
         {/* Header — compacto */}
         <div className="flex-shrink-0 bg-gradient-to-r from-purple-800 via-violet-700 to-indigo-800 px-4 shadow-xl" style={{height:48}}>
@@ -910,10 +910,10 @@ export function MusicPlayer() {
           </div>
         </div>
 
-        <div className="flex-1 min-h-0 max-w-7xl mx-auto w-full px-3 py-2 grid grid-cols-1 lg:grid-cols-3 gap-3">
+        <div className="flex-1 lg:min-h-0 max-w-7xl mx-auto w-full px-3 py-2 grid grid-cols-1 lg:grid-cols-3 gap-3">
 
           {/* ── Coluna Esquerda: pesquisa ─────────────────────────── */}
-          <div className="lg:col-span-1 flex flex-col min-h-0 gap-2 order-2 lg:order-1">
+          <div className="lg:col-span-1 flex flex-col lg:min-h-0 gap-2 order-2 lg:order-1">
             <form onSubmit={e=>{e.preventDefault();searchVideos(query);}}
               className="flex-shrink-0 bg-white/10 backdrop-blur rounded-xl p-3 space-y-2">
               <label className="block text-xs font-bold text-purple-200 uppercase tracking-widest">
@@ -945,7 +945,7 @@ export function MusicPlayer() {
               </div>
             )}
 
-            <div className="flex-1 min-h-0 overflow-y-auto space-y-1.5 pr-1">
+            <div className="max-h-[40vh] lg:max-h-none lg:flex-1 lg:min-h-0 overflow-y-auto space-y-1.5 pr-1">
               {loading && (
                 <div className="text-center py-8">
                   <div className="flex justify-center gap-1 mb-2">
@@ -989,7 +989,7 @@ export function MusicPlayer() {
           </div>
 
           {/* ── Coluna Direita: player + legenda ──────────────────── */}
-          <div className="lg:col-span-2 flex flex-col min-h-0 gap-2 order-1 lg:order-2">
+          <div className="lg:col-span-2 flex flex-col lg:min-h-0 gap-2 order-1 lg:order-2">
 
             {/* Player — gerido pela YouTube IFrame API */}
             <div className={`rounded-2xl overflow-hidden shadow-2xl aspect-video relative bg-black ${isPlaying ? "player-glow" : ""}`}>
@@ -1087,7 +1087,7 @@ export function MusicPlayer() {
             </div>
 
             {/* ── SECÇÃO PRINCIPAL: LETRAS / NOTAS ─────────────────── */}
-            <div className="flex-1 min-h-0 flex flex-col bg-white/10 backdrop-blur rounded-xl overflow-hidden">
+            <div className="lg:flex-1 lg:min-h-0 flex flex-col bg-white/10 backdrop-blur rounded-xl overflow-hidden">
 
               {/* Tabs */}
               <div className="flex-shrink-0 flex border-b border-white/10">

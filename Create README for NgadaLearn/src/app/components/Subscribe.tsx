@@ -333,13 +333,39 @@ export function Subscribe() {
 
       <div className="container mx-auto px-4 py-5 sm:py-8 pb-36 sm:pb-8 max-w-5xl">
 
-        {/* Alerta renovação */}
+        {/* ── Banner de renovação profissional ── */}
         {isRenewal && (
-          <div className="mb-5 p-3.5 bg-orange-50 border-2 border-orange-300 rounded-2xl flex items-start gap-3">
-            <RefreshCw className="w-5 h-5 text-orange-600 flex-shrink-0 mt-0.5" />
-            <div>
-              <p className="font-bold text-orange-800 text-sm">O seu plano mensal expirou</p>
-              <p className="text-xs text-orange-700 mt-0.5">Renove para recuperar o acesso completo.</p>
+          <div className="mb-6">
+            <div className="bg-gradient-to-r from-orange-500 to-red-500 rounded-2xl p-5 text-white mb-4 shadow-lg">
+              <div className="flex items-start gap-4">
+                <div className="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center flex-shrink-0">
+                  <RefreshCw className="w-6 h-6 text-white" />
+                </div>
+                <div className="flex-1">
+                  <p className="font-black text-lg leading-tight">O seu acesso expirou</p>
+                  <p className="text-orange-100 text-sm mt-1">
+                    O seu Plano Mensal chegou ao fim. Renove agora para retomar o acesso imediato a todo o conteúdo.
+                  </p>
+                </div>
+              </div>
+              <div className="mt-4 grid grid-cols-3 gap-3 text-center">
+                {["50+ horas de conteúdo", "NgadaFlow (áudio)", "Acesso em 30 segundos"].map(f => (
+                  <div key={f} className="bg-white/15 rounded-xl p-2">
+                    <Check className="w-4 h-4 text-white mx-auto mb-1" />
+                    <p className="text-[10px] text-orange-100 font-semibold leading-tight">{f}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+            <div className="flex items-center justify-between p-4 bg-white border-2 border-purple-100 rounded-2xl shadow-sm">
+              <div>
+                <p className="font-black text-gray-900">Plano Mensal — Renovação</p>
+                <p className="text-sm text-gray-500 mt-0.5">30 dias de acesso completo · Renova quando precisar</p>
+              </div>
+              <div className="text-right">
+                <p className="text-2xl font-black text-purple-700">US$ 15</p>
+                <p className="text-xs text-gray-400">/mês</p>
+              </div>
             </div>
           </div>
         )}

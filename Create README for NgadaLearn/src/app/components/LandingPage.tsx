@@ -213,7 +213,7 @@ export function LandingPage() {
                     size="lg"
                     className="w-full bg-purple-600 hover:bg-purple-700 py-6 text-lg font-bold"
                   >
-                    Garantir Acesso Vitalício — US$ 20
+                    Garantir Acesso Vitalício — US$ 150
                   </Button>
                 </Link>
                 <p className="text-center text-sm text-gray-400">
@@ -253,9 +253,9 @@ export function LandingPage() {
                 </button>
 
                 <div className="mb-4">
-                  <div className="text-xs text-gray-400 line-through mb-0.5">US$ 60</div>
-                  <div className="text-4xl font-black">US$ 20</div>
-                  <div className="text-purple-700 text-xs font-bold mt-0.5">pagamento único · acesso vitalício</div>
+                  <div className="text-xs text-gray-400 line-through mb-0.5">US$ 300</div>
+                  <div className="text-4xl font-black text-purple-700">US$ 150</div>
+                  <div className="text-gray-500 text-xs font-semibold mt-0.5">pagamento único • acesso para sempre</div>
                 </div>
 
                 <Link to="/subscribe" className="block mb-4">
@@ -281,11 +281,10 @@ export function LandingPage() {
                   ))}
                 </div>
 
-                <div className="mt-4 p-3 bg-green-50 border border-green-200 rounded-lg flex items-start gap-2.5">
-                  <Shield className="w-4 h-4 text-green-600 flex-shrink-0 mt-0.5" />
-                  <p className="text-xs text-green-800">
-                    <strong>Garantia de 30 dias.</strong> Não ficou satisfeito?
-                    Devolvemos 100% do seu dinheiro.
+                <div className="mt-4 p-3 bg-purple-50 border border-purple-200 rounded-lg flex items-start gap-2.5">
+                  <Shield className="w-4 h-4 text-purple-600 flex-shrink-0 mt-0.5" />
+                  <p className="text-xs text-purple-800">
+                    <strong>Pagamento 100% seguro via Stripe.</strong> SSL encriptado · Sem taxas ocultas.
                   </p>
                 </div>
               </Card>

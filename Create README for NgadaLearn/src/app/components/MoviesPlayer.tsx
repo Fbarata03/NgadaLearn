@@ -902,7 +902,7 @@ export function MoviesPlayer() {
         </>
       )}
 
-      <div className="h-screen flex flex-col bg-gradient-to-br from-slate-950 via-amber-950/20 to-slate-950 text-white overflow-hidden">
+      <div className="min-h-screen lg:h-screen flex flex-col bg-gradient-to-br from-slate-950 via-amber-950/20 to-slate-950 text-white lg:overflow-hidden">
 
         {/* Header — compacto */}
         <div className="flex-shrink-0 bg-gradient-to-r from-amber-800 via-orange-800 to-amber-900 px-4 shadow-xl" style={{height:48}}>
@@ -919,10 +919,10 @@ export function MoviesPlayer() {
           </div>
         </div>
 
-        <div className="flex-1 min-h-0 max-w-7xl mx-auto w-full px-3 py-2 grid grid-cols-1 lg:grid-cols-3 gap-3">
+        <div className="flex-1 lg:min-h-0 max-w-7xl mx-auto w-full px-3 py-2 grid grid-cols-1 lg:grid-cols-3 gap-3">
 
           {/* ── COLUNA ESQUERDA ──────────────────────────────────── */}
-          <div className="lg:col-span-1 flex flex-col min-h-0 gap-2 order-2 lg:order-1">
+          <div className="lg:col-span-1 flex flex-col lg:min-h-0 gap-2 order-2 lg:order-1">
 
             {/* Pesquisa */}
             <form onSubmit={e=>{e.preventDefault();searchClips(query);}}
@@ -990,7 +990,7 @@ export function MoviesPlayer() {
               </div>
             )}
 
-            <div className="flex-1 min-h-0 overflow-y-auto space-y-1.5 pr-1">
+            <div className="max-h-[35vh] lg:max-h-none lg:flex-1 lg:min-h-0 overflow-y-auto space-y-1.5 pr-1">
               {loading && (
                 <div className="text-center py-6">
                   <div className="flex justify-center gap-1 mb-2">
@@ -1045,7 +1045,7 @@ export function MoviesPlayer() {
           </div>
 
           {/* ── COLUNA DIREITA ────────────────────────────────────── */}
-          <div className="lg:col-span-2 flex flex-col min-h-0 gap-2 order-1 lg:order-2">
+          <div className="lg:col-span-2 flex flex-col lg:min-h-0 gap-2 order-1 lg:order-2">
 
             {/* Player */}
             <div className={`rounded-2xl overflow-hidden shadow-2xl aspect-video bg-black relative ${isPlaying ? "movie-glow" : ""}`}>
@@ -1171,7 +1171,7 @@ export function MoviesPlayer() {
             </div>
 
             {/* Vocabulário + Frases + Notas */}
-            <div className="flex-1 min-h-0 flex flex-col bg-white/8 backdrop-blur rounded-xl overflow-hidden border border-amber-500/10">
+            <div className="lg:flex-1 lg:min-h-0 flex flex-col bg-white/8 backdrop-blur rounded-xl overflow-hidden border border-amber-500/10">
 
               {/* Tabs */}
               <div className="flex-shrink-0 flex border-b border-white/10">

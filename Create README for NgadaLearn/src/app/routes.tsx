@@ -16,6 +16,7 @@ import { Login } from "./components/Login";
 import { ResetPassword } from "./components/ResetPassword";
 import { Demo } from "./components/Demo";
 import { Admin } from "./components/Admin";
+import { Certificate } from "./components/Certificate";
 import { ProtectedRoute } from "./components/ProtectedRoute";
 import { GRAMMAR_LESSONS } from "./data/grammarData";
 
@@ -128,6 +129,16 @@ export const router = createBrowserRouter([
         element: (
           <ProtectedRoute>
             <MoviesPlayer />
+          </ProtectedRoute>
+        ),
+      },
+
+      // ── Certificado ──
+      {
+        path: "certificate",
+        element: (
+          <ProtectedRoute>
+            <Certificate />
           </ProtectedRoute>
         ),
       },

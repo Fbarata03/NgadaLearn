@@ -101,13 +101,21 @@ function CertificateSection({
                   <p className="text-[10px] text-gray-500">Nível</p>
                 </div>
               </div>
-              <Button
-                onClick={handleDownload}
-                className="w-full bg-yellow-500 hover:bg-yellow-400 active:bg-yellow-600 text-yellow-900 font-black h-12 rounded-2xl text-sm gap-2"
-              >
-                <Download className="w-4 h-4" />
-                Baixar Certificado (PNG)
-              </Button>
+              <div className="flex gap-2">
+                <Link to="/certificate" className="flex-1">
+                  <Button className="w-full bg-purple-600 hover:bg-purple-700 text-white font-black h-12 rounded-2xl text-sm gap-2">
+                    <Award className="w-4 h-4" />
+                    Ver Certificado
+                  </Button>
+                </Link>
+                <Button
+                  onClick={handleDownload}
+                  variant="outline"
+                  className="h-12 px-4 rounded-2xl border-2 border-yellow-300 text-yellow-700 hover:bg-yellow-50"
+                >
+                  <Download className="w-4 h-4" />
+                </Button>
+              </div>
             </>
           ) : (
             <>

@@ -297,7 +297,9 @@ export function Subscribe() {
     return (
       <div className="min-h-[60vh] flex items-center justify-center px-4">
         <div className="text-center max-w-sm">
-          <div className="text-5xl mb-4">✅</div>
+          <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+            <Check className="w-8 h-8 text-green-600" />
+          </div>
           <h1 className="text-xl font-black mb-2">Já tem acesso!</h1>
           <p className="text-gray-500 text-sm mb-5">O seu plano está activo.</p>
           <Link to="/dashboard">
@@ -426,7 +428,7 @@ export function Subscribe() {
                       >
                         {/* Faixa topo */}
                         <div className="bg-gradient-to-r from-purple-600 to-indigo-600 px-5 py-2 flex items-center justify-between">
-                          <span className="text-white text-xs font-black tracking-wider uppercase">⭐ Recomendado — Melhor Valor</span>
+                          <span className="text-white text-xs font-black tracking-wider uppercase flex items-center gap-1.5"><Star className="w-3.5 h-3.5 fill-yellow-300 text-yellow-300" /> Recomendado — Melhor Valor</span>
                           <span className="bg-white/25 text-white text-[10px] font-bold px-2 py-0.5 rounded-full">POUPA 50%</span>
                         </div>
                         {/* Corpo */}

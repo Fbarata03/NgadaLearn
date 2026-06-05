@@ -4,6 +4,7 @@ import { Button } from "./ui/button";
 import { Card } from "./ui/card";
 import {
   Check,
+  CheckCircle,
   Headphones,
   MessageCircle,
   TrendingUp,
@@ -212,11 +213,11 @@ export function LandingPage() {
               </div>
 
               <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm text-gray-400">
-                <span>🌍 Instruído em Português</span>
+                <span className="flex items-center gap-1.5"><Globe className="w-3.5 h-3.5" /> Instruído em Português</span>
                 <span>•</span>
-                <span>📱 Acesso em qualquer dispositivo</span>
+                <span className="flex items-center gap-1.5"><Smartphone className="w-3.5 h-3.5" /> Qualquer dispositivo</span>
                 <span>•</span>
-                <span>✅ Atualizado em Maio de 2026</span>
+                <span className="flex items-center gap-1.5"><CheckCircle className="w-3.5 h-3.5 text-green-400" /> Atualizado em Maio de 2026</span>
               </div>
 
               {/* CTA móvel */}
@@ -377,12 +378,13 @@ export function LandingPage() {
       </div>
 
       {/* ── Mais vendido ── */}
-      <div className="bg-yellow-50 border-y border-yellow-200 py-3">
+      <div className="bg-amber-50 border-y border-amber-200 py-3">
         <div className="container mx-auto px-4 flex flex-wrap items-center gap-3">
-          <span className="bg-yellow-500 text-white text-xs font-bold px-2.5 py-1 rounded">
-            MAIS VENDIDO
+          <span className="flex items-center gap-1.5 bg-amber-500 text-white text-xs font-bold px-2.5 py-1 rounded-md">
+            <TrendingUp className="w-3 h-3" /> MAIS VENDIDO
           </span>
-          <span className="text-sm text-gray-700">
+          <span className="text-sm text-gray-700 flex items-center gap-1.5">
+            <Users className="w-3.5 h-3.5 text-amber-600" />
             Mais de 2.300 alunos matriculados nos últimos 30 dias
           </span>
         </div>
@@ -608,8 +610,14 @@ export function LandingPage() {
             </section>
 
             {/* CTA final */}
-            <section className="bg-gradient-to-br from-purple-600 to-blue-700 rounded-2xl p-6 sm:p-8 text-white text-center">
-              <div className="text-5xl mb-4">🚀</div>
+            <section className="relative overflow-hidden bg-gradient-to-br from-purple-600 to-blue-700 rounded-2xl p-6 sm:p-8 text-white text-center">
+              <div className="absolute inset-0 opacity-10">
+                <img src="https://images.unsplash.com/photo-1546410531-bb4caa6b424d?auto=format&fit=crop&w=800&q=60" alt="" className="w-full h-full object-cover" />
+              </div>
+              <div className="relative z-10">
+              <div className="w-16 h-16 bg-white/20 rounded-2xl flex items-center justify-center mx-auto mb-5 backdrop-blur-sm">
+                <TrendingUp className="w-8 h-8 text-white" />
+              </div>
               <h2 className="text-2xl sm:text-3xl font-black mb-3">A tua jornada começa hoje</h2>
               <p className="text-purple-200 mb-6 max-w-md mx-auto">
                 Não adie mais. Com US$ 150 (≈ €138) investe no inglês que abre portas para
@@ -626,6 +634,7 @@ export function LandingPage() {
               <p className="text-xs text-purple-300 mt-3">
                 Pagamento único · Sem mensalidades · Acesso para sempre
               </p>
+              </div>
             </section>
           </div>
 

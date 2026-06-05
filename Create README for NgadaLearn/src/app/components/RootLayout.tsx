@@ -13,6 +13,8 @@ import {
   ShieldCheck,
   Music,
   Film,
+  Globe,
+  Lock,
 } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 
@@ -364,8 +366,8 @@ export function RootLayout() {
               <a href="mailto:suporte@ngadalearn.pt" className="hover:text-gray-300 transition-colors">Suporte</a>
             </div>
             <div className="flex flex-wrap items-center justify-center gap-4">
-              <span>🌍 Português</span>
-              <span>🔒 Pagamentos seguros via Stripe</span>
+              <span className="flex items-center gap-1.5"><Globe className="w-3.5 h-3.5" /> Português</span>
+              <span className="flex items-center gap-1.5"><Lock className="w-3.5 h-3.5" /> Pagamentos seguros via Stripe</span>
             </div>
           </div>
         </div>

@@ -372,18 +372,25 @@ export function Dashboard() {
 
           {/* ── CTA se não começou ── */}
           {totalCompleted === 0 && (
-            <div className="bg-gradient-to-r from-purple-600 to-blue-600 rounded-2xl p-6 text-white text-center">
-              <div className="text-4xl mb-3">🚀</div>
-              <h3 className="text-2xl font-black mb-2">Comece a Aprender Agora!</h3>
-              <p className="text-purple-200 mb-5">
-                Você tem acesso a <strong>194 aulas</strong> — Assimil, Pimsleur e Leituras.
-                Cada aula tem áudio real e exercícios interativos.
-              </p>
-              <Link to="/lessons">
-                <Button size="lg" className="bg-white text-purple-700 hover:bg-gray-100 font-black px-10">
-                  Começar Lição 1 →
-                </Button>
-              </Link>
+            <div className="relative overflow-hidden bg-gradient-to-r from-purple-600 to-blue-600 rounded-2xl p-6 text-white text-center">
+              <div className="absolute inset-0 opacity-10">
+                <img src="https://images.unsplash.com/photo-1481627834876-b7833e8f5570?auto=format&fit=crop&w=800&q=60" alt="" className="w-full h-full object-cover" />
+              </div>
+              <div className="relative z-10">
+                <div className="w-14 h-14 bg-white/20 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                  <PlayCircle className="w-7 h-7 text-white" />
+                </div>
+                <h3 className="text-2xl font-black mb-2">Começa a Aprender Agora!</h3>
+                <p className="text-purple-200 mb-5">
+                  Tens acesso a <strong className="text-white">194 aulas</strong> — Assimil, Pimsleur e Leituras.
+                  Cada aula tem áudio real e exercícios interativos.
+                </p>
+                <Link to="/lessons">
+                  <Button size="lg" className="bg-white text-purple-700 hover:bg-gray-100 font-black px-10 shadow-lg">
+                    Começar Lição 1 →
+                  </Button>
+                </Link>
+              </div>
             </div>
           )}
 
@@ -392,9 +399,9 @@ export function Dashboard() {
             <div className="bg-gradient-to-r from-purple-600 to-blue-600 rounded-2xl p-6 text-white">
               <div className="flex flex-col md:flex-row items-center justify-between gap-4">
                 <div>
-                  <h3 className="text-xl font-black mb-1">Continue Hoje! 🎯</h3>
+                  <h3 className="text-xl font-black mb-1 flex items-center gap-2"><Target className="w-5 h-5" /> Continua Hoje!</h3>
                   <p className="text-purple-200 text-sm">
-                    Cada aula te aproxima da fluência. Mantenha a sequência!
+                    Cada aula aproxima-te da fluência. Mantém a sequência!
                   </p>
                 </div>
                 <Link to="/lessons" className="w-full md:w-auto">

@@ -1,821 +1,464 @@
 /* ═══════════════════════════════════════════════════════════════════
    NgadaLearn — Prática de Conversação ao Vivo
-   Deepgram STT (speech-to-text) + Deepgram Aura TTS (text-to-speech)
-   IA tutor com tópicos, dificuldade e feedback em tempo real
+   Interface estilo Gemini Live — foto real, animação, mobile-first
    ═══════════════════════════════════════════════════════════════════ */
 
 import { useState, useRef, useEffect, useCallback } from "react";
 import { Link } from "react-router";
 import {
-  Mic, MicOff, Volume2, VolumeX, RotateCcw, ChevronLeft,
-  MessageCircle, Star, Zap, BookOpen, Globe, Briefcase,
-  ShoppingBag, UtensilsCrossed, Plane, Users, Stethoscope,
-  CheckCircle, AlertCircle, ChevronDown, PlayCircle, Trophy,
+  Mic, MicOff, Volume2, VolumeX, ChevronLeft, X,
+  ShoppingBag, UtensilsCrossed, Plane, Users, Briefcase, Star,
+  Stethoscope, Globe,
 } from "lucide-react";
-import { Button } from "./ui/button";
-import { Card } from "./ui/card";
-import { Progress } from "./ui/progress";
+
+/* ── CSS de animação ─────────────────────────────────────────────── */
+const ANIM = `
+@keyframes ripple {
+  0%   { transform: scale(1);   opacity: .6; }
+  100% { transform: scale(2.2); opacity: 0;  }
+}
+@keyframes ripple2 {
+  0%   { transform: scale(1);   opacity: .4; }
+  100% { transform: scale(2.8); opacity: 0;  }
+}
+@keyframes pulse-ring {
+  0%,100% { transform: scale(1);   opacity: .8; }
+  50%      { transform: scale(1.08); opacity: 1;  }
+}
+@keyframes wave {
+  0%,100% { height: 6px;  }
+  50%     { height: 28px; }
+}
+@keyframes fadeUp {
+  from { opacity:0; transform:translateY(12px); }
+  to   { opacity:1; transform:translateY(0);    }
+}
+.ripple-1 { animation: ripple  1.8s ease-out infinite; }
+.ripple-2 { animation: ripple2 1.8s ease-out .5s infinite; }
+.pulse-ring{ animation: pulse-ring 1.4s ease-in-out infinite; }
+.wave-bar  { animation: wave 0.6s ease-in-out infinite; }
+.fade-up   { animation: fadeUp .4s ease forwards; }
+`;
 
 /* ── Config ──────────────────────────────────────────────────────── */
-// A chave Deepgram está no BACKEND — o frontend nunca a vê
 const BACKEND = import.meta.env.VITE_API_URL || "https://ngadalearn-api.onrender.com";
-// Endpoints do backend que fazem a ponte com a Deepgram:
-const API_STT  = `${BACKEND}/api/transcribe`;          // POST áudio → texto
-const API_TTS  = (voice: string) => `${BACKEND}/api/speak?voice=${voice}`; // POST texto → mp3
-const API_CHAT = `${BACKEND}/api/conversation`;         // POST mensagem → resposta tutor
+const API_STT  = `${BACKEND}/api/transcribe`;
+const API_TTS  = (v: string) => `${BACKEND}/api/speak?voice=${v}`;
+const API_CHAT = `${BACKEND}/api/conversation`;
 
-/* ── Tipos ───────────────────────────────────────────────────────── */
-interface Message {
-  role: "tutor" | "user";
-  text: string;
-  feedback?: { corrections: string[]; vocab: string[]; tip: string } | null;
-  timestamp: number;
-}
+/* ── Foto real do tutor (Unsplash) ───────────────────────────────── */
+const TUTOR_PHOTO =
+  "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&w=300&h=300&q=80";
 
-interface Topic {
-  id: string;
-  label: string;
-  icon: React.ElementType;
-  color: string;
-  description: string;
-  starter: string;
-  systemPrompt: string;
-  vocabulary: string[];
-}
+/* ── Tópicos ─────────────────────────────────────────────────────── */
+const TOPICS = [
+  { id: "smalltalk", label: "Apresentações",  icon: Users,         color: "#7c3aed", starter: "Hi! I'm Alex, your English tutor. Let's chat! How are you today?" },
+  { id: "shopping",  label: "Compras",         icon: ShoppingBag,  color: "#2563eb", starter: "Welcome! I'm a shop assistant. What are you looking for today?" },
+  { id: "restaurant",label: "Restaurante",     icon: UtensilsCrossed,color:"#ea580c",starter: "Good evening! Welcome. Are you ready to order?" },
+  { id: "travel",    label: "Viagens",          icon: Plane,        color: "#0891b2", starter: "Hello! I'm the hotel receptionist. How can I help you today?" },
+  { id: "interview", label: "Entrevista",       icon: Briefcase,    color: "#4338ca", starter: "Good morning! Please tell me about yourself and your experience." },
+  { id: "health",    label: "Saúde",            icon: Stethoscope,  color: "#16a34a", starter: "Good morning, I'm Dr. Alex. What seems to be the problem today?" },
+  { id: "business",  label: "Negócios",         icon: Globe,        color: "#475569", starter: "Good morning! Let's start our meeting. Can you give us a project update?" },
+  { id: "culture",   label: "Cultura Pop",      icon: Star,         color: "#db2777", starter: "Hey! What kind of movies or music do you enjoy? Let's talk!" },
+] as const;
+type TopicId = typeof TOPICS[number]["id"];
 
-type Difficulty = "beginner" | "intermediate" | "advanced";
-
-/* ── Tópicos de conversação ──────────────────────────────────────── */
-const TOPICS: Topic[] = [
-  {
-    id: "smalltalk",
-    label: "Apresentações",
-    icon: Users,
-    color: "bg-purple-500",
-    description: "Cumprimentos, apresentações e conversa informal",
-    starter: "Hi there! I'm Alex, your English tutor. Let's practice some small talk! How are you doing today? Tell me a bit about yourself.",
-    systemPrompt: "Practice greetings, introductions, asking about hobbies and daily life. Keep it friendly and encouraging.",
-    vocabulary: ["Nice to meet you", "How are you doing?", "What do you do for a living?", "I enjoy", "In my free time"],
-  },
-  {
-    id: "shopping",
-    label: "Compras",
-    icon: ShoppingBag,
-    color: "bg-blue-500",
-    description: "Em lojas, mercados e centros comerciais",
-    starter: "Welcome to our store! I'm here to help you practice shopping in English. What are you looking for today?",
-    systemPrompt: "Simulate a shopping scenario. Practice asking about prices, sizes, colors, availability. Help with shopping vocabulary.",
-    vocabulary: ["How much does it cost?", "Do you have it in...?", "I'm looking for...", "Can I try it on?", "I'll take it"],
-  },
-  {
-    id: "restaurant",
-    label: "Restaurante",
-    icon: UtensilsCrossed,
-    color: "bg-orange-500",
-    description: "Fazer pedidos e conversar num restaurante",
-    starter: "Good evening! Welcome to The English Café. I'm your server tonight. Are you ready to order, or would you like a few more minutes?",
-    systemPrompt: "Simulate a restaurant scenario. Practice ordering food, asking about the menu, making special requests, paying the bill.",
-    vocabulary: ["I'd like to order...", "What do you recommend?", "Is it spicy?", "The bill, please", "Could I have...?"],
-  },
-  {
-    id: "travel",
-    label: "Viagens",
-    icon: Plane,
-    color: "bg-cyan-500",
-    description: "Aeroporto, hotel e turismo",
-    starter: "Hello! I'm the receptionist at The Grand Hotel. How can I assist you today? Are you checking in?",
-    systemPrompt: "Practice travel English — hotels, airports, directions, tourist information. Focus on practical travel phrases.",
-    vocabulary: ["I have a reservation", "Where is the...?", "How do I get to...?", "Can you help me?", "How far is it?"],
-  },
-  {
-    id: "interview",
-    label: "Entrevista",
-    icon: Briefcase,
-    color: "bg-indigo-500",
-    description: "Entrevistas de emprego em inglês",
-    starter: "Good morning! I'm the hiring manager at TechCorp. Thank you for coming in today. Could you start by telling me a little about yourself and your background?",
-    systemPrompt: "Simulate a job interview. Ask about experience, skills, strengths/weaknesses, career goals. Professional language focus.",
-    vocabulary: ["My experience includes...", "I'm proficient in...", "My greatest strength is...", "I'm a team player", "I'm looking for a challenge"],
-  },
-  {
-    id: "health",
-    label: "Saúde",
-    icon: Stethoscope,
-    color: "bg-green-500",
-    description: "Consultas médicas e farmácia",
-    starter: "Good morning, I'm Dr. Miller. Please, take a seat. What seems to be the problem today? How can I help you?",
-    systemPrompt: "Practice medical English — describing symptoms, asking for medicine, understanding medical advice. Be clear and helpful.",
-    vocabulary: ["I have a headache", "It hurts here", "Since yesterday", "I'm allergic to...", "How often should I take it?"],
-  },
-  {
-    id: "business",
-    label: "Negócios",
-    icon: Globe,
-    color: "bg-slate-600",
-    description: "Reuniões e e-mails profissionais",
-    starter: "Good morning, everyone. Let's get started with today's meeting. First, could you give us a quick update on the project status?",
-    systemPrompt: "Simulate business meetings, presentations and professional communication. Focus on formal business English.",
-    vocabulary: ["As per our agenda", "Could you elaborate?", "I'd like to propose...", "Let's wrap up", "Following up on..."],
-  },
-  {
-    id: "culture",
-    label: "Cultura Pop",
-    icon: Star,
-    color: "bg-pink-500",
-    description: "Filmes, música e entretenimento",
-    starter: "Hey! So I just watched an amazing movie. What kind of movies or TV shows do you like? Are you a fan of any particular genre?",
-    systemPrompt: "Casual conversation about movies, music, sports, entertainment. Fun and relaxed English practice.",
-    vocabulary: ["I'm a big fan of...", "Have you seen...?", "What do you think of...?", "I'd highly recommend", "It's worth watching"],
-  },
-];
-
-const DIFFICULTIES: { id: Difficulty; label: string; desc: string; color: string }[] = [
-  { id: "beginner",     label: "A1–A2",      desc: "Frases simples, vocabulário básico",    color: "bg-green-500" },
-  { id: "intermediate", label: "B1–B2",      desc: "Conversação fluente, erros ocasionais", color: "bg-yellow-500" },
-  { id: "advanced",     label: "C1–C2",      desc: "Inglês complexo, expressões idiomáticas", color: "bg-red-500" },
-];
-
-const TUTOR_VOICES: Record<Difficulty, string> = {
-  beginner:     "aura-asteria-en",
-  intermediate: "aura-luna-en",
-  advanced:     "aura-orion-en",
+const VOICES: Record<string, string> = {
+  beginner: "aura-asteria-en", intermediate: "aura-luna-en", advanced: "aura-orion-en",
 };
 
-/* ── Avaliação de inglês (client-side) ───────────────────────────── */
-function evaluateEnglish(text: string, difficulty: Difficulty): {
-  corrections: string[]; vocab: string[]; tip: string; score: number;
-} {
-  const corrections: string[] = [];
-  const vocab: string[] = [];
+/* ── Avaliação simples ───────────────────────────────────────────── */
+function quickFeedback(text: string): string | null {
   const t = text.toLowerCase();
-
-  /* Erros comuns PT→EN */
-  if (/\bi (is|am) /.test(t))       corrections.push('"I am" not "I is"');
-  if (/don't has/.test(t))           corrections.push('"don\'t have" not "don\'t has"');
-  if (/he have/.test(t))             corrections.push('"he has" not "he have"');
-  if (/yesterday i go/.test(t))      corrections.push('Use past tense: "I went" not "I go"');
-  if (/since \d+ (day|year)s/.test(t)) corrections.push('Use "for" with duration, "since" with a point in time');
-
-  /* Bom vocabulário identificado */
-  const goodPhrases = ["however", "therefore", "furthermore", "in addition", "for instance", "on the other hand", "as a result", "in conclusion"];
-  goodPhrases.forEach(p => { if (t.includes(p)) vocab.push(`Great use of "${p}"! 👍`); });
-
-  /* Dicas por dificuldade */
-  const tips: Record<Difficulty, string[]> = {
-    beginner:     ["Try to use complete sentences!", "Good try — keep practising!", "Remember to say 'I am' or 'I'm'"],
-    intermediate: ["Try adding more details to your answer.", "Use connectors like 'however', 'because', 'therefore'.", "Great effort! Try varying your vocabulary."],
-    advanced:     ["Excellent! Try using idiomatic expressions.", "Consider using the passive voice for variety.", "Your English is improving — add more nuance!"],
-  };
-  const tip = tips[difficulty][Math.floor(Math.random() * tips[difficulty].length)];
-
-  const wordCount = text.trim().split(/\s+/).length;
-  const baseScore = Math.min(wordCount * 3, 40);
-  const correctionPenalty = corrections.length * 5;
-  const vocabBonus = vocab.length * 10;
-  const score = Math.max(0, Math.min(100, baseScore - correctionPenalty + vocabBonus));
-
-  return { corrections, vocab, tip, score };
+  if (/\bhe have\b/.test(t))   return "💡 \"he has\" not \"he have\"";
+  if (/\bi is\b/.test(t))      return "💡 \"I am\" not \"I is\"";
+  if (/\bdon't has\b/.test(t)) return "💡 \"don't have\" not \"don't has\"";
+  if (text.trim().split(" ").length < 3) return "💡 Try to answer with a full sentence!";
+  return null;
 }
 
-/* ── Resposta do tutor (backend ou fallback) ─────────────────────── */
-async function getTutorResponse(
-  userText: string,
-  topic: Topic,
-  difficulty: Difficulty,
-  history: Message[]
-): Promise<string> {
-  const difficultyInstructions: Record<Difficulty, string> = {
-    beginner:     "Use simple words and short sentences. Speak slowly and clearly. Correct mistakes gently with the right form.",
-    intermediate: "Use natural conversation. Occasionally introduce new vocabulary. Correct major mistakes kindly.",
-    advanced:     "Use natural, complex English. Use idioms and advanced structures. Challenge the student with follow-up questions.",
-  };
+/* ── Fallback de respostas ───────────────────────────────────────── */
+const FALLBACKS: Record<string, string[]> = {
+  smalltalk:  ["That sounds great! Tell me more — what do you enjoy doing at weekends?", "Interesting! And where are you from? Have you ever visited an English-speaking country?", "Wonderful! What's your favourite thing about learning English?"],
+  shopping:   ["Great choice! What size are you looking for?", "We have it in blue and green — which do you prefer?", "Of course! The fitting rooms are just over there. Can I help with anything else?"],
+  restaurant: ["Excellent! And what would you like to drink with that?", "Our special today is grilled salmon — highly recommended!", "Absolutely! Would you like any dessert? Our chocolate cake is amazing."],
+  travel:     ["Your room is ready on the 5th floor. Would you like a wake-up call?", "The city centre is about 10 minutes by taxi. Shall I call one for you?", "Check-out is at 11 AM. Is there anything else I can help you with?"],
+  interview:  ["Impressive! Could you give me a specific example of a challenge you overcame?", "Interesting! Where do you see yourself in five years?", "Great answer! What would you say is your biggest professional achievement so far?"],
+  health:     ["I see. How long have you had this? And does anything make it worse?", "Are you allergic to any medications? Have you taken anything for it already?", "I'll prescribe something for you. Take one tablet twice a day with food."],
+  business:   ["Excellent update! Any blockers we should be aware of?", "Good point! How do you propose we resolve this before the deadline?", "Let's action that. Can you send a follow-up email to the team today?"],
+  culture:    ["Oh amazing! What's your all-time favourite film? I'd love to know!", "Great taste! Have you seen any good series lately on Netflix?", "I love that! Do you prefer watching with subtitles? It's great for English practice!"],
+};
 
-  const historyText = history.slice(-6).map(m => `${m.role === "tutor" ? "Tutor" : "Student"}: ${m.text}`).join("\n");
-
-  const systemPrompt = `You are Alex, a friendly and encouraging English conversation tutor for Portuguese speakers learning English.
-Topic: ${topic.label} — ${topic.description}
-${topic.systemPrompt}
-Difficulty: ${difficulty} — ${difficultyInstructions[difficulty]}
-
-RULES:
-- Keep responses SHORT (2-4 sentences max)
-- ALWAYS end with a question to keep the conversation going
-- If the student makes errors, gently correct them and continue
-- Be warm, encouraging and natural
-- Never break character
-- Focus on the topic: ${topic.label}`;
-
+async function getTutorReply(user: string, topicId: TopicId, history: string, difficulty: string): Promise<string> {
   try {
-    const res = await fetch(API_CHAT, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ systemPrompt, history: historyText, userMessage: userText, topic: topic.id, difficulty }),
+    const r = await fetch(API_CHAT, {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ userMessage: user, topic: topicId, history, difficulty,
+        systemPrompt: `You are Alex, a friendly English tutor. Topic: ${topicId}. Keep replies SHORT — max 2 sentences. Always end with a question. Correct gently. Level: ${difficulty}.` }),
     });
-    if (res.ok) {
-      const data = await res.json();
-      if (data.response) return data.response;
-    }
+    if (r.ok) { const d = await r.json(); if (d.response) return d.response; }
   } catch { /* fallback */ }
-
-  /* ── Fallback inteligente (sem backend) ── */
-  const fallbacks: Record<string, string[]> = {
-    smalltalk: [
-      "That's great! Tell me more about your hobbies. What do you enjoy doing in your free time?",
-      "Interesting! So what's a typical day like for you? Do you work or study?",
-      "That sounds wonderful! Have you ever travelled to an English-speaking country?",
-      "I love hearing about that! What's your favorite thing about your city?",
-    ],
-    shopping: [
-      "Of course! We have that item available. What size are you looking for — small, medium, or large?",
-      "Great choice! That item costs $25. Would you like to pay by cash or card?",
-      "I'm afraid we're out of stock in that colour. We have it in blue and green — would either of those work?",
-      "Excellent! Would you like to try it on? The fitting rooms are just over there.",
-    ],
-    restaurant: [
-      "Excellent choice! And what would you like to drink? We have water, juice, or our house wine.",
-      "Our chef's special tonight is grilled salmon with vegetables. It's absolutely delicious — highly recommended!",
-      "Of course! Are you celebrating anything special tonight? We can make it extra memorable.",
-      "I'm so glad you enjoyed the meal! Can I bring you the dessert menu, or would you like the bill?",
-    ],
-    travel: [
-      "Welcome! I have your reservation right here. Your room is ready. Would you like a king or twin bed?",
-      "The city centre is about 10 minutes by taxi. You can also take the number 5 bus from the front of the hotel.",
-      "Absolutely! Check-out time is 11 AM. Would you like a wake-up call in the morning?",
-      "I can recommend the old town area — it's beautiful and full of great restaurants. Do you need a map?",
-    ],
-    interview: [
-      "That's very impressive! Could you tell me about a specific challenge you faced in your previous role and how you handled it?",
-      "Excellent background! Where do you see yourself in five years? What are your career goals?",
-      "I see. And why are you interested in working for our company specifically? What attracted you to this position?",
-      "Great answer! Now, could you describe your greatest professional achievement so far?",
-    ],
-    health: [
-      "I see. How long have you had this symptom? And does anything make it better or worse?",
-      "I understand. Have you taken any medication for this? Are you allergic to any medicines?",
-      "Based on what you've told me, I'd like to prescribe something for you. Take one tablet twice a day with food.",
-      "That should help within a few days. If it doesn't improve, please come back and see me immediately.",
-    ],
-    business: [
-      "Excellent update! Let's move to the next agenda item. Who wants to present the quarterly figures?",
-      "That's a valid point. How do you propose we address this challenge? Any specific recommendations?",
-      "Good idea! Let's put that on the action list. Can you send a follow-up email to the team by end of day?",
-      "Absolutely. I think we're all in agreement. Let's schedule a follow-up meeting for next week to review progress.",
-    ],
-    culture: [
-      "Oh interesting! Have you seen any good films recently? What's your all-time favourite movie?",
-      "I love that show too! What kind of music do you listen to? Any favourite artists or bands?",
-      "That's a great recommendation! Do you prefer watching things with subtitles or without? It's great practice!",
-      "Totally agree! What about sports — do you follow any teams? The World Cup is always exciting!",
-    ],
-  };
-
-  const topicFallbacks = fallbacks[topic.id] || fallbacks.smalltalk;
-  const userWordCount = userText.trim().split(/\s+/).length;
-
-  if (userWordCount < 3) {
-    return "I didn't quite catch that! Could you try again? Speak a complete sentence — for example: 'I would like...' or 'I think...'";
-  }
-
-  return topicFallbacks[Math.floor(Math.random() * topicFallbacks.length)];
+  const arr = FALLBACKS[topicId] || FALLBACKS.smalltalk;
+  return arr[Math.floor(Math.random() * arr.length)];
 }
 
 /* ════════════════════════════════════════════════════════════════════
-   COMPONENTE PRINCIPAL
+   COMPONENTE
    ════════════════════════════════════════════════════════════════════ */
 export function ConversationPractice() {
-  const [step,         setStep]         = useState<"select" | "practice">("select");
-  const [topic,        setTopic]        = useState<Topic>(TOPICS[0]);
-  const [difficulty,   setDifficulty]   = useState<Difficulty>("beginner");
-  const [messages,     setMessages]     = useState<Message[]>([]);
-  const [isListening,  setIsListening]  = useState(false);
-  const [isProcessing, setIsProcessing] = useState(false);
-  const [isSpeaking,   setIsSpeaking]   = useState(false);
-  const [liveText,     setLiveText]     = useState("");
-  const [totalScore,   setTotalScore]   = useState(0);
-  const [turnCount,    setTurnCount]    = useState(0);
-  const [audioEnabled, setAudioEnabled] = useState(true);
-  const [showVocab,    setShowVocab]    = useState(false);
-  const [micError,     setMicError]     = useState("");
+  /* ── Estado ── */
+  const [screen,      setScreen]      = useState<"select" | "live">("select");
+  const [topicId,     setTopicId]     = useState<TopicId>("smalltalk");
+  const [difficulty,  setDifficulty]  = useState("beginner");
+  const [phase,       setPhase]       = useState<"idle" | "listening" | "thinking" | "speaking">("idle");
+  const [tutorText,   setTutorText]   = useState("");
+  const [userText,    setUserText]    = useState("");
+  const [liveText,    setLiveText]    = useState("");
+  const [feedback,    setFeedback]    = useState<string | null>(null);
+  const [muted,       setMuted]       = useState(false);
+  const [history,     setHistory]     = useState("");
+  const [micError,    setMicError]    = useState("");
 
-  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
-  const audioChunksRef   = useRef<Blob[]>([]);
-  const streamRef        = useRef<MediaStream | null>(null);
-  const chatEndRef       = useRef<HTMLDivElement>(null);
-  const currentAudioRef  = useRef<HTMLAudioElement | null>(null);
-  const recognitionRef   = useRef<any>(null);
+  const mediaRecRef  = useRef<MediaRecorder | null>(null);
+  const chunksRef    = useRef<Blob[]>([]);
+  const streamRef    = useRef<MediaStream | null>(null);
+  const audioRef     = useRef<HTMLAudioElement | null>(null);
+  const recognRef    = useRef<any>(null);
 
-  /* Auto-scroll */
-  useEffect(() => {
-    chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages, liveText]);
+  const topic = TOPICS.find(t => t.id === topicId)!;
 
-  /* Cleanup on unmount */
-  useEffect(() => () => {
-    stopStream();
-    currentAudioRef.current?.pause();
-    if (recognitionRef.current) try { recognitionRef.current.stop(); } catch(_) {}
-  }, []);
+  /* cleanup */
+  useEffect(() => () => { stopStream(); audioRef.current?.pause(); stopRecog(); }, []);
 
-  function stopStream() {
-    streamRef.current?.getTracks().forEach(t => t.stop());
-    streamRef.current = null;
-  }
+  function stopStream() { streamRef.current?.getTracks().forEach(t => t.stop()); streamRef.current = null; }
+  function stopRecog()  { try { recognRef.current?.stop(); } catch(_) {}  recognRef.current = null; }
 
-  /* ── Falar com Deepgram TTS ──────────────────────────────────────── */
+  /* ── Falar (TTS) ─────────────────────────────────────────────── */
   const speak = useCallback(async (text: string) => {
-    if (!audioEnabled) return;
-    currentAudioRef.current?.pause();
-    setIsSpeaking(true);
+    if (muted) return;
+    audioRef.current?.pause();
+    setPhase("speaking"); setTutorText(text);
     try {
-      const res = await fetch(API_TTS(TUTOR_VOICES[difficulty]), {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
+      const r = await fetch(API_TTS(VOICES[difficulty]), {
+        method: "POST", headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ text }),
       });
-      if (!res.ok) throw new Error("TTS failed");
-      const blob = await res.blob();
+      if (!r.ok) throw new Error();
+      const blob = await r.blob();
       const url  = URL.createObjectURL(blob);
-      const audio = new Audio(url);
-      currentAudioRef.current = audio;
-      audio.onended = () => { setIsSpeaking(false); URL.revokeObjectURL(url); };
-      audio.onerror = () => setIsSpeaking(false);
-      await audio.play();
+      const a    = new Audio(url);
+      audioRef.current = a;
+      a.onended = () => { setPhase("idle"); URL.revokeObjectURL(url); };
+      a.onerror = () => setPhase("idle");
+      a.play();
     } catch {
-      /* Fallback: Web Speech API */
       if ("speechSynthesis" in window) {
         window.speechSynthesis.cancel();
         const u = new SpeechSynthesisUtterance(text);
-        u.lang = "en-US"; u.rate = difficulty === "beginner" ? 0.8 : 1;
-        const voices = window.speechSynthesis.getVoices();
-        const pref = voices.find(v => v.lang === "en-US" && v.name.includes("Google")) || voices.find(v => v.lang.startsWith("en"));
-        if (pref) u.voice = pref;
-        u.onend = () => setIsSpeaking(false);
+        u.lang = "en-US"; u.rate = difficulty === "beginner" ? 0.85 : 1;
+        const v = window.speechSynthesis.getVoices().find(x => x.lang === "en-US");
+        if (v) u.voice = v;
+        u.onend = () => setPhase("idle");
         window.speechSynthesis.speak(u);
-      } else {
-        setIsSpeaking(false);
-      }
+      } else { setPhase("idle"); }
     }
-  }, [difficulty, audioEnabled]);
+  }, [difficulty, muted]);
 
-  /* ── Iniciar sessão ──────────────────────────────────────────────── */
+  /* ── Iniciar sessão ──────────────────────────────────────────── */
   async function startSession() {
-    setMessages([]);
-    setTotalScore(0);
-    setTurnCount(0);
-    setLiveText("");
-    setMicError("");
-    setStep("practice");
-
-    const tutorMsg: Message = { role: "tutor", text: topic.starter, feedback: null, timestamp: Date.now() };
-    setMessages([tutorMsg]);
+    setScreen("live"); setPhase("idle");
+    setTutorText(""); setUserText(""); setLiveText(""); setHistory(""); setFeedback(""); setMicError("");
     await speak(topic.starter);
+    setHistory(`Tutor: ${topic.starter}\n`);
   }
 
-  /* ── Gravar com MediaRecorder ────────────────────────────────────── */
-  async function startListening() {
-    setMicError("");
+  /* ── Gravar ──────────────────────────────────────────────────── */
+  async function startListen() {
+    if (phase === "speaking") { audioRef.current?.pause(); setPhase("idle"); }
+    setMicError(""); setLiveText(""); chunksRef.current = [];
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       streamRef.current = stream;
-      audioChunksRef.current = [];
-
-      /* Web Speech API para preview em tempo real */
-      const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
-      if (SpeechRecognition) {
-        const rec = new SpeechRecognition();
-        rec.lang = "en-US"; rec.continuous = true; rec.interimResults = true;
-        rec.onresult = (e: any) => {
-          const interim = Array.from(e.results).map((r: any) => r[0].transcript).join(" ");
-          setLiveText(interim);
-        };
-        rec.start();
-        recognitionRef.current = rec;
-      }
-
-      const mimeType = MediaRecorder.isTypeSupported("audio/webm;codecs=opus") ? "audio/webm;codecs=opus" : "audio/webm";
-      const mr = new MediaRecorder(stream, { mimeType });
-      mr.ondataavailable = e => { if (e.data.size > 0) audioChunksRef.current.push(e.data); };
+      /* Web Speech preview */
+      const SR = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+      if (SR) { const r = new SR(); r.lang="en-US"; r.continuous=true; r.interimResults=true;
+        r.onresult = (e:any) => setLiveText(Array.from(e.results).map((x:any)=>x[0].transcript).join(" "));
+        r.start(); recognRef.current = r; }
+      const mime = MediaRecorder.isTypeSupported("audio/webm;codecs=opus") ? "audio/webm;codecs=opus" : "audio/webm";
+      const mr = new MediaRecorder(stream, { mimeType: mime });
+      mr.ondataavailable = e => { if (e.data.size>0) chunksRef.current.push(e.data); };
       mr.start(250);
-      mediaRecorderRef.current = mr;
-      setIsListening(true);
-    } catch (err) {
-      setMicError("Microfone bloqueado. Clica no cadeado da barra do browser e permite o microfone.");
-    }
+      mediaRecRef.current = mr;
+      setPhase("listening");
+    } catch { setMicError("Microfone bloqueado — permite o acesso no browser."); }
   }
 
-  async function stopListening() {
-    setIsListening(false);
-    if (recognitionRef.current) { try { recognitionRef.current.stop(); } catch(_) {} recognitionRef.current = null; }
-
-    const mr = mediaRecorderRef.current;
+  async function stopListen() {
+    if (phase !== "listening") return;
+    stopRecog();
+    const mr = mediaRecRef.current;
     if (!mr) return;
-
-    await new Promise<void>(resolve => {
-      mr.onstop = () => resolve();
-      mr.stop();
-    });
+    await new Promise<void>(r => { mr.onstop = () => r(); mr.stop(); });
     stopStream();
 
-    const audioBlob = new Blob(audioChunksRef.current, { type: "audio/webm" });
-    const userText  = liveText.trim();
-    setLiveText("");
+    const captured = liveText.trim();
+    setLiveText(""); setPhase("thinking");
 
-    if (!userText && audioBlob.size < 2000) {
-      setMicError("Não ouvi nada. Tenta falar mais alto ou mais perto do microfone.");
-      return;
-    }
+    const blob = new Blob(chunksRef.current, { type: "audio/webm" });
+    let finalText = captured;
 
-    setIsProcessing(true);
-    let finalText = userText;
-
-    /* Enviar áudio ao backend → backend chama Deepgram */
-    if (audioBlob.size > 2000) {
+    if (blob.size > 1500) {
       try {
-        const res = await fetch(API_STT, {
-          method: "POST",
-          headers: { "Content-Type": "audio/webm" },
-          body: audioBlob,
-        });
-        if (res.ok) {
-          const data = await res.json();
-          const dgText = data?.results?.channels?.[0]?.alternatives?.[0]?.transcript;
-          if (dgText?.trim()) finalText = dgText.trim();
-        }
-      } catch { /* usar texto da Web Speech API */ }
+        const r = await fetch(API_STT, { method:"POST", headers:{"Content-Type":"audio/webm"}, body: blob });
+        if (r.ok) { const d = await r.json(); if (d.transcript?.trim()) finalText = d.transcript.trim(); }
+      } catch { /* usa Web Speech */ }
     }
 
-    if (!finalText) {
-      setIsProcessing(false);
-      setMicError("Não consegui transcrever. Tenta novamente.");
-      return;
-    }
+    if (!finalText) { setPhase("idle"); setMicError("Não ouvi nada. Tenta de novo!"); return; }
 
-    /* Avaliar inglês */
-    const evaluation = evaluateEnglish(finalText, difficulty);
-    const userMsg: Message = {
-      role: "user",
-      text: finalText,
-      feedback: { corrections: evaluation.corrections, vocab: evaluation.vocab, tip: evaluation.tip },
-      timestamp: Date.now(),
-    };
-    setMessages(prev => [...prev, userMsg]);
-    setTotalScore(prev => prev + evaluation.score);
-    setTurnCount(prev => prev + 1);
-
-    /* Obter resposta do tutor */
-    const allMessages = [...messages, userMsg];
-    const response = await getTutorResponse(finalText, topic, difficulty, allMessages);
-    const tutorMsg: Message = { role: "tutor", text: response, feedback: null, timestamp: Date.now() };
-    setMessages(prev => [...prev, tutorMsg]);
-    setIsProcessing(false);
-
-    await speak(response);
+    setUserText(finalText);
+    const tip = quickFeedback(finalText);
+    setFeedback(tip);
+    const newHistory = history + `Student: ${finalText}\n`;
+    const reply = await getTutorReply(finalText, topicId, newHistory, difficulty);
+    setHistory(newHistory + `Tutor: ${reply}\n`);
+    await speak(reply);
   }
 
-  const avgScore = turnCount > 0 ? Math.round(totalScore / turnCount) : 0;
-
-  /* ════════════════════════════════════════════════════════
+  /* ════════════════════════
      ECRÃ DE SELEÇÃO
-  ════════════════════════════════════════════════════════ */
-  if (step === "select") {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-950 to-slate-900 text-white">
-        {/* Header */}
-        <div className="flex-shrink-0 bg-gradient-to-r from-purple-800 via-violet-700 to-indigo-800 px-4 shadow-xl" style={{ height: 48 }}>
-          <div className="max-w-5xl mx-auto h-full flex items-center justify-between">
-            <Link to="/lessons" className="flex items-center gap-1.5 text-purple-200 hover:text-white transition-colors min-h-[44px] px-1">
-              <ChevronLeft className="w-5 h-5" />
-              <span className="text-sm font-semibold hidden sm:inline">Conteúdo</span>
-            </Link>
-            <div className="flex items-center gap-2">
-              <Mic className="w-5 h-5 text-purple-300" />
-              <h1 className="text-sm sm:text-lg font-black">Prática de Conversação ao Vivo</h1>
-            </div>
-            <div className="w-16" />
-          </div>
-        </div>
-
-        <div className="max-w-4xl mx-auto px-4 py-8">
-
-          {/* Título */}
-          <div className="text-center mb-8">
-            <div className="w-20 h-20 bg-purple-600/30 rounded-3xl flex items-center justify-center mx-auto mb-4 border border-purple-500/30">
-              <Mic className="w-10 h-10 text-purple-300" />
-            </div>
-            <h2 className="text-3xl font-black mb-2">Fala inglês em tempo real</h2>
-            <p className="text-purple-200 max-w-lg mx-auto">
-              O tutor IA Alex ouve-te, responde e corrige-te ao vivo. Usa o Deepgram para transcrição e voz profissional.
-            </p>
-          </div>
-
-          {/* Escolher tópico */}
-          <div className="mb-8">
-            <h3 className="text-sm font-bold uppercase tracking-widest text-purple-300 mb-3">1. Escolhe o tópico</h3>
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-              {TOPICS.map(t => (
-                <button
-                  key={t.id}
-                  onClick={() => setTopic(t)}
-                  className={`p-4 rounded-2xl border-2 text-left transition-all ${
-                    topic.id === t.id
-                      ? "border-purple-400 bg-purple-700/40 shadow-lg shadow-purple-900/50"
-                      : "border-white/10 bg-white/5 hover:border-white/30 hover:bg-white/10"
-                  }`}
-                >
-                  <div className={`w-9 h-9 ${t.color} rounded-xl flex items-center justify-center mb-2.5`}>
-                    <t.icon className="w-5 h-5 text-white" />
-                  </div>
-                  <p className="font-bold text-sm">{t.label}</p>
-                  <p className="text-[11px] text-white/50 mt-0.5 leading-snug">{t.description}</p>
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* Escolher dificuldade */}
-          <div className="mb-8">
-            <h3 className="text-sm font-bold uppercase tracking-widest text-purple-300 mb-3">2. Escolhe o nível</h3>
-            <div className="flex flex-col sm:flex-row gap-3">
-              {DIFFICULTIES.map(d => (
-                <button
-                  key={d.id}
-                  onClick={() => setDifficulty(d.id)}
-                  className={`flex-1 p-4 rounded-2xl border-2 text-left transition-all ${
-                    difficulty === d.id
-                      ? "border-purple-400 bg-purple-700/40"
-                      : "border-white/10 bg-white/5 hover:border-white/30"
-                  }`}
-                >
-                  <span className={`inline-block text-[10px] font-black px-2 py-0.5 rounded-full text-white mb-2 ${d.color}`}>{d.label}</span>
-                  <p className="font-bold text-sm">{d.id === "beginner" ? "Iniciante" : d.id === "intermediate" ? "Intermédio" : "Avançado"}</p>
-                  <p className="text-xs text-white/50 mt-0.5">{d.desc}</p>
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* Vocabulário do tópico */}
-          <div className="mb-8 bg-white/5 rounded-2xl border border-white/10 p-4">
-            <button
-              className="w-full flex items-center justify-between text-sm font-semibold text-purple-200"
-              onClick={() => setShowVocab(!showVocab)}
-            >
-              <span className="flex items-center gap-2"><BookOpen className="w-4 h-4" /> Vocabulário útil — {topic.label}</span>
-              <ChevronDown className={`w-4 h-4 transition-transform ${showVocab ? "rotate-180" : ""}`} />
-            </button>
-            {showVocab && (
-              <div className="flex flex-wrap gap-2 mt-3">
-                {topic.vocabulary.map(v => (
-                  <span key={v} className="bg-purple-800/60 text-purple-200 text-xs px-3 py-1.5 rounded-full border border-purple-700/50">
-                    {v}
-                  </span>
-                ))}
-              </div>
-            )}
-          </div>
-
-          {/* Botão iniciar */}
-          <button
-            onClick={startSession}
-            className="w-full bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white font-black text-lg py-4 rounded-2xl transition-all shadow-xl shadow-purple-900/50 flex items-center justify-center gap-3"
-          >
-            <PlayCircle className="w-6 h-6" />
-            Iniciar Conversa — {topic.label}
-          </button>
-
-          <p className="text-center text-xs text-white/30 mt-3">
-            Microfone necessário · Deepgram STT + TTS · Tutor IA em inglês
-          </p>
-        </div>
-      </div>
-    );
-  }
-
-  /* ════════════════════════════════════════════════════════
-     ECRÃ DE PRÁTICA
-  ════════════════════════════════════════════════════════ */
-  return (
-    <div className="min-h-screen lg:h-[calc(100vh-4rem)] flex flex-col bg-gradient-to-br from-slate-900 via-purple-950 to-slate-900 text-white lg:overflow-hidden">
+  ════════════════════════ */
+  if (screen === "select") return (
+    <div className="min-h-screen bg-[#0d0d1a] text-white flex flex-col">
+      <style>{ANIM}</style>
 
       {/* Header */}
-      <div className="flex-shrink-0 bg-gradient-to-r from-purple-800 via-violet-700 to-indigo-800 px-4 shadow-xl" style={{ height: 48 }}>
-        <div className="max-w-5xl mx-auto h-full flex items-center justify-between">
-          <button
-            onClick={() => { setStep("select"); stopStream(); currentAudioRef.current?.pause(); }}
-            className="flex items-center gap-1.5 text-purple-200 hover:text-white transition-colors min-h-[44px] px-1"
-          >
-            <ChevronLeft className="w-5 h-5" />
-            <span className="text-sm font-semibold hidden sm:inline">Voltar</span>
-          </button>
+      <div className="flex items-center gap-3 px-4 pt-safe pt-4 pb-3 border-b border-white/10">
+        <Link to="/lessons" className="min-w-[44px] min-h-[44px] flex items-center justify-center text-white/50 hover:text-white rounded-xl transition-colors">
+          <ChevronLeft className="w-5 h-5" />
+        </Link>
+        <div>
+          <h1 className="font-black text-base">Conversação ao Vivo</h1>
+          <p className="text-xs text-white/40">Fala inglês com o tutor IA Alex</p>
+        </div>
+      </div>
 
-          <div className="flex items-center gap-2">
-            <div className={`w-8 h-8 ${topic.color} rounded-lg flex items-center justify-center`}>
-              <topic.icon className="w-4 h-4 text-white" />
+      <div className="flex-1 overflow-y-auto px-4 py-6 max-w-lg mx-auto w-full">
+
+        {/* Tutor card */}
+        <div className="flex items-center gap-4 bg-white/5 border border-white/10 rounded-2xl p-4 mb-8">
+          <img
+            src={TUTOR_PHOTO}
+            alt="Alex — English Tutor"
+            className="w-16 h-16 rounded-full object-cover border-2 border-purple-500 flex-shrink-0"
+            onError={e => { (e.target as HTMLImageElement).src = "https://ui-avatars.com/api/?name=Alex&background=7c3aed&color=fff&size=128"; }}
+          />
+          <div>
+            <p className="font-black text-lg">Alex</p>
+            <p className="text-sm text-white/50">Tutor de Inglês IA · Deepgram</p>
+            <div className="flex items-center gap-1 mt-1">
+              <span className="w-2 h-2 bg-green-400 rounded-full animate-pulse" />
+              <span className="text-xs text-green-400 font-medium">Disponível agora</span>
             </div>
-            <span className="text-sm font-black">{topic.label}</span>
-            <span className="text-[10px] bg-white/15 px-2 py-0.5 rounded-full hidden sm:block">
-              {difficulty === "beginner" ? "A1–A2" : difficulty === "intermediate" ? "B1–B2" : "C1–C2"}
-            </span>
           </div>
+        </div>
 
-          <div className="flex items-center gap-2">
-            {/* Score */}
-            {turnCount > 0 && (
-              <div className="flex items-center gap-1.5 bg-white/10 rounded-lg px-2.5 py-1">
-                <Star className="w-3.5 h-3.5 text-yellow-400 fill-yellow-400" />
-                <span className="text-sm font-bold">{avgScore}</span>
-              </div>
-            )}
-            {/* Toggle áudio */}
-            <button
-              onClick={() => { setAudioEnabled(!audioEnabled); currentAudioRef.current?.pause(); }}
-              className="min-w-[44px] min-h-[44px] flex items-center justify-center rounded-xl hover:bg-white/10 transition-colors"
+        {/* Tópicos */}
+        <p className="text-xs font-bold uppercase tracking-widest text-white/40 mb-3">Escolhe o tópico</p>
+        <div className="grid grid-cols-2 gap-2.5 mb-6">
+          {TOPICS.map(t => (
+            <button key={t.id} onClick={() => setTopicId(t.id)}
+              className={`flex items-center gap-3 p-3.5 rounded-2xl border-2 text-left transition-all ${
+                topicId === t.id ? "border-purple-500 bg-purple-600/20" : "border-white/10 bg-white/5 hover:border-white/25"
+              }`}
             >
-              {audioEnabled ? <Volume2 className="w-5 h-5" /> : <VolumeX className="w-5 h-5 text-white/40" />}
+              <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0" style={{ backgroundColor: t.color + "33" }}>
+                <t.icon className="w-4.5 h-4.5" style={{ color: t.color }} />
+              </div>
+              <span className="text-sm font-semibold leading-tight">{t.label}</span>
             </button>
-          </div>
-        </div>
-      </div>
-
-      <div className="flex-1 lg:min-h-0 max-w-4xl mx-auto w-full px-4 py-3 flex flex-col gap-3">
-
-        {/* Score bar */}
-        {turnCount > 0 && (
-          <div className="flex-shrink-0 bg-white/5 rounded-xl px-4 py-2 flex items-center gap-3 border border-white/10">
-            <Trophy className="w-4 h-4 text-yellow-400 flex-shrink-0" />
-            <div className="flex-1">
-              <Progress value={avgScore} className="h-1.5" />
-            </div>
-            <span className="text-xs text-white/60 flex-shrink-0">{turnCount} {turnCount === 1 ? "turno" : "turnos"} · {avgScore}/100</span>
-          </div>
-        )}
-
-        {/* Chat */}
-        <div className="flex-1 lg:min-h-0 overflow-y-auto space-y-4 pr-1 pb-2">
-          {messages.map((msg, i) => (
-            <div key={i} className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}>
-              <div className={`max-w-[85%] ${msg.role === "user" ? "items-end" : "items-start"} flex flex-col gap-1.5`}>
-
-                {/* Bubble */}
-                <div className={`rounded-2xl px-4 py-3 text-sm leading-relaxed ${
-                  msg.role === "tutor"
-                    ? "bg-white/10 border border-white/10 text-white rounded-tl-sm"
-                    : "bg-purple-600 text-white rounded-tr-sm"
-                }`}>
-                  {msg.role === "tutor" && (
-                    <div className="flex items-center gap-1.5 mb-1.5">
-                      <div className={`w-5 h-5 ${topic.color} rounded-md flex items-center justify-center flex-shrink-0`}>
-                        <topic.icon className="w-3 h-3 text-white" />
-                      </div>
-                      <span className="text-[10px] font-bold text-white/60 uppercase tracking-wide">Alex · Tutor</span>
-                      {isSpeaking && i === messages.filter(m => m.role === "tutor").length - 1 + messages.filter(m => m.role === "user").length && (
-                        <span className="flex items-center gap-0.5 ml-1">
-                          {[1,2,3].map(n => <span key={n} className="w-1 h-1 bg-purple-300 rounded-full animate-bounce" style={{ animationDelay: `${n * 100}ms` }} />)}
-                        </span>
-                      )}
-                    </div>
-                  )}
-                  <p>{msg.text}</p>
-                </div>
-
-                {/* Feedback para o utilizador */}
-                {msg.role === "user" && msg.feedback && (
-                  <div className="bg-white/5 border border-white/10 rounded-xl px-3 py-2.5 max-w-full space-y-1.5 text-xs">
-                    {msg.feedback.corrections.length > 0 && (
-                      <div>
-                        {msg.feedback.corrections.map((c, j) => (
-                          <div key={j} className="flex items-start gap-1.5 text-orange-300">
-                            <AlertCircle className="w-3.5 h-3.5 flex-shrink-0 mt-0.5" />
-                            <span>{c}</span>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                    {msg.feedback.vocab.length > 0 && (
-                      <div>
-                        {msg.feedback.vocab.map((v, j) => (
-                          <div key={j} className="flex items-start gap-1.5 text-green-300">
-                            <CheckCircle className="w-3.5 h-3.5 flex-shrink-0 mt-0.5" />
-                            <span>{v}</span>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                    <div className="flex items-start gap-1.5 text-purple-300">
-                      <Zap className="w-3.5 h-3.5 flex-shrink-0 mt-0.5" />
-                      <span>{msg.feedback.tip}</span>
-                    </div>
-                  </div>
-                )}
-              </div>
-            </div>
           ))}
-
-          {/* Live transcript */}
-          {(isListening || liveText) && (
-            <div className="flex justify-end">
-              <div className="max-w-[85%] bg-purple-700/40 border border-purple-500/40 rounded-2xl rounded-tr-sm px-4 py-3 text-sm">
-                <div className="flex items-center gap-1.5 mb-1">
-                  <div className="flex gap-0.5">
-                    {[1,2,3].map(n => <span key={n} className="w-1.5 h-1.5 bg-red-400 rounded-full animate-pulse" style={{ animationDelay: `${n * 150}ms` }} />)}
-                  </div>
-                  <span className="text-[10px] text-white/50 uppercase">A ouvir...</span>
-                </div>
-                <p className={liveText ? "text-white" : "text-white/30 italic"}>
-                  {liveText || "Fala em inglês..."}
-                </p>
-              </div>
-            </div>
-          )}
-
-          {/* A processar */}
-          {isProcessing && (
-            <div className="flex justify-start">
-              <div className="bg-white/10 border border-white/10 rounded-2xl rounded-tl-sm px-4 py-3">
-                <div className="flex items-center gap-1.5">
-                  <div className={`w-5 h-5 ${topic.color} rounded-md flex items-center justify-center`}>
-                    <topic.icon className="w-3 h-3 text-white" />
-                  </div>
-                  <div className="flex gap-1 items-center">
-                    {[1,2,3].map(n => <span key={n} className="w-2 h-2 bg-white/60 rounded-full animate-bounce" style={{ animationDelay: `${n * 150}ms` }} />)}
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
-          <div ref={chatEndRef} />
         </div>
 
-        {/* Erro */}
-        {micError && (
-          <div className="flex-shrink-0 bg-red-500/20 border border-red-500/40 rounded-xl px-4 py-2.5 text-xs text-red-300 flex items-center gap-2">
-            <AlertCircle className="w-4 h-4 flex-shrink-0" />
-            {micError}
+        {/* Nível */}
+        <p className="text-xs font-bold uppercase tracking-widest text-white/40 mb-3">Nível</p>
+        <div className="flex gap-2 mb-8">
+          {[["beginner","A1–A2","#22c55e"],["intermediate","B1–B2","#eab308"],["advanced","C1–C2","#ef4444"]].map(([id,lbl,col])=>(
+            <button key={id} onClick={()=>setDifficulty(id)}
+              className={`flex-1 py-3 rounded-2xl border-2 text-sm font-bold transition-all ${
+                difficulty===id ? "border-current bg-current/10" : "border-white/10 bg-white/5 text-white/50"
+              }`}
+              style={difficulty===id ? { color: col, borderColor: col } : undefined}
+            >
+              {lbl}
+            </button>
+          ))}
+        </div>
+
+        {/* Botão iniciar */}
+        <button onClick={startSession}
+          className="w-full py-4 bg-purple-600 hover:bg-purple-500 active:bg-purple-700 rounded-2xl font-black text-lg transition-all shadow-xl shadow-purple-900/50 flex items-center justify-center gap-3"
+        >
+          <Mic className="w-5 h-5" />
+          Iniciar com Alex
+        </button>
+      </div>
+    </div>
+  );
+
+  /* ════════════════════════
+     ECRÃ LIVE (Gemini style)
+  ════════════════════════ */
+  return (
+    <div className="min-h-[100dvh] bg-[#0d0d1a] text-white flex flex-col select-none overflow-hidden">
+      <style>{ANIM}</style>
+
+      {/* Top bar */}
+      <div className="flex items-center justify-between px-4 pt-safe pt-3 pb-3 flex-shrink-0">
+        <button
+          onClick={() => { stopStream(); audioRef.current?.pause(); setScreen("select"); }}
+          className="min-w-[44px] min-h-[44px] flex items-center justify-center text-white/40 hover:text-white rounded-xl transition-colors"
+        >
+          <X className="w-5 h-5" />
+        </button>
+
+        <div className="flex items-center gap-2">
+          <div className="w-2 h-2 rounded-full animate-pulse" style={{ backgroundColor: topic.color }} />
+          <span className="text-sm font-semibold text-white/70">{topic.label}</span>
+        </div>
+
+        <button
+          onClick={() => { setMuted(!muted); audioRef.current?.pause(); }}
+          className="min-w-[44px] min-h-[44px] flex items-center justify-center text-white/40 hover:text-white rounded-xl transition-colors"
+        >
+          {muted ? <VolumeX className="w-5 h-5 text-red-400" /> : <Volume2 className="w-5 h-5" />}
+        </button>
+      </div>
+
+      {/* Centro — avatar + animações */}
+      <div className="flex-1 flex flex-col items-center justify-center px-6 gap-6">
+
+        {/* Avatar com círculos animados */}
+        <div className="relative flex items-center justify-center" style={{ width: 220, height: 220 }}>
+
+          {/* Ripples (só quando fala ou ouve) */}
+          {(phase === "speaking" || phase === "listening") && <>
+            <div className="absolute inset-0 rounded-full ripple-1" style={{ backgroundColor: topic.color + "33" }} />
+            <div className="absolute inset-0 rounded-full ripple-2" style={{ backgroundColor: topic.color + "22" }} />
+          </>}
+
+          {/* Anel exterior */}
+          <div className={`absolute inset-0 rounded-full border-2 transition-all duration-500 ${
+            phase === "speaking"  ? "pulse-ring" :
+            phase === "listening" ? "pulse-ring" : ""
+          }`}
+            style={{ borderColor: phase !== "idle" && phase !== "thinking" ? topic.color : "rgba(255,255,255,0.1)" }}
+          />
+
+          {/* Foto */}
+          <div className="w-44 h-44 rounded-full overflow-hidden border-4 border-white/10 shadow-2xl z-10 relative">
+            <img
+              src={TUTOR_PHOTO}
+              alt="Alex"
+              className="w-full h-full object-cover"
+              onError={e => { (e.target as HTMLImageElement).src = "https://ui-avatars.com/api/?name=Alex&background=7c3aed&color=fff&size=256"; }}
+            />
+            {/* Overlay de estado */}
+            <div className={`absolute inset-0 transition-all duration-300 flex items-center justify-center ${
+              phase === "listening" ? "bg-black/30" : "bg-transparent"
+            }`}>
+              {phase === "listening" && (
+                <div className="flex items-end gap-1">
+                  {[1,2,3,4,5].map((_, i) => (
+                    <div key={i} className="w-1.5 bg-white rounded-full wave-bar"
+                      style={{ animationDelay: `${i * 80}ms`, minHeight: 6 }} />
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Badge de estado */}
+          <div className={`absolute -bottom-2 left-1/2 -translate-x-1/2 px-3 py-1 rounded-full text-xs font-bold z-20 whitespace-nowrap transition-all ${
+            phase === "speaking"  ? "bg-purple-600 text-white" :
+            phase === "listening" ? "bg-red-500 text-white" :
+            phase === "thinking"  ? "bg-amber-500 text-black" :
+            "bg-white/10 text-white/50"
+          }`}>
+            {phase === "speaking"  ? "Alex está a falar..." :
+             phase === "listening" ? "⏺ A ouvir..." :
+             phase === "thinking"  ? "A pensar..." :
+             "Alex"}
+          </div>
+        </div>
+
+        {/* Texto do tutor */}
+        {tutorText && (
+          <div className="fade-up max-w-sm text-center">
+            <p className="text-white/90 text-base leading-relaxed font-medium">
+              "{tutorText}"
+            </p>
           </div>
         )}
 
-        {/* Controlos */}
-        <div className="flex-shrink-0 flex items-center gap-3 pb-2">
-          {/* Vocabulário */}
-          <button
-            onClick={() => setShowVocab(!showVocab)}
-            className="min-w-[44px] min-h-[44px] flex items-center justify-center bg-white/10 hover:bg-white/20 rounded-xl border border-white/10 transition-colors"
-            title="Ver vocabulário"
-          >
-            <BookOpen className="w-5 h-5 text-purple-300" />
-          </button>
+        {/* Texto do utilizador */}
+        {(userText || liveText) && (
+          <div className="fade-up max-w-sm w-full">
+            <div className="bg-white/8 border border-white/10 rounded-2xl px-4 py-3 text-center">
+              <p className="text-xs text-white/40 mb-1 uppercase tracking-wide">Tu disseste</p>
+              <p className="text-white/80 text-sm leading-relaxed">{liveText || userText}</p>
+            </div>
+          </div>
+        )}
 
-          {/* Microfone */}
-          <button
-            onPointerDown={startListening}
-            onPointerUp={stopListening}
-            onPointerLeave={isListening ? stopListening : undefined}
-            disabled={isProcessing || isSpeaking}
-            className={`flex-1 min-h-[56px] rounded-2xl font-black text-sm flex items-center justify-center gap-3 transition-all select-none ${
-              isListening
-                ? "bg-red-600 shadow-xl shadow-red-900/60 scale-105"
-                : isProcessing || isSpeaking
-                ? "bg-white/10 text-white/30 cursor-not-allowed"
-                : "bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 shadow-lg shadow-purple-900/50"
-            }`}
-          >
-            {isListening ? (
-              <><MicOff className="w-6 h-6" /> <span>A gravar... (solta para enviar)</span></>
-            ) : isProcessing ? (
-              <><span className="animate-spin rounded-full h-5 w-5 border-2 border-white/30 border-t-white" /> A processar...</>
-            ) : isSpeaking ? (
-              <><Volume2 className="w-6 h-6" /> Alex está a falar...</>
-            ) : (
-              <><Mic className="w-6 h-6" /> <span>Mantém pressionado para falar</span></>
-            )}
-          </button>
+        {/* Feedback */}
+        {feedback && (
+          <div className="fade-up bg-amber-500/15 border border-amber-500/30 rounded-xl px-4 py-2.5 max-w-sm w-full text-center">
+            <p className="text-amber-300 text-sm">{feedback}</p>
+          </div>
+        )}
 
-          {/* Reiniciar */}
-          <button
-            onClick={() => { stopStream(); startSession(); }}
-            className="min-w-[44px] min-h-[44px] flex items-center justify-center bg-white/10 hover:bg-white/20 rounded-xl border border-white/10 transition-colors"
-            title="Reiniciar conversa"
-          >
-            <RotateCcw className="w-5 h-5 text-white/60" />
-          </button>
-        </div>
-
-        {/* Vocabulário expandido */}
-        {showVocab && (
-          <div className="flex-shrink-0 bg-white/5 border border-white/10 rounded-xl p-3 flex flex-wrap gap-2">
-            {topic.vocabulary.map(v => (
-              <button
-                key={v}
-                onClick={() => speak(v)}
-                className="bg-purple-800/60 text-purple-200 text-xs px-3 py-1.5 rounded-full border border-purple-700/50 hover:bg-purple-700/60 transition-colors flex items-center gap-1.5"
-              >
-                <Volume2 className="w-3 h-3" />
-                {v}
-              </button>
-            ))}
+        {/* Erro de mic */}
+        {micError && (
+          <div className="fade-up bg-red-500/15 border border-red-500/30 rounded-xl px-4 py-2.5 max-w-sm w-full text-center">
+            <p className="text-red-300 text-sm">{micError}</p>
           </div>
         )}
       </div>
+
+      {/* Bottom — botão de microfone */}
+      <div className="flex-shrink-0 flex items-center justify-center gap-6 px-6 pb-safe pb-8 pt-4">
+
+        {/* Botão mic — pressionar e soltar */}
+        <button
+          onPointerDown={e => { e.currentTarget.setPointerCapture(e.pointerId); startListen(); }}
+          onPointerUp={stopListen}
+          onPointerCancel={stopListen}
+          disabled={phase === "thinking"}
+          className={`w-20 h-20 rounded-full flex items-center justify-center transition-all duration-200 shadow-2xl ${
+            phase === "listening"
+              ? "bg-red-500 scale-110 shadow-red-900/60"
+              : phase === "thinking"
+              ? "bg-white/10 scale-95 cursor-not-allowed"
+              : phase === "speaking"
+              ? "bg-purple-600/60 scale-100"
+              : "bg-white/15 hover:bg-white/25 active:scale-95 border border-white/20"
+          }`}
+          aria-label={phase === "listening" ? "Parar de gravar" : "Falar"}
+        >
+          {phase === "listening"
+            ? <MicOff className="w-8 h-8 text-white" />
+            : phase === "thinking"
+            ? <div className="w-6 h-6 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+            : <Mic className="w-8 h-8 text-white" />
+          }
+        </button>
+      </div>
+
+      {/* Hint */}
+      <p className="text-center text-xs text-white/20 pb-3 flex-shrink-0 pb-safe">
+        {phase === "idle" ? "Mantém pressionado para falar" : ""}
+      </p>
     </div>
   );
 }

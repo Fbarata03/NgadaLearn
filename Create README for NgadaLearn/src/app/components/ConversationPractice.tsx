@@ -17,10 +17,12 @@ import { Card } from "./ui/card";
 import { Progress } from "./ui/progress";
 
 /* ── Config ──────────────────────────────────────────────────────── */
-const DG_KEY    = import.meta.env.VITE_DEEPGRAM_KEY as string;
-const DG_STT    = "https://api.deepgram.com/v1/listen?model=nova-2&language=en-US&punctuate=true&smart_format=true";
-const DG_TTS    = (voice: string) => `https://api.deepgram.com/v1/speak?model=${voice}&encoding=mp3`;
-const BACKEND   = import.meta.env.VITE_API_URL || "https://ngadalearn-api.onrender.com";
+// A chave Deepgram está no BACKEND — o frontend nunca a vê
+const BACKEND = import.meta.env.VITE_API_URL || "https://ngadalearn-api.onrender.com";
+// Endpoints do backend que fazem a ponte com a Deepgram:
+const API_STT  = `${BACKEND}/api/transcribe`;          // POST áudio → texto
+const API_TTS  = (voice: string) => `${BACKEND}/api/speak?voice=${voice}`; // POST texto → mp3
+const API_CHAT = `${BACKEND}/api/conversation`;         // POST mensagem → resposta tutor
 
 /* ── Tipos ───────────────────────────────────────────────────────── */
 interface Message {
@@ -204,7 +206,7 @@ RULES:
 - Focus on the topic: ${topic.label}`;
 
   try {
-    const res = await fetch(`${BACKEND}/api/conversation`, {
+    const res = await fetch(API_CHAT, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ systemPrompt, history: historyText, userMessage: userText, topic: topic.id, difficulty }),
@@ -325,9 +327,9 @@ export function ConversationPractice() {
     currentAudioRef.current?.pause();
     setIsSpeaking(true);
     try {
-      const res = await fetch(DG_TTS(TUTOR_VOICES[difficulty]), {
+      const res = await fetch(API_TTS(TUTOR_VOICES[difficulty]), {
         method: "POST",
-        headers: { "Authorization": `Token ${DG_KEY}`, "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ text }),
       });
       if (!res.ok) throw new Error("TTS failed");
@@ -426,12 +428,12 @@ export function ConversationPractice() {
     setIsProcessing(true);
     let finalText = userText;
 
-    /* Tentar Deepgram STT se temos áudio */
+    /* Enviar áudio ao backend → backend chama Deepgram */
     if (audioBlob.size > 2000) {
       try {
-        const res = await fetch(DG_STT, {
+        const res = await fetch(API_STT, {
           method: "POST",
-          headers: { "Authorization": `Token ${DG_KEY}`, "Content-Type": "audio/webm" },
+          headers: { "Content-Type": "audio/webm" },
           body: audioBlob,
         });
         if (res.ok) {

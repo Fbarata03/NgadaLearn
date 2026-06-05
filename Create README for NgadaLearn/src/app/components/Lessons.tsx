@@ -603,7 +603,7 @@ export function Lessons() {
         </div>
 
         {/* Tabs */}
-        <div id="lessons-tabs" className="flex gap-2 mb-5 overflow-x-auto pb-1 flex-nowrap sm:flex-wrap scrollbar-hide -mx-1 px-1">
+        <div id="lessons-tabs" className="flex gap-2 mb-5 overflow-x-auto pb-1.5 flex-nowrap scrollbar-hide overscroll-x-contain -mx-1 px-1">
           {TABS.map((t) => (
             <button
               key={t.id}
@@ -640,7 +640,7 @@ export function Lessons() {
               }
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="pl-9 bg-white"
+              className="pl-9 bg-white text-base"
             />
           </div>
         )}

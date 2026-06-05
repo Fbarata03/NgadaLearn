@@ -183,7 +183,7 @@ export function Dashboard() {
         <div className="max-w-7xl mx-auto space-y-6">
 
           {/* ── Boas-vindas ── */}
-          <div className="bg-gradient-to-r from-purple-700 to-blue-700 rounded-2xl p-6 text-white">
+          <div className="bg-gradient-to-r from-purple-700 to-blue-700 rounded-2xl p-4 sm:p-6 text-white">
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
               <div>
                 <h1 className="text-2xl sm:text-3xl font-black mb-1">

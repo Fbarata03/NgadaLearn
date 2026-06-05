@@ -1,4 +1,4 @@
-﻿import { useState } from "react";
+﻿import { useState, useEffect } from "react";
 import { Outlet, Link, useLocation, useNavigate } from "react-router";
 import { Button } from "./ui/button";
 import {
@@ -28,6 +28,21 @@ export function RootLayout() {
     setUserMenuOpen(false);
     navigate("/");
   };
+
+  /* Fechar drawer com Escape + bloquear scroll do body */
+  useEffect(() => {
+    if (!mobileOpen) {
+      document.body.style.overflow = "";
+      return;
+    }
+    document.body.style.overflow = "hidden";
+    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") setMobileOpen(false); };
+    document.addEventListener("keydown", onKey);
+    return () => {
+      document.removeEventListener("keydown", onKey);
+      document.body.style.overflow = "";
+    };
+  }, [mobileOpen]);
 
   const navLinks = isAccessActive
     ? [
@@ -147,99 +162,131 @@ export function RootLayout() {
               </>
             )}
 
-            {/* Mobile toggle */}
+            {/* Hamburger — touch target 44×44 */}
             <button
-              className="md:hidden p-1.5 rounded-md hover:bg-gray-100"
+              className="md:hidden min-w-[44px] min-h-[44px] flex items-center justify-center rounded-xl hover:bg-gray-100 transition-colors"
               onClick={() => setMobileOpen(!mobileOpen)}
-              aria-label="Menu"
+              aria-label={mobileOpen ? "Fechar menu" : "Abrir menu"}
+              aria-expanded={mobileOpen}
             >
-              {mobileOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+              <Menu className="w-5 h-5 text-gray-700" />
             </button>
           </div>
         </div>
+      </header>
 
-        {/* Menu mobile */}
-        {mobileOpen && (
-          <div className="md:hidden border-t bg-white shadow-lg">
-            <nav className="container mx-auto px-4 py-4 space-y-1">
-              <Link
-                to="/"
-                className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-gray-700 hover:bg-purple-50 hover:text-purple-700"
-                onClick={() => setMobileOpen(false)}
-              >
-                <GraduationCap className="w-4 h-4" />
-                Início
-              </Link>
-              {isAuthenticated && (
-                <div className="flex items-center gap-3 px-3 py-3 mb-2 bg-purple-50 rounded-xl">
-                  <div className="w-9 h-9 bg-purple-100 rounded-full flex items-center justify-center">
-                    <User className="w-5 h-5 text-purple-700" />
-                  </div>
-                  <div>
-                    <p className="text-sm font-bold text-gray-800">{user?.name}</p>
-                    {isAccessActive && (
-                      <p className="text-xs text-green-600 font-medium">
-                        ✓ {user?.plan === "lifetime" ? "Acesso Vitalício" : "Acesso Ativo"}
-                      </p>
-                    )}
-                    {isAdmin && (
-                      <p className="text-xs text-purple-600 font-bold">🛡 Admin</p>
-                    )}
-                  </div>
-                </div>
+      {/* ── OVERLAY do drawer ── */}
+      <div
+        className={`fixed inset-0 bg-black/50 z-[99] md:hidden transition-opacity duration-300 ease-in-out ${
+          mobileOpen ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"
+        }`}
+        onClick={() => setMobileOpen(false)}
+        aria-hidden="true"
+      />
+
+      {/* ── MOBILE DRAWER (slide da esquerda) ── */}
+      <nav
+        aria-label="Menu principal"
+        className={`fixed top-0 left-0 h-full w-72 max-w-[85vw] bg-white z-[100] shadow-2xl flex flex-col md:hidden transition-transform duration-300 ease-in-out ${
+          mobileOpen ? "translate-x-0" : "-translate-x-full"
+        }`}
+      >
+        {/* Cabeçalho do drawer */}
+        <div className="flex items-center justify-between px-4 h-16 border-b flex-shrink-0">
+          <Link to="/" className="flex items-center gap-2" onClick={() => setMobileOpen(false)}>
+            <GraduationCap className="w-7 h-7 text-purple-600" />
+            <span className="font-black text-lg text-gray-900">NgadaLearn</span>
+          </Link>
+          <button
+            onClick={() => setMobileOpen(false)}
+            className="min-w-[44px] min-h-[44px] flex items-center justify-center rounded-xl hover:bg-gray-100 transition-colors"
+            aria-label="Fechar menu"
+          >
+            <X className="w-5 h-5 text-gray-600" />
+          </button>
+        </div>
+
+        {/* Perfil (se autenticado) */}
+        {isAuthenticated && (
+          <div className="flex items-center gap-3 px-4 py-3 bg-purple-50 border-b flex-shrink-0">
+            <div className="w-9 h-9 bg-purple-100 rounded-full flex items-center justify-center flex-shrink-0">
+              <User className="w-5 h-5 text-purple-700" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-bold text-gray-800 truncate">{user?.name}</p>
+              {isAccessActive && (
+                <p className="text-xs text-green-600 font-medium">
+                  ✓ {user?.plan === "lifetime" ? "Acesso Vitalício" : "Acesso Ativo"}
+                </p>
               )}
-
-              {navLinks.map(({ to, label, icon: Icon }) => (
-                <Link
-                  key={to}
-                  to={to}
-                  className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-gray-700 hover:bg-purple-50 hover:text-purple-700"
-                  onClick={() => setMobileOpen(false)}
-                >
-                  <Icon className="w-4 h-4" />
-                  {label}
-                </Link>
-              ))}
-
-              {isAdmin && (
-                <Link
-                  to="/admin"
-                  className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-bold text-purple-700 hover:bg-purple-50"
-                  onClick={() => setMobileOpen(false)}
-                >
-                  <ShieldCheck className="w-4 h-4" /> Painel Admin
-                </Link>
-              )}
-
-              <hr className="my-2" />
-
-              {isAuthenticated ? (
-                <button
-                  onClick={() => { handleLogout(); setMobileOpen(false); }}
-                  className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-red-600 hover:bg-red-50 w-full"
-                >
-                  <LogOut className="w-4 h-4" /> Sair
-                </button>
-              ) : (
-                <>
-                  <Link
-                    to="/login"
-                    className="block px-3 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-50 rounded-lg"
-                    onClick={() => setMobileOpen(false)}
-                  >
-                    Entrar
-                  </Link>
-                  <Link to="/subscribe" onClick={() => setMobileOpen(false)}>
-                    <Button className="w-full bg-purple-600 hover:bg-purple-700 mt-1">
-                      Começar Agora
-                    </Button>
-                  </Link>
-                </>
-              )}
-            </nav>
+              {isAdmin && <p className="text-xs text-purple-600 font-bold">🛡 Admin</p>}
+            </div>
           </div>
         )}
-      </header>
+
+        {/* Links de navegação */}
+        <div className="flex-1 overflow-y-auto px-3 py-3 space-y-0.5">
+          <Link
+            to="/"
+            className={`flex items-center gap-3 px-3 py-3 rounded-xl text-sm font-medium transition-colors ${
+              location.pathname === "/" ? "bg-purple-100 text-purple-700 font-semibold" : "text-gray-700 hover:bg-gray-50"
+            }`}
+            onClick={() => setMobileOpen(false)}
+          >
+            <GraduationCap className="w-4 h-4" />
+            Início
+          </Link>
+          {navLinks.map(({ to, label, icon: Icon }) => (
+            <Link
+              key={to}
+              to={to}
+              className={`flex items-center gap-3 px-3 py-3 rounded-xl text-sm font-medium transition-colors ${
+                location.pathname === to ? "bg-purple-100 text-purple-700 font-semibold" : "text-gray-700 hover:bg-gray-50"
+              }`}
+              onClick={() => setMobileOpen(false)}
+            >
+              <Icon className="w-4 h-4" />
+              {label}
+            </Link>
+          ))}
+          {isAdmin && (
+            <Link
+              to="/admin"
+              className="flex items-center gap-3 px-3 py-3 rounded-xl text-sm font-bold text-purple-700 hover:bg-purple-50 transition-colors"
+              onClick={() => setMobileOpen(false)}
+            >
+              <ShieldCheck className="w-4 h-4" /> Painel Admin
+            </Link>
+          )}
+        </div>
+
+        {/* Rodapé do drawer */}
+        <div className="px-3 py-3 border-t space-y-1 flex-shrink-0">
+          {isAuthenticated ? (
+            <button
+              onClick={() => { handleLogout(); setMobileOpen(false); }}
+              className="flex items-center gap-3 w-full px-3 py-3 rounded-xl text-sm font-medium text-red-600 hover:bg-red-50 transition-colors"
+            >
+              <LogOut className="w-4 h-4" /> Sair
+            </button>
+          ) : (
+            <>
+              <Link
+                to="/login"
+                className="block px-3 py-3 text-sm font-medium text-center text-gray-700 hover:bg-gray-50 rounded-xl transition-colors"
+                onClick={() => setMobileOpen(false)}
+              >
+                Entrar
+              </Link>
+              <Link to="/subscribe" onClick={() => setMobileOpen(false)}>
+                <Button className="w-full bg-purple-600 hover:bg-purple-700 h-11">
+                  Começar Agora
+                </Button>
+              </Link>
+            </>
+          )}
+        </div>
+      </nav>
 
       {/* Fechar menu do utilizador ao clicar fora */}
       {userMenuOpen && (

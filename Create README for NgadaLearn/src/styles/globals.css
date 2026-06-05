@@ -1,0 +1,33 @@
+/* ── Scroll suave global ── */
+html {
+  scroll-behavior: smooth;
+}
+
+/* ── Previne zoom automático no iOS em inputs com font-size < 16px ── */
+input,
+select,
+textarea {
+  font-size: 16px !important;
+}
+
+/* ── Scroll inercial nativo no iOS para containers de scroll ── */
+.overflow-y-auto,
+.overflow-x-auto,
+.overflow-y-scroll,
+.overflow-x-scroll {
+  -webkit-overflow-scrolling: touch;
+}
+
+/* ── Previne scroll da página ao deslizar em filtros horizontais ── */
+.overscroll-x-contain {
+  overscroll-behavior-x: contain;
+}
+
+/* ── Esconde scrollbar mas mantém funcionalidade ── */
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}

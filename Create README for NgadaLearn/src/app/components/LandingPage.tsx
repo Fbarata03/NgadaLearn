@@ -524,7 +524,7 @@ export function LandingPage() {
                 {FAQ_ITEMS.map((item, i) => (
                   <div key={i} className="border rounded-xl overflow-hidden">
                     <button
-                      className="w-full px-5 py-4 flex items-center justify-between hover:bg-gray-50 text-left transition-colors"
+                      className="w-full px-5 py-4 min-h-[48px] flex items-center justify-between hover:bg-gray-50 text-left transition-colors"
                       onClick={() => setOpenFaq(openFaq === i ? null : i)}
                     >
                       <span className="font-semibold text-sm">{item.q}</span>
@@ -621,20 +621,24 @@ export function LandingPage() {
       </div>
 
       {/* ── CTA Fixo móvel (bottom bar) ── */}
-      <div className="lg:hidden fixed bottom-0 left-0 right-0 bg-white border-t shadow-xl z-50 p-3">
+      <div
+        className="lg:hidden fixed bottom-0 left-0 right-0 bg-white border-t shadow-xl z-50 px-4 pt-3"
+        style={{ paddingBottom: "max(12px, env(safe-area-inset-bottom))" }}
+      >
         <div className="flex items-center gap-3">
-          <div>
+          <div className="flex-shrink-0">
             <div className="text-xl font-black leading-none">US$ 150</div>
-            <div className="text-[11px] text-purple-600 font-medium">acesso vitalício</div>
+            <div className="text-[11px] text-purple-600 font-medium">≈ €138 · vitalício</div>
           </div>
           <Link to="/subscribe" className="flex-1">
-            <Button className="w-full bg-purple-600 hover:bg-purple-700 font-bold py-3 text-sm">
-              Começar Agora
+            <Button className="w-full bg-purple-600 hover:bg-purple-700 font-bold h-11 text-sm">
+              Garantir Acesso →
             </Button>
           </Link>
         </div>
       </div>
-      <div className="lg:hidden h-20" />
+      {/* Espaçador para o sticky bar não tapar conteúdo */}
+      <div className="lg:hidden h-24" />
 
       {/* ════════════════════════════════════════
           MODAL DE VÍDEO PROMOCIONAL

@@ -907,7 +907,7 @@ export function MoviesPlayer() {
         {/* Header — compacto */}
         <div className="flex-shrink-0 bg-gradient-to-r from-amber-800 via-orange-800 to-amber-900 px-4 shadow-xl" style={{height:48}}>
           <div className="max-w-7xl mx-auto h-full relative flex items-center justify-center">
-            <Link to="/lessons" className="absolute left-0 flex items-center gap-1.5 text-amber-200 hover:text-white transition-colors">
+            <Link to="/lessons" className="absolute left-0 flex items-center gap-1.5 text-amber-200 hover:text-white transition-colors min-h-[44px] px-1">
               <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7"/></svg>
               <span className="text-sm font-semibold hidden sm:inline">Conteúdo</span>
             </Link>
@@ -948,10 +948,10 @@ export function MoviesPlayer() {
             <div className="flex-shrink-0 bg-white/8 backdrop-blur rounded-xl p-3 border border-amber-500/10">
               <div className="flex items-center justify-between mb-2">
                 <p className="text-xs font-bold text-amber-300 uppercase tracking-widest">🎞️ Recomendados</p>
-                <div className="flex flex-wrap gap-1">
+                <div className="flex gap-1 overflow-x-auto scrollbar-hide overscroll-x-contain pb-0.5">
                   {GENRES.map(g => (
                     <button key={g} onClick={()=>setGenreFilter(g)}
-                      className={`text-[10px] px-1.5 py-0.5 rounded-full transition-colors font-semibold ${
+                      className={`text-[10px] px-2 py-1.5 min-h-[28px] rounded-full transition-colors font-semibold flex-shrink-0 ${
                         genreFilter===g ? "bg-amber-600 text-white" : "bg-white/10 text-white/60 hover:text-white"
                       }`}>{g}</button>
                   ))}
@@ -1134,7 +1134,7 @@ export function MoviesPlayer() {
                 <div className="flex gap-1.5 flex-1">
                   {SPEED_OPT.map(({label,value,color}) => (
                     <button key={value} onClick={()=>setSpeed(value)}
-                      className={`flex-1 py-1.5 rounded-lg text-sm font-black transition-all ${
+                      className={`flex-1 py-1.5 min-h-[44px] rounded-lg text-sm font-black transition-all ${
                         speed===value
                           ? `${color} text-white shadow-md scale-105`
                           : "bg-white/10 hover:bg-white/20 text-white/70"
@@ -1164,7 +1164,7 @@ export function MoviesPlayer() {
                   { id:"subs",    icon:"📺", label:"Legendas" },
                 ] as const).map(t => (
                   <button key={t.id} onClick={()=>setTab(t.id)}
-                    className={`flex-1 py-2 text-xs font-bold transition-colors ${
+                    className={`flex-1 py-2 min-h-[44px] text-xs font-bold transition-colors ${
                       tab===t.id
                         ? "bg-amber-700/50 text-white border-b-2 border-amber-400"
                         : "text-white/50 hover:text-white hover:bg-white/5"

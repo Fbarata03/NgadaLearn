@@ -898,7 +898,7 @@ export function MusicPlayer() {
         {/* Header — compacto */}
         <div className="flex-shrink-0 bg-gradient-to-r from-purple-800 via-violet-700 to-indigo-800 px-4 shadow-xl" style={{height:48}}>
           <div className="max-w-7xl mx-auto h-full relative flex items-center justify-center">
-            <Link to="/lessons" className="absolute left-0 flex items-center gap-1.5 text-purple-200 hover:text-white transition-colors">
+            <Link to="/lessons" className="absolute left-0 flex items-center gap-1.5 text-purple-200 hover:text-white transition-colors min-h-[44px] px-1">
               <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7"/></svg>
               <span className="text-sm font-semibold hidden sm:inline">Conteúdo</span>
             </Link>
@@ -924,7 +924,7 @@ export function MusicPlayer() {
                   placeholder="Ex: Adele Hello official…"
                   className="flex-1 bg-white/10 border border-white/20 rounded-lg px-3 py-2 text-sm placeholder-white/40 focus:outline-none focus:border-purple-400 transition-colors" />
                 <button type="submit" disabled={loading}
-                  className="bg-purple-600 hover:bg-purple-500 disabled:opacity-50 px-4 py-2 rounded-lg text-sm font-bold transition-colors">
+                  className="bg-purple-600 hover:bg-purple-500 disabled:opacity-50 px-4 py-2 min-h-[44px] rounded-lg text-sm font-bold transition-colors">
                   {loading ? "…" : "Ir"}
                 </button>
               </div>
@@ -1066,7 +1066,7 @@ export function MusicPlayer() {
                   <button
                     key={value}
                     onClick={() => setSpeed(value)}
-                    className={`flex-1 py-2 rounded-lg text-sm font-black transition-all ${
+                    className={`flex-1 py-2 min-h-[44px] rounded-lg text-sm font-black transition-all ${
                       speed === value
                         ? value === 0.5  ? "bg-red-600 text-white shadow-md scale-105"
                         : value === 0.75 ? "bg-yellow-600 text-white shadow-md scale-105"
@@ -1092,7 +1092,7 @@ export function MusicPlayer() {
               {/* Tabs */}
               <div className="flex-shrink-0 flex border-b border-white/10">
                 <button onClick={()=>setTab("lyrics")}
-                  className={`flex-1 py-2.5 text-sm font-bold transition-colors ${
+                  className={`flex-1 py-2.5 min-h-[44px] text-sm font-bold transition-colors ${
                     tab==="lyrics"
                       ? "bg-purple-700/60 text-white border-b-2 border-purple-400"
                       : "text-white/50 hover:text-white hover:bg-white/5"
@@ -1100,7 +1100,7 @@ export function MusicPlayer() {
                   🎤 Legenda
                 </button>
                 <button onClick={()=>setTab("notes")}
-                  className={`flex-1 py-2.5 text-sm font-bold transition-colors ${
+                  className={`flex-1 py-2.5 min-h-[44px] text-sm font-bold transition-colors ${
                     tab==="notes"
                       ? "bg-indigo-700/60 text-white border-b-2 border-indigo-400"
                       : "text-white/50 hover:text-white hover:bg-white/5"

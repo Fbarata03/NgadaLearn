@@ -957,7 +957,7 @@ export function MoviesPlayer() {
                   ))}
                 </div>
               </div>
-              <div className="space-y-1 max-h-32 overflow-y-auto pr-1">
+              <div className="space-y-1 max-h-44 overflow-y-auto pr-1">
                 {filteredCurated.map(m => (
                   <button key={m.label}
                     onClick={()=>{
@@ -990,7 +990,7 @@ export function MoviesPlayer() {
               </div>
             )}
 
-            <div className="max-h-[35vh] lg:max-h-none lg:flex-1 lg:min-h-0 overflow-y-auto space-y-1.5 pr-1">
+            <div className="max-h-[45vh] lg:max-h-none lg:flex-1 lg:min-h-0 overflow-y-auto space-y-1.5 pr-1">
               {loading && (
                 <div className="text-center py-6">
                   <div className="flex justify-center gap-1 mb-2">
@@ -1104,74 +1104,56 @@ export function MoviesPlayer() {
               </div>
             ) : null}
 
-            {/* CC + Velocidade */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-
-              {/* Legendas CC */}
-              <div className="bg-white/8 backdrop-blur rounded-xl p-4 border border-amber-500/10">
-                <p className="text-xs font-bold text-amber-200 uppercase tracking-widest mb-3">
-                  💬 Legendas (Closed Captions)
-                </p>
-                <div className="flex items-center justify-between mb-2">
-                  <span className="text-sm text-white/70">
-                    {ccOn ? "Legendas em inglês activas" : "Legendas desactivadas"}
-                  </span>
-                  <button
-                    onClick={() => {
-                      const next = !ccOn;
-                      setCcOn(next);
-                      /* Recarregar player com novo cc_load_policy */
-                      if (selected) {
-                        const cur = selected;
-                        setSelected(null);
-                        setTimeout(() => setSelected(cur), 100);
-                      }
-                    }}
-                    className={`relative w-12 h-6 rounded-full transition-colors ${ccOn ? "bg-blue-600" : "bg-white/20"}`}>
-                    <div className={`absolute top-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform ${ccOn ? "translate-x-6" : "translate-x-0.5"}`} />
-                  </button>
-                </div>
-                <p className="text-[11px] text-white/40">
-                  {ccOn
-                    ? "🔵 O YouTube exibirá legendas em inglês automaticamente (se disponíveis)"
-                    : "○ Sem legendas — reativa para treino de compreensão"}
-                </p>
+            {/* CC + Velocidade — barra compacta (1 linha) */}
+            <div className="flex-shrink-0 bg-white/8 backdrop-blur rounded-xl px-4 py-3 border border-amber-500/10 flex items-center gap-3 flex-wrap">
+              {/* CC toggle */}
+              <div className="flex items-center gap-2 flex-shrink-0">
+                <span className="text-[11px] font-bold text-amber-300 uppercase tracking-widest">💬 CC</span>
+                <button
+                  onClick={() => {
+                    const next = !ccOn;
+                    setCcOn(next);
+                    if (selected) {
+                      const cur = selected;
+                      setSelected(null);
+                      setTimeout(() => setSelected(cur), 100);
+                    }
+                  }}
+                  title={ccOn ? "Desativar legendas" : "Ativar legendas"}
+                  className={`relative w-10 h-5 rounded-full transition-colors flex-shrink-0 ${ccOn ? "bg-blue-600" : "bg-white/20"}`}>
+                  <div className={`absolute top-0.5 w-4 h-4 bg-white rounded-full shadow transition-transform ${ccOn ? "translate-x-5" : "translate-x-0.5"}`} />
+                </button>
+                <span className={`text-xs font-semibold ${ccOn ? "text-blue-300" : "text-white/35"}`}>
+                  {ccOn ? "On" : "Off"}
+                </span>
               </div>
-
+              <div className="w-px h-5 bg-white/15 flex-shrink-0" />
               {/* Velocidade */}
-              <div className="bg-white/8 backdrop-blur rounded-xl p-4 border border-amber-500/10">
-                <div className="flex items-center justify-between mb-3">
-                  <p className="text-xs font-bold text-amber-200 uppercase tracking-widest">
-                    🐢 Velocidade
-                  </p>
-                  <span className={`text-xs font-black px-2 py-0.5 rounded-full ${
-                    speed===0.5  ? "bg-red-500/30 text-red-300"    :
-                    speed===0.75 ? "bg-yellow-500/30 text-yellow-300" :
-                                   "bg-green-500/30 text-green-300"
-                  }`}>
-                    {speed===0.5?"Muito lento":speed===0.75?"Lento":"Normal"}
-                  </span>
-                </div>
-                <div className="flex gap-2">
+              <div className="flex items-center gap-2 flex-1 min-w-0">
+                <span className="text-[11px] font-bold text-amber-300 uppercase tracking-widest flex-shrink-0">🐢 Vel.</span>
+                <div className="flex gap-1.5 flex-1">
                   {SPEED_OPT.map(({label,value,color}) => (
                     <button key={value} onClick={()=>setSpeed(value)}
-                      className={`flex-1 py-2 rounded-lg text-sm font-black transition-all ${
+                      className={`flex-1 py-1.5 rounded-lg text-sm font-black transition-all ${
                         speed===value
-                          ? `${color} text-white shadow-lg scale-105`
+                          ? `${color} text-white shadow-md scale-105`
                           : "bg-white/10 hover:bg-white/20 text-white/70"
                       }`}>
                       {label}
                     </button>
                   ))}
                 </div>
-                <p className="text-[11px] text-white/40 mt-2 text-center">
-                  {SPEED_OPT.find(s=>s.value===speed)?.tip}
-                </p>
+                <span className={`text-xs font-bold flex-shrink-0 hidden sm:block ${
+                  speed===0.5  ? "text-red-300" :
+                  speed===0.75 ? "text-yellow-300" : "text-green-300"
+                }`}>
+                  {speed===0.5?"Muito lento":speed===0.75?"Lento":"Normal"}
+                </span>
               </div>
             </div>
 
             {/* Vocabulário + Frases + Notas */}
-            <div className="lg:flex-1 lg:min-h-0 flex flex-col bg-white/8 backdrop-blur rounded-xl overflow-hidden border border-amber-500/10">
+            <div className="min-h-[300px] lg:flex-1 lg:min-h-0 flex flex-col bg-white/8 backdrop-blur rounded-xl overflow-hidden border border-amber-500/10">
 
               {/* Tabs */}
               <div className="flex-shrink-0 flex border-b border-white/10">
@@ -1192,7 +1174,7 @@ export function MoviesPlayer() {
                 ))}
               </div>
 
-              <div className="flex-1 min-h-0 overflow-y-auto p-3">
+              <div className="flex-1 min-h-0 overflow-y-auto p-3 pb-6">
 
                 {/* ── Vocabulário ── */}
                 {tab==="vocab" && (
@@ -1227,7 +1209,7 @@ export function MoviesPlayer() {
 
                     {savedVocab.length > 0 && (
                       <>
-                        <div className="space-y-1.5 max-h-40 overflow-y-auto">
+                        <div className="space-y-1.5 max-h-52 overflow-y-auto">
                           {savedVocab.map(v => (
                             <div key={v.id} className="mslide flex items-center gap-2 bg-white/5 rounded-lg px-3 py-2">
                               <span className="text-sm font-bold text-amber-300">{v.en}</span>
@@ -1282,7 +1264,7 @@ export function MoviesPlayer() {
                     </button>
 
                     {savedPhrases.length > 0 && (
-                      <div className="space-y-2 max-h-40 overflow-y-auto">
+                      <div className="space-y-2 max-h-52 overflow-y-auto">
                         {savedPhrases.map(p => (
                           <div key={p.id} className="mslide bg-white/5 rounded-lg px-3 py-2 relative">
                             <p className="text-sm font-semibold text-amber-200 italic">"{p.en}"</p>

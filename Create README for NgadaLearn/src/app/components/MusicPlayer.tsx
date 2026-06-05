@@ -200,7 +200,7 @@ function InteractiveLyrics({
     );
 
   return (
-    <div ref={containerRef} className="space-y-1 overflow-y-auto pr-1 py-1" style={{maxHeight:"clamp(240px, calc(100vh - 420px), 580px)", minHeight:80}}>
+    <div ref={containerRef} className="space-y-1 overflow-y-auto pr-1 py-1" style={{maxHeight:"clamp(220px, calc(100dvh - 480px), 580px)", minHeight:120}}>
       {lines.map((line) => {
         const isActive = line.id === activeLine;
         const meta     = DIFF_META[line.difficulty];
@@ -1087,7 +1087,7 @@ export function MusicPlayer() {
             </div>
 
             {/* ── SECÇÃO PRINCIPAL: LETRAS / NOTAS ─────────────────── */}
-            <div className="lg:flex-1 lg:min-h-0 flex flex-col bg-white/10 backdrop-blur rounded-xl overflow-hidden">
+            <div className="min-h-[300px] lg:flex-1 lg:min-h-0 flex flex-col bg-white/10 backdrop-blur rounded-xl overflow-hidden">
 
               {/* Tabs */}
               <div className="flex-shrink-0 flex border-b border-white/10">
@@ -1109,7 +1109,7 @@ export function MusicPlayer() {
                 </button>
               </div>
               {/* Conteúdo da aba — scrollável */}
-              <div className="flex-1 min-h-0 overflow-y-auto">
+              <div className="flex-1 min-h-0 overflow-y-auto pb-6">
 
               {/* ── Aba LETRAS ────────────────────────────────────── */}
               {tab==="lyrics" && (

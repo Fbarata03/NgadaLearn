@@ -115,32 +115,35 @@ const REVIEWS = [
   {
     name: "Maria Silva",
     location: "São Paulo, BR",
-    avatar: "👩🏽",
+    avatar: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=80&h=80&fit=crop&crop=face",
     date: "há 2 semanas",
     stars: 5,
-    text: "Depois de 3 meses com NgadaLearn, consegui meu primeiro emprego internacional! O método de conversação é completamente diferente de tudo que já tentei.",
+    text: "Depois de 3 meses com NgadaLearn, consegui o meu primeiro emprego internacional! O método de conversação é completamente diferente de tudo o que já tentei. Vale cada cêntimo.",
     helpful: 134,
     badge: "Emprego internacional",
+    role: "Designer • Udemy Brasil",
   },
   {
     name: "João Costa",
     location: "Lisboa, PT",
-    avatar: "👨🏻",
+    avatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=80&h=80&fit=crop&crop=face",
     date: "há 1 mês",
     stars: 5,
-    text: "O NgadaFlow mudou completamente meu listening. Em 2 meses comecei a entender séries americanas sem legenda. Por US$ 15, é impossível encontrar algo melhor.",
+    text: "O NgadaFlow mudou completamente o meu listening. Em 2 meses comecei a entender séries americanas sem legenda. Por US$ 15, é impossível encontrar algo melhor no mercado.",
     helpful: 89,
     badge: "Séries sem legenda",
+    role: "Engenheiro de Software • Lisboa",
   },
   {
     name: "Amara Ndiaye",
     location: "Luanda, AO",
-    avatar: "👩🏾",
+    avatar: "https://images.unsplash.com/photo-1531746020798-e6953c6e8e04?w=80&h=80&fit=crop&crop=face",
     date: "há 3 semanas",
     stars: 5,
-    text: "Aprendo no celular durante o trajeto pro trabalho. Em 4 meses fui promovida por causa das minhas habilidades em inglês. Melhor investimento que já fiz!",
+    text: "Aprendo no telemóvel durante o percurso para o trabalho. Em 4 meses fui promovida graças às minhas competências em inglês. Melhor investimento que já fiz na minha carreira!",
     helpful: 67,
     badge: "Promovida no trabalho",
+    role: "Gestora de Projetos • Luanda",
   },
 ];
 
@@ -158,8 +161,17 @@ export function LandingPage() {
       {/* ══════════════════════════════════════
           HERO — estilo Udemy
       ══════════════════════════════════════ */}
-      <section className="bg-gradient-to-br from-slate-900 via-purple-950 to-slate-900 text-white">
-        <div className="container mx-auto px-4 py-8 sm:py-14">
+      <section className="relative text-white overflow-hidden">
+        {/* Imagem de fundo com overlay */}
+        <div className="absolute inset-0 z-0">
+          <img
+            src="https://images.unsplash.com/photo-1522202176988-66273c2fd55f?auto=format&fit=crop&w=1400&q=75"
+            alt=""
+            className="w-full h-full object-cover"
+          />
+          <div className="absolute inset-0 bg-gradient-to-br from-slate-900/97 via-purple-950/95 to-slate-900/97" />
+        </div>
+        <div className="relative z-10 container mx-auto px-4 py-8 sm:py-14">
           <div className="grid lg:grid-cols-3 gap-8 sm:gap-12 items-start">
             {/* ── Texto ── */}
             <div className="lg:col-span-2 space-y-5">
@@ -334,6 +346,36 @@ export function LandingPage() {
         </div>
       </section>
 
+      {/* ── Barra de confiança — logos e stats ── */}
+      <div className="bg-white border-b border-gray-100 py-4">
+        <div className="container mx-auto px-4">
+          <div className="flex flex-wrap items-center justify-center gap-6 sm:gap-10 text-sm text-gray-500">
+            <div className="flex items-center gap-2">
+              <span className="text-2xl font-black text-purple-700">4.9</span>
+              <div className="flex gap-0.5">
+                {[...Array(5)].map((_, i) => <Star key={i} className="w-3.5 h-3.5 fill-yellow-400 text-yellow-400" />)}
+              </div>
+              <span className="text-xs text-gray-400">1.842 avaliações</span>
+            </div>
+            <div className="w-px h-5 bg-gray-200 hidden sm:block" />
+            <div className="flex items-center gap-1.5">
+              <Users className="w-4 h-4 text-purple-500" />
+              <span><strong className="text-gray-800">2.300+</strong> alunos</span>
+            </div>
+            <div className="w-px h-5 bg-gray-200 hidden sm:block" />
+            <div className="flex items-center gap-1.5">
+              <Shield className="w-4 h-4 text-green-500" />
+              <span>Pagamento seguro via <strong className="text-gray-700">Stripe</strong></span>
+            </div>
+            <div className="w-px h-5 bg-gray-200 hidden sm:block" />
+            <div className="flex items-center gap-1.5">
+              <Award className="w-4 h-4 text-yellow-500" />
+              <span>Certificado incluído</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
       {/* ── Mais vendido ── */}
       <div className="bg-yellow-50 border-y border-yellow-200 py-3">
         <div className="container mx-auto px-4 flex flex-wrap items-center gap-3">
@@ -356,13 +398,15 @@ export function LandingPage() {
 
             {/* O que você vai aprender */}
             <section>
-              <h2 className="text-2xl font-bold mb-4">O que você vai aprender</h2>
-              <div className="border rounded-xl p-6 bg-gray-50">
+              <h2 className="text-2xl font-bold mb-4">O que vais aprender</h2>
+              <div className="border border-purple-100 rounded-2xl p-6 bg-gradient-to-br from-purple-50/50 to-indigo-50/30">
                 <div className="grid md:grid-cols-2 gap-3">
                   {WHAT_YOU_LEARN.map((item) => (
                     <div key={item} className="flex items-start gap-2.5 text-sm">
-                      <Check className="w-4 h-4 text-green-600 flex-shrink-0 mt-0.5" />
-                      <span>{item}</span>
+                      <div className="w-5 h-5 bg-green-100 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+                        <Check className="w-3 h-3 text-green-600" />
+                      </div>
+                      <span className="text-gray-700">{item}</span>
                     </div>
                   ))}
                 </div>
@@ -372,17 +416,18 @@ export function LandingPage() {
             {/* Para quem é */}
             <section>
               <h2 className="text-2xl font-bold mb-4">Para quem é este curso</h2>
-              <div className="space-y-2.5">
+              <div className="grid sm:grid-cols-2 gap-3">
                 {[
-                  "Iniciantes que nunca estudaram inglês formalmente",
-                  "Quem estudou inglês na escola mas ainda não sabe falar",
-                  "Profissionais que precisam do inglês para crescer na carreira",
-                  "Viajantes que querem se comunicar sem dificuldades",
-                  "Quem quer assistir filmes e séries sem legenda",
+                  { icon: "🌱", text: "Iniciantes que nunca estudaram inglês formalmente" },
+                  { icon: "🏫", text: "Quem estudou na escola mas ainda não sabe falar" },
+                  { icon: "💼", text: "Profissionais que precisam do inglês para crescer" },
+                  { icon: "✈️", text: "Viajantes que querem comunicar sem dificuldades" },
+                  { icon: "🎬", text: "Quem quer ver filmes e séries sem legenda" },
+                  { icon: "🎯", text: "Quem quer atingir fluência real em menos de 1 ano" },
                 ].map((item) => (
-                  <div key={item} className="flex items-start gap-3 text-sm text-gray-700">
-                    <span className="text-purple-600 font-bold mt-0.5">›</span>
-                    <span>{item}</span>
+                  <div key={item.text} className="flex items-start gap-3 p-3 bg-purple-50 rounded-xl border border-purple-100">
+                    <span className="text-lg flex-shrink-0">{item.icon}</span>
+                    <span className="text-sm text-gray-700 leading-snug">{item.text}</span>
                   </div>
                 ))}
               </div>
@@ -437,9 +482,11 @@ export function LandingPage() {
               <h2 className="text-2xl font-bold mb-5">Este curso inclui</h2>
               <div className="grid sm:grid-cols-2 gap-3">
                 {COURSE_INCLUDES.map((item) => (
-                  <div key={item.text} className="flex items-center gap-3 text-sm text-gray-700">
-                    <item.icon className="w-5 h-5 text-purple-600 flex-shrink-0" />
-                    <span>{item.text}</span>
+                  <div key={item.text} className="flex items-center gap-3 p-3.5 bg-white border border-gray-100 rounded-xl shadow-sm text-sm text-gray-700 hover:border-purple-200 transition-colors">
+                    <div className="w-9 h-9 bg-purple-100 rounded-xl flex items-center justify-center flex-shrink-0">
+                      <item.icon className="w-4.5 h-4.5 text-purple-600" />
+                    </div>
+                    <span className="font-medium">{item.text}</span>
                   </div>
                 ))}
               </div>
@@ -488,30 +535,46 @@ export function LandingPage() {
               </div>
 
               {/* Reviews individuais */}
-              <div className="space-y-6">
+              <div className="space-y-4">
                 {REVIEWS.map((r) => (
-                  <div key={r.name} className="border-b pb-6 last:border-b-0">
-                    <div className="flex flex-wrap items-start gap-2 mb-3">
-                      <div className="text-3xl leading-none">{r.avatar}</div>
+                  <div key={r.name} className="bg-white border border-gray-100 rounded-2xl p-5 shadow-sm hover:shadow-md transition-shadow">
+                    {/* Cabeçalho */}
+                    <div className="flex items-start gap-3 mb-3">
+                      <img
+                        src={r.avatar}
+                        alt={r.name}
+                        className="w-12 h-12 rounded-full object-cover flex-shrink-0 border-2 border-purple-100"
+                        onError={(e) => { (e.target as HTMLImageElement).src = `https://ui-avatars.com/api/?name=${encodeURIComponent(r.name)}&background=7c3aed&color=fff&size=80`; }}
+                      />
                       <div className="flex-1 min-w-0">
-                        <div className="font-semibold text-sm">{r.name}</div>
-                        <div className="text-xs text-gray-500">
-                          {r.location} · {r.date}
+                        <div className="flex flex-wrap items-center gap-2">
+                          <span className="font-bold text-sm text-gray-900">{r.name}</span>
+                          <span className="text-[10px] bg-blue-50 text-blue-700 border border-blue-200 px-1.5 py-0.5 rounded-full font-semibold flex items-center gap-0.5">
+                            ✓ Compra verificada
+                          </span>
+                        </div>
+                        <div className="text-xs text-gray-500 mt-0.5">{r.role}</div>
+                        <div className="flex items-center gap-2 mt-1">
+                          <div className="flex gap-0.5">
+                            {[...Array(r.stars)].map((_, i) => (
+                              <Star key={i} className="w-3.5 h-3.5 fill-yellow-400 text-yellow-400" />
+                            ))}
+                          </div>
+                          <span className="text-xs text-gray-400">{r.date}</span>
                         </div>
                       </div>
-                      <span className="text-xs font-semibold text-green-700 bg-green-100 px-2 py-0.5 rounded-full">
+                      <span className="text-xs font-semibold text-green-700 bg-green-50 border border-green-200 px-2.5 py-1 rounded-full flex-shrink-0">
                         ✓ {r.badge}
                       </span>
                     </div>
-                    <div className="flex gap-0.5 mb-2">
-                      {[...Array(r.stars)].map((_, i) => (
-                        <Star key={i} className="w-4 h-4 fill-yellow-400 text-yellow-400" />
-                      ))}
-                    </div>
-                    <p className="text-sm text-gray-700 leading-relaxed">{r.text}</p>
-                    <p className="text-xs text-gray-400 mt-2">
-                      {r.helpful} pessoas acharam esta avaliação útil
+                    {/* Texto */}
+                    <p className="text-sm text-gray-700 leading-relaxed border-l-2 border-purple-200 pl-3 italic">
+                      "{r.text}"
                     </p>
+                    <div className="flex items-center justify-between mt-3 pt-2 border-t border-gray-50">
+                      <span className="text-xs text-gray-400">{r.location}</span>
+                      <span className="text-xs text-gray-400">{r.helpful} pessoas acharam útil</span>
+                    </div>
                   </div>
                 ))}
               </div>

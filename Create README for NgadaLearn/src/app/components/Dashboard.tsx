@@ -191,8 +191,8 @@ export function Dashboard() {
                 </h1>
                 <p className="text-purple-200">
                   {totalCompleted === 0
-                    ? "Comece sua primeira aula hoje — a jornada para a fluência começa aqui!"
-                    : `Continue sua jornada — ${totalCompleted} aula${totalCompleted > 1 ? "s" : ""} concluída${totalCompleted > 1 ? "s" : ""}!`}
+                    ? "Começa a tua primeira aula hoje — a jornada para a fluência começa aqui!"
+                    : `Continua a tua jornada — ${totalCompleted} aula${totalCompleted > 1 ? "s" : ""} concluída${totalCompleted > 1 ? "s" : ""}!`}
                 </p>
                 {streak > 0 && (
                   <div className="flex items-center gap-2 mt-3 text-sm">
@@ -279,9 +279,9 @@ export function Dashboard() {
                       <span className="font-medium text-gray-700">{item.label}</span>
                       <span className="text-gray-500">{item.value}/{item.total} lições</span>
                     </div>
-                    <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
+                    <div className="h-2.5 bg-gray-100 rounded-full overflow-hidden">
                       <div
-                        className={`h-full rounded-full transition-all ${item.color}`}
+                        className={`h-full rounded-full transition-all duration-500 ${item.color}`}
                         style={{ width: `${item.total > 0 ? (item.value / item.total) * 100 : 0}%` }}
                       />
                     </div>
@@ -347,19 +347,24 @@ export function Dashboard() {
               <Award className="w-5 h-5 text-yellow-500" />
               Conquistas
             </h2>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
               {achievements.map((a) => (
                 <div
                   key={a.title}
-                  className={`text-center p-4 rounded-xl border transition-all ${
+                  className={`relative text-center p-4 rounded-2xl border transition-all ${
                     a.unlocked
-                      ? "bg-gradient-to-br from-yellow-50 to-orange-50 border-yellow-200 shadow-sm"
-                      : "bg-gray-50 opacity-40 border-gray-200"
+                      ? "bg-gradient-to-br from-yellow-50 to-amber-50 border-yellow-200 shadow-md"
+                      : "bg-gray-50 border-gray-200 opacity-50 grayscale"
                   }`}
                 >
+                  {a.unlocked && (
+                    <div className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-green-500 rounded-full flex items-center justify-center shadow-sm">
+                      <span className="text-white text-[9px] font-bold">✓</span>
+                    </div>
+                  )}
                   <div className="text-3xl mb-2">{a.emoji}</div>
-                  <p className="font-bold text-sm text-gray-800">{a.title}</p>
-                  <p className="text-xs text-gray-500 mt-0.5">{a.unlocked ? a.desc : "🔒 " + a.desc}</p>
+                  <p className="font-bold text-xs text-gray-800 leading-tight">{a.title}</p>
+                  <p className="text-[10px] text-gray-500 mt-1 leading-snug">{a.unlocked ? a.desc : "🔒 " + a.desc}</p>
                 </div>
               ))}
             </div>

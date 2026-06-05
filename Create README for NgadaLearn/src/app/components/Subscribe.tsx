@@ -159,6 +159,7 @@ function PaymentForm({
         <div className="text-right">
           <p className="text-2xl font-black text-purple-700">US$ {isRenewal ? "15" : plan.price}</p>
           <p className="text-xs text-gray-500">{isRenewal ? "/mês" : plan.period}</p>
+          <p className="text-[11px] text-gray-400">≈ {isRenewal ? "€14/mês" : plan.id === "lifetime" ? "€138" : "€14/mês"}</p>
         </div>
       </div>
 
@@ -231,8 +232,14 @@ function PaymentForm({
 
       {/* Total */}
       <div className="flex items-center justify-between bg-gray-50 rounded-xl px-4 py-3">
-        <span className="font-bold text-gray-800">Total</span>
-        <span className="text-xl font-black text-purple-700">US$ {isRenewal ? "15" : plan.price},00</span>
+        <div>
+          <span className="font-bold text-gray-800">Total</span>
+          <p className="text-[11px] text-gray-400">Processado em USD via Stripe</p>
+        </div>
+        <div className="text-right">
+          <span className="text-xl font-black text-purple-700">US$ {isRenewal ? "15" : plan.price},00</span>
+          <p className="text-[11px] text-gray-400">≈ {isRenewal || plan.id === "monthly" ? "€14" : "€138"}</p>
+        </div>
       </div>
 
       {error && (
@@ -413,7 +420,7 @@ export function Subscribe() {
                       <button
                         type="button"
                         onClick={() => setSelectedPlan(p.id)}
-                        className={`w-full text-left rounded-2xl transition-all active:scale-[0.99] overflow-hidden border-2 ${
+                        className={`w-full text-left rounded-2xl transition-all active:scale-[0.99] border-2 ${
                           active ? "border-purple-500 shadow-xl shadow-purple-100" : "border-gray-200 hover:border-purple-300"
                         }`}
                       >
@@ -448,6 +455,7 @@ export function Subscribe() {
                               <div className="text-sm text-gray-400 line-through">US$ {p.priceOld}</div>
                               <div className="text-4xl font-black text-purple-700 leading-none">US$ {p.price}</div>
                               <div className="text-xs text-gray-500 mt-0.5">pagamento único</div>
+                              <div className="text-[11px] text-gray-400 mt-0.5">≈ €138</div>
                               <div className="mt-2 bg-green-100 text-green-700 text-xs font-bold px-2 py-1 rounded-lg">
                                 = US$ 1,25/mês por 10 anos
                               </div>
@@ -492,6 +500,7 @@ export function Subscribe() {
                             <div className="text-right flex-shrink-0">
                               <div className="text-xs text-gray-400 line-through">US$ {p.priceOld}</div>
                               <div className="text-2xl font-black text-gray-900">US$ {p.price}<span className="text-sm font-normal text-gray-500">/mês</span></div>
+                              <div className="text-[11px] text-gray-400">≈ €14/mês</div>
                             </div>
                           </div>
                           <p className="text-xs font-semibold text-orange-600 mt-3 pt-3 border-t border-gray-100">
@@ -523,7 +532,7 @@ export function Subscribe() {
 
             {/* ── ETAPA 2 ── */}
             {(step === "payment" || isRenewal) && (
-              <Elements stripe={stripePromise} options={{ locale: "pt-BR" }}>
+              <Elements stripe={stripePromise} options={{ locale: "pt-PT" }}>
                 <PaymentForm selectedPlan={selectedPlan} isRenewal={isRenewal} onBack={() => setStep("plan")} />
               </Elements>
             )}

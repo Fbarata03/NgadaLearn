@@ -432,6 +432,13 @@ export function Lessons() {
   const [tab, setTab] = useState<TabId>("assimil");
   const [search, setSearch] = useState("");
   const { totalCompleted, totalMinutes } = useProgress();
+  const [onboardingDismissed, setOnboardingDismissed] = useState(
+    () => localStorage.getItem("ngada_onboarding_done") === "1"
+  );
+  function dismissOnboarding() {
+    localStorage.setItem("ngada_onboarding_done", "1");
+    setOnboardingDismissed(true);
+  }
 
   const lessons = (tab !== "conversacoes" && tab !== "textos" && tab !== "gramatica" && tab !== "frases" && tab !== "vocabulario" && tab !== "musica" && tab !== "filmes")
     ? LESSONS_MAP[tab as "assimil" | "pimsleur" | "leituras"]
@@ -469,13 +476,41 @@ export function Lessons() {
     <div className="bg-gray-50 min-h-screen">
       <div className="container mx-auto px-4 py-8 max-w-5xl">
 
+        {/* Banner onboarding — apenas para novos utilizadores */}
+        {totalCompleted === 0 && !onboardingDismissed && (
+          <div className="mb-5 bg-gradient-to-r from-purple-600 to-indigo-600 rounded-2xl p-5 text-white flex flex-col sm:flex-row items-start sm:items-center gap-4 shadow-lg">
+            <div className="text-3xl flex-shrink-0">👋</div>
+            <div className="flex-1">
+              <p className="font-black text-base sm:text-lg leading-tight">Bem-vindo ao NgadaLearn!</p>
+              <p className="text-purple-200 text-sm mt-0.5">
+                Começa pelo <strong className="text-white">Módulo 1 — Fundamentos</strong>. É o melhor ponto de partida para iniciantes.
+              </p>
+            </div>
+            <div className="flex items-center gap-2 flex-shrink-0">
+              <button
+                onClick={() => { goToTab("assimil"); dismissOnboarding(); }}
+                className="bg-white text-purple-700 font-bold text-sm px-4 py-2 rounded-xl hover:bg-purple-50 transition-colors whitespace-nowrap"
+              >
+                Começar aqui →
+              </button>
+              <button
+                onClick={dismissOnboarding}
+                aria-label="Fechar aviso"
+                className="text-purple-300 hover:text-white transition-colors p-1"
+              >
+                ✕
+              </button>
+            </div>
+          </div>
+        )}
+
         {/* Header */}
         <div className="mb-6">
           <Link to="/dashboard" className="inline-flex items-center gap-1.5 text-sm text-gray-500 hover:text-purple-600 transition-colors mb-3 min-h-[44px] -ml-1 px-1">
             <LayoutDashboard className="w-4 h-4" />
             Meu Progresso
           </Link>
-          <h1 className="text-3xl font-black text-gray-900 mb-1">Seu Plano de Estudos</h1>
+          <h1 className="text-3xl font-black text-gray-900 mb-1">O teu Plano de Estudos</h1>
           <p className="text-gray-600">
             {totalAll} conteúdos disponíveis · {totalCompleted} concluídos · {totalMinutes} min estudados
           </p>
@@ -638,8 +673,8 @@ export function Lessons() {
               <div className="text-7xl mb-4">🎬</div>
               <h2 className="text-2xl font-black mb-2">Abrir Player de Filmes</h2>
               <p className="text-amber-100 text-sm mb-6 max-w-md mx-auto">
-                Assiste a trechos de filmes oficiais em inglês, ativa as legendas CC,
-                guarda vocabulário novo e faz anotações enquanto assistis.
+                Vê trechos de filmes oficiais em inglês, ativa as legendas CC,
+                guarda vocabulário novo e faz anotações enquanto vês.
               </p>
               <div className="flex justify-center gap-4 flex-wrap text-sm mb-6">
                 <span className="bg-white/20 px-3 py-1.5 rounded-full">🎭 12 Sugestões de Filmes</span>

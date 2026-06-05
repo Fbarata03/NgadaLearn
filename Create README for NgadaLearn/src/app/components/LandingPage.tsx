@@ -39,7 +39,7 @@ const COURSE_INCLUDES = [
   { icon: Clock, text: "50+ horas de conteúdo em vídeo" },
   { icon: FileText, text: "100+ exercícios práticos" },
   { icon: Headphones, text: "Áudio NgadaFlow com sotaques reais" },
-  { icon: Smartphone, text: "Acesso no celular e computador" },
+  { icon: Smartphone, text: "Acesso no telemóvel e computador" },
   { icon: BookOpen, text: "Acesso completo enquanto assinante" },
   { icon: Award, text: "Certificado de conclusão" },
 ];
@@ -91,19 +91,19 @@ const LESSONS_PREVIEW = [
 const FAQ_ITEMS = [
   {
     q: "É um pagamento único ou mensalidade?",
-    a: "Pagamento único! Você paga uma vez e tem acesso completo ao curso para sempre. Sem mensalidades, sem renovações automáticas, sem surpresas.",
+    a: "Pagamento único! Pagas uma vez e tens acesso completo ao curso para sempre. Sem mensalidades, sem renovações automáticas, sem surpresas.",
   },
   {
     q: "O que está incluído no curso?",
-    a: "Você tem acesso completo a TUDO: todas as aulas de conversação, áudio NgadaFlow com sotaques reais, exercícios de vocabulário, dashboard de progresso e certificados de conclusão. Sem restrições, para sempre.",
+    a: "Tens acesso completo a TUDO: todas as aulas de conversação, áudio NgadaFlow com sotaques reais, exercícios de vocabulário, dashboard de progresso e certificados de conclusão. Sem restrições, para sempre.",
   },
   {
     q: "Tenho acesso para sempre mesmo?",
-    a: "Sim! Após o pagamento único, o acesso é vitalício. Mesmo quando adicionarmos novos conteúdos, você continuará tendo acesso sem pagar nada a mais.",
+    a: "Sim! Após o pagamento único, o acesso é vitalício. Mesmo quando adicionarmos novos conteúdos, continuarás a ter acesso sem pagar nada a mais.",
   },
   {
-    q: "O curso funciona no celular?",
-    a: "Perfeitamente! O NgadaLearn foi projetado para funcionar em qualquer dispositivo — celular, tablet ou computador. Estude onde e quando quiser.",
+    q: "O curso funciona no telemóvel?",
+    a: "Perfeitamente! O NgadaLearn foi concebido para funcionar em qualquer dispositivo — telemóvel, tablet ou computador. Estuda onde e quando quiseres.",
   },
   {
     q: "Quais métodos de pagamento são aceitos?",
@@ -257,11 +257,12 @@ export function LandingPage() {
                 </button>
 
                 {/* ── Plano Vitalício — destaque ── */}
-                <div className="relative border-2 border-purple-500 rounded-2xl p-4 mb-3 bg-gradient-to-br from-purple-50 to-indigo-50">
-                  <div className="absolute -top-3 left-1/2 -translate-x-1/2">
-                    <span className="bg-purple-600 text-white text-[10px] font-black px-3 py-0.5 rounded-full tracking-wider">⭐ MELHOR VALOR</span>
+                <div className="relative pt-4">
+                  <div className="absolute top-0 left-1/2 -translate-x-1/2 z-10">
+                    <span className="bg-purple-600 text-white text-[10px] font-black px-3 py-1 rounded-full tracking-wider shadow-sm">⭐ MELHOR VALOR</span>
                   </div>
-                  <div className="flex items-center justify-between mt-1">
+                  <div className="border-2 border-purple-500 rounded-2xl p-4 mb-3 bg-gradient-to-br from-purple-50 to-indigo-50">
+                  <div className="flex items-center justify-between">
                     <div>
                       <p className="font-black text-gray-900 text-sm">Plano Vitalício</p>
                       <p className="text-[11px] text-gray-500">Pague uma vez · Acesso para sempre</p>
@@ -269,6 +270,7 @@ export function LandingPage() {
                     <div className="text-right">
                       <p className="text-xs text-gray-400 line-through">US$ 300</p>
                       <p className="text-2xl font-black text-purple-700 leading-tight">US$ 150</p>
+                      <p className="text-[11px] text-gray-400">≈ €138</p>
                     </div>
                   </div>
                   <Link to="/subscribe" className="block mt-3">
@@ -276,6 +278,7 @@ export function LandingPage() {
                       Garantir Acesso Vitalício →
                     </Button>
                   </Link>
+                  </div>
                 </div>
 
                 {/* ── Divisor ── */}
@@ -295,10 +298,11 @@ export function LandingPage() {
                     <div className="text-right">
                       <p className="text-xs text-gray-400 line-through">US$ 30</p>
                       <p className="text-xl font-black text-gray-800 leading-tight">US$ 15<span className="text-xs font-normal text-gray-400">/mês</span></p>
+                      <p className="text-[11px] text-gray-400">≈ €14/mês</p>
                     </div>
                   </div>
                   <Link to="/subscribe" className="block mt-3">
-                    <Button variant="outline" size="sm" className="w-full border-2 border-gray-300 hover:border-purple-400 hover:text-purple-700 text-sm font-bold rounded-xl py-2.5">
+                    <Button variant="outline" size="sm" className="w-full border-2 border-purple-400 hover:border-purple-600 text-purple-700 hover:bg-purple-50 text-sm font-bold rounded-xl py-2.5 transition-colors">
                       Começar com Plano Mensal →
                     </Button>
                   </Link>
@@ -543,9 +547,9 @@ export function LandingPage() {
             {/* CTA final */}
             <section className="bg-gradient-to-br from-purple-600 to-blue-700 rounded-2xl p-6 sm:p-8 text-white text-center">
               <div className="text-5xl mb-4">🚀</div>
-              <h2 className="text-2xl sm:text-3xl font-black mb-3">Sua jornada começa hoje</h2>
+              <h2 className="text-2xl sm:text-3xl font-black mb-3">A tua jornada começa hoje</h2>
               <p className="text-purple-200 mb-6 max-w-md mx-auto">
-                Não adie mais. Com US$ 150 você investe no inglês que abre portas para
+                Não adie mais. Com US$ 150 (≈ €138) investe no inglês que abre portas para
                 empregos, viagens e oportunidades do mundo inteiro — para sempre.
               </p>
               <Link to="/subscribe">
@@ -568,6 +572,7 @@ export function LandingPage() {
               <Card className="p-6 shadow-xl border-2 border-gray-100">
                 <div className="text-xs text-gray-400 line-through mb-0.5">US$ 300</div>
                 <div className="text-4xl font-black mb-0.5">US$ 150</div>
+                <div className="text-gray-400 text-xs mb-1">≈ €138 · Pagamento processado em USD via Stripe</div>
                 <div className="text-purple-700 text-xs font-bold mb-5">pagamento único · acesso para sempre</div>
 
                 <Link to="/subscribe" className="block mb-4">

@@ -41,10 +41,10 @@ export function RootLayout() {
   return (
     <div className="min-h-screen flex flex-col bg-white">
       {/* ── HEADER ── */}
-      <header className="border-b bg-white sticky top-0 z-50 shadow-sm">
+      <header className="border-b bg-white sticky top-0 z-50 shadow-[0_2px_8px_rgba(0,0,0,0.08)]">
         <div className="container mx-auto px-4 h-16 flex items-center gap-4">
           {/* Logo */}
-          <Link to="/" className="flex items-center gap-1.5 sm:gap-2 flex-shrink-0">
+          <Link to="/" title="Página Inicial" aria-label="Ir para a página inicial" className="flex items-center gap-1.5 sm:gap-2 flex-shrink-0">
             <GraduationCap className="w-7 h-7 sm:w-8 sm:h-8 text-purple-600" />
             <span className="font-black text-lg sm:text-xl text-gray-900 tracking-tight">NgadaLearn</span>
           </Link>
@@ -78,8 +78,8 @@ export function RootLayout() {
                   <div className="w-8 h-8 bg-purple-100 rounded-full flex items-center justify-center">
                     <User className="w-4 h-4 text-purple-700" />
                   </div>
-                  <span className="text-sm font-semibold text-gray-800 max-w-[120px] truncate">
-                    {user?.name}
+                  <span className="text-sm font-semibold text-gray-800 max-w-[120px] truncate" title={user?.name}>
+                    {user?.name?.split(" ")[0]}
                   </span>
                   <ChevronDown className="w-4 h-4 text-gray-500" />
                 </button>
@@ -162,6 +162,14 @@ export function RootLayout() {
         {mobileOpen && (
           <div className="md:hidden border-t bg-white shadow-lg">
             <nav className="container mx-auto px-4 py-4 space-y-1">
+              <Link
+                to="/"
+                className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-gray-700 hover:bg-purple-50 hover:text-purple-700"
+                onClick={() => setMobileOpen(false)}
+              >
+                <GraduationCap className="w-4 h-4" />
+                Início
+              </Link>
               {isAuthenticated && (
                 <div className="flex items-center gap-3 px-3 py-3 mb-2 bg-purple-50 rounded-xl">
                   <div className="w-9 h-9 bg-purple-100 rounded-full flex items-center justify-center">
@@ -297,8 +305,17 @@ export function RootLayout() {
             </div>
           </div>
 
-          <div className="border-t border-gray-800 pt-6 flex flex-col md:flex-row items-center justify-between gap-3 text-xs sm:text-sm text-gray-500 text-center">
+          <div className="border-t border-gray-800 pt-6 flex flex-col md:flex-row items-center justify-between gap-3 text-xs text-gray-500 text-center">
             <p>© 2026 NgadaLearn. Todos os direitos reservados.</p>
+            <div className="flex flex-wrap items-center justify-center gap-3 sm:gap-4">
+              <Link to="/privacy" className="hover:text-gray-300 transition-colors">Política de Privacidade</Link>
+              <span className="text-gray-700">|</span>
+              <Link to="/terms" className="hover:text-gray-300 transition-colors">Termos de Uso</Link>
+              <span className="text-gray-700">|</span>
+              <a href="mailto:suporte@ngadalearn.pt" className="hover:text-gray-300 transition-colors">Contacto</a>
+              <span className="text-gray-700">|</span>
+              <a href="mailto:suporte@ngadalearn.pt" className="hover:text-gray-300 transition-colors">Suporte</a>
+            </div>
             <div className="flex flex-wrap items-center justify-center gap-4">
               <span>🌍 Português</span>
               <span>🔒 Pagamentos seguros via Stripe</span>

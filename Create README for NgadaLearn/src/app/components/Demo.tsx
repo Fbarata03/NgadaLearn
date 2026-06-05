@@ -5,7 +5,7 @@ import { Button } from "./ui/button";
 import { MessageCircle, CheckCircle2, Lock, PlayCircle, Star, Headphones } from "lucide-react";
 
 const DEMO_EXERCISE = {
-  question: "Como você cumprimenta alguém pela primeira vez em inglês?",
+  question: "Como se cumprimenta alguém pela primeira vez em inglês?",
   options: [
     "Hey, what's up?",
     "Nice to meet you!",
@@ -181,7 +181,7 @@ export function Demo() {
               </Card>
             </div>
 
-            {/* ── Sidebar: o que você perde ── */}
+            {/* ── Sidebar: o que perdes ── */}
             <div className="space-y-5">
               <Card className="p-5 border-0 shadow-sm rounded-2xl">
                 <div className="flex items-center gap-2 mb-4">

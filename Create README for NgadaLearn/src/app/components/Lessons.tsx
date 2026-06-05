@@ -16,7 +16,7 @@ import { VOCABULARY } from "../data/vocabularyData";
 import {
   BookOpen, Headphones, Search, Play, CheckCircle2, Clock,
   ChevronDown, ChevronUp, MessageCircle, FileText,
-  BookMarked, MessageSquare, List, Music, Film, LayoutDashboard,
+  BookMarked, MessageSquare, List, Music, Film, LayoutDashboard, Mic,
 } from "lucide-react";
 
 const TABS = [
@@ -559,6 +559,39 @@ export function Lessons() {
             </button>
           ))}
         </div>
+
+        {/* ── Card destaque: Prática de Conversação ao Vivo ── */}
+        <Link to="/conversation-practice" className="block mb-4">
+          <div className="relative overflow-hidden rounded-2xl shadow-2xl cursor-pointer h-28 sm:h-36 transition-all duration-300 hover:scale-[1.02] hover:shadow-3xl">
+            <img
+              src="https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&w=800&q=75"
+              alt="Conversação ao Vivo"
+              className="absolute inset-0 w-full h-full object-cover"
+              loading="lazy"
+            />
+            <div className="absolute inset-0 bg-gradient-to-r from-purple-900/97 via-purple-800/80 to-purple-700/40" />
+            <div className="absolute inset-0 flex items-center px-6 gap-4">
+              <div className="w-14 h-14 bg-red-500/90 backdrop-blur-sm rounded-2xl flex items-center justify-center flex-shrink-0 border border-red-400/50 shadow-lg">
+                <Mic className="w-7 h-7 text-white" />
+              </div>
+              <div className="flex-1">
+                <div className="flex items-center gap-2 mb-1">
+                  <p className="font-black text-xl sm:text-2xl text-white">Prática ao Vivo</p>
+                  <span className="bg-red-500 text-white text-[10px] font-black px-2 py-0.5 rounded-full animate-pulse">NOVO</span>
+                </div>
+                <p className="text-purple-200 text-xs sm:text-sm mt-0.5">
+                  Fala inglês com o tutor IA Alex · Deepgram STT + TTS · 8 tópicos
+                </p>
+                <div className="flex gap-2 mt-2 flex-wrap">
+                  <span className="text-[10px] bg-white/15 text-white px-2 py-0.5 rounded-full">🎙️ Microfone ao vivo</span>
+                  <span className="text-[10px] bg-white/15 text-white px-2 py-0.5 rounded-full">📊 Feedback instantâneo</span>
+                  <span className="text-[10px] bg-white/15 text-white px-2 py-0.5 rounded-full">🔊 Voz profissional</span>
+                </div>
+              </div>
+              <Mic className="w-8 h-8 text-white/30 flex-shrink-0" />
+            </div>
+          </div>
+        </Link>
 
         {/* ── Cards grandes: Música e Filmes ── */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">

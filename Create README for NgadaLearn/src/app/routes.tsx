@@ -11,6 +11,7 @@ import { PhrasesViewer } from "./components/PhrasesViewer";
 import { VocabularyViewer } from "./components/VocabularyViewer";
 import { MusicPlayer } from "./components/MusicPlayer";
 import { MoviesPlayer } from "./components/MoviesPlayer";
+import { ConversationPractice } from "./components/ConversationPractice";
 import { Subscribe } from "./components/Subscribe";
 import { Login } from "./components/Login";
 import { ResetPassword } from "./components/ResetPassword";
@@ -109,6 +110,16 @@ export const router = createBrowserRouter([
         element: (
           <ProtectedRoute>
             <VocabularyViewer />
+          </ProtectedRoute>
+        ),
+      },
+
+      // ── Prática de Conversação ao Vivo ──
+      {
+        path: "conversation-practice",
+        element: (
+          <ProtectedRoute>
+            <ConversationPractice />
           </ProtectedRoute>
         ),
       },

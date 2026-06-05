@@ -51,7 +51,7 @@ export function Demo() {
       <div className="bg-gradient-to-r from-purple-700 to-blue-700 text-white py-3">
         <div className="container mx-auto px-4 flex flex-wrap items-center justify-between gap-3">
           <p className="text-sm font-medium">
-            🎓 Você está vendo uma <strong>demonstração gratuita</strong> — apenas 1 aula de 50+
+            🎓 Estás a ver uma <strong>demonstração gratuita</strong> — apenas 1 aula de 50+
           </p>
           <Link to="/subscribe">
             <Button size="sm" className="bg-white text-purple-700 hover:bg-gray-100 font-bold text-xs">
@@ -81,9 +81,11 @@ export function Demo() {
 
               {/* Exercício */}
               <Card className="p-6 border-0 shadow-sm rounded-2xl">
-                <div className="flex items-center gap-2 mb-5 text-xs text-gray-500 font-medium">
-                  <MessageCircle className="w-4 h-4 text-purple-600" />
-                  Exercício 1 de 1 (demonstração)
+                <div className="flex items-center gap-2 mb-5">
+                  <span className="bg-purple-100 text-purple-700 text-xs font-bold px-3 py-1.5 rounded-full flex items-center gap-1.5">
+                    <MessageCircle className="w-3.5 h-3.5" />
+                    Exercício 1 de 1 · Demonstração gratuita
+                  </span>
                 </div>
 
                 {/* Pergunta */}
@@ -109,7 +111,11 @@ export function Demo() {
                       }`}
                     >
                       <div className="flex items-center gap-3">
-                        <span className="w-7 h-7 flex items-center justify-center rounded-full bg-white border text-xs font-bold flex-shrink-0">
+                        <span className={`w-8 h-8 flex items-center justify-center rounded-full text-xs font-black flex-shrink-0 transition-colors ${
+                          showResult
+                            ? opt === DEMO_EXERCISE.correctAnswer ? "bg-green-500 text-white" : opt === selectedAnswer ? "bg-red-400 text-white" : "bg-gray-200 text-gray-500"
+                            : "bg-purple-100 text-purple-700"
+                        }`}>
                           {String.fromCharCode(65 + i)}
                         </span>
                         <span>{opt}</span>
@@ -158,26 +164,33 @@ export function Demo() {
               </Card>
 
               {/* CTA após demo */}
-              <Card className="p-6 bg-gradient-to-br from-purple-50 to-blue-50 border-purple-200 rounded-2xl text-center">
-                <div className="text-4xl mb-3">🔓</div>
-                <h3 className="text-xl font-black mb-2 text-gray-900">
-                  Gostou? Desbloqueie tudo!
+              <Card className="p-6 bg-gradient-to-br from-purple-600 to-indigo-700 border-0 rounded-2xl text-center text-white overflow-hidden relative">
+                <div className="absolute inset-0 opacity-10">
+                  <img src="https://images.unsplash.com/photo-1523050854058-8df90110c9f1?auto=format&fit=crop&w=600&q=60" alt="" className="w-full h-full object-cover" />
+                </div>
+                <div className="relative z-10">
+                <div className="w-14 h-14 bg-white/20 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                  <Lock className="w-7 h-7 text-white" />
+                </div>
+                <h3 className="text-xl font-black mb-2">
+                  Gostaste? Desbloqueia tudo!
                 </h3>
-                <p className="text-gray-600 text-sm mb-5">
-                  Você tem acesso a apenas 1 aula gratuita. Compre o curso e tenha
-                  acesso a todas as 50+ aulas, NgadaFlow completo e certificados.
+                <p className="text-purple-100 text-sm mb-5">
+                  Tens acesso a apenas 1 aula gratuita. Compra o curso e acede
+                  a todas as 50+ aulas, NgadaFlow completo e certificados.
                 </p>
                 <Link to="/subscribe">
                   <Button
                     size="lg"
-                    className="bg-purple-600 hover:bg-purple-700 px-8 font-bold"
+                    className="bg-white text-purple-700 hover:bg-purple-50 px-8 font-bold shadow-md"
                   >
                     Garantir Acesso Completo — US$ 150
                   </Button>
                 </Link>
-                <p className="text-xs text-gray-500 mt-3">
-                  Pagamento único · Acesso para sempre
+                <p className="text-xs text-purple-200 mt-3">
+                  Pagamento único · Acesso para sempre · ≈ €138
                 </p>
+                </div>
               </Card>
             </div>
 
@@ -209,16 +222,30 @@ export function Demo() {
 
               {/* Avaliações */}
               <Card className="p-5 border-0 shadow-sm rounded-2xl">
-                <div className="flex gap-0.5 mb-1">
-                  {[...Array(5)].map((_, i) => (
-                    <Star key={i} className="w-4 h-4 fill-yellow-400 text-yellow-400" />
-                  ))}
+                <div className="flex items-center gap-2 mb-3">
+                  <div className="flex gap-0.5">
+                    {[...Array(5)].map((_, i) => (
+                      <Star key={i} className="w-4 h-4 fill-yellow-400 text-yellow-400" />
+                    ))}
+                  </div>
+                  <span className="text-sm font-black text-gray-800">4.9</span>
+                  <span className="text-xs text-gray-400">· 1.842 avaliações</span>
                 </div>
-                <p className="text-xs font-bold text-gray-800 mb-3">4.9 · 1.842 avaliações</p>
-                <p className="text-xs text-gray-600 italic">
-                  "Depois de 3 meses, consegui meu primeiro emprego internacional!"
-                </p>
-                <p className="text-xs text-gray-400 mt-2">— Maria S., São Paulo</p>
+                <div className="flex items-start gap-3">
+                  <img
+                    src="https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=48&h=48&fit=crop&crop=face"
+                    alt="Maria S."
+                    className="w-9 h-9 rounded-full object-cover flex-shrink-0 border-2 border-purple-100"
+                    onError={(e) => { (e.target as HTMLImageElement).src = "https://ui-avatars.com/api/?name=Maria+S&background=7c3aed&color=fff&size=48"; }}
+                  />
+                  <div>
+                    <p className="text-xs text-gray-600 italic leading-relaxed">
+                      "Depois de 3 meses, consegui o meu primeiro emprego internacional!"
+                    </p>
+                    <p className="text-xs font-semibold text-gray-700 mt-1.5">Maria S. <span className="text-green-600">✓ Verificado</span></p>
+                    <p className="text-[10px] text-gray-400">São Paulo, BR</p>
+                  </div>
+                </div>
               </Card>
 
               <Link to="/subscribe">

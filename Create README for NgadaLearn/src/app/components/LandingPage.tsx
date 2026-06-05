@@ -670,7 +670,12 @@ export function LandingPage() {
                 </p>
                 {REVIEWS.slice(0, 2).map((r) => (
                   <div key={r.name} className="flex items-center gap-2.5 mb-2.5 last:mb-0">
-                    <div className="text-2xl">{r.avatar}</div>
+                    <img
+                      src={r.avatar}
+                      alt={r.name}
+                      className="w-8 h-8 rounded-full object-cover flex-shrink-0 border border-gray-200"
+                      onError={(e) => { (e.target as HTMLImageElement).src = `https://ui-avatars.com/api/?name=${encodeURIComponent(r.name)}&background=7c3aed&color=fff&size=64`; }}
+                    />
                     <div>
                       <p className="text-xs font-semibold">{r.name}</p>
                       <p className="text-xs text-green-600">✓ {r.badge}</p>

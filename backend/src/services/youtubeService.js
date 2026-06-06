@@ -125,6 +125,7 @@ async function searchVideos({ q, type = "music", maxResults = 12 }) {
     if (type === "movies") {
       params.set("videoDuration", "short");
       params.set("order", "relevance");
+      params.set("videoCaption", "closedCaption"); // apenas vídeos com CC
     }
 
     const data = await apiFetch(`${BASE_URL}/search?${params}`);

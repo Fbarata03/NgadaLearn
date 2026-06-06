@@ -520,18 +520,27 @@ function SubtitleRiser({ lines, active, isPlaying, onWordClick }: {
           {lines.map((line, i) => {
             const dist  = Math.abs(i - active);
             const isAct = i === active;
-            const opacity = dist===0?1:dist===1?.4:dist===2?.18:.07;
-            const scale   = dist===0?1:dist===1?.92:.84;
+            const opacity = dist===0?1:dist===1?.42:dist===2?.2:.06;
+            const scale   = dist===0?1:dist===1?.93:.85;
             return (
               <div key={i} style={{height:SL_H,display:"flex",alignItems:"center",
                 justifyContent:"center",padding:"0 28px",
-                opacity,transform:`scale(${scale})`,transition:"opacity .5s ease, transform .5s ease"}}>
+                opacity,transform:`scale(${scale})`,transition:"opacity .45s ease, transform .45s ease"}}>
                 <p style={{textAlign:"center",lineHeight:1.3,margin:0,
-                  fontSize:isAct?"clamp(1.2rem,3vw,1.65rem)":"clamp(.82rem,2vw,1.05rem)",
-                  fontWeight:isAct?800:400,fontStyle:dist>=2?"italic":"normal",
-                  color:isAct?"#fff":"rgba(255,255,255,.5)",
-                  textShadow:isAct?"0 2px 28px rgba(0,0,0,.9),0 0 48px rgba(245,158,11,.18)":"none"}}>
-                  {isAct ? renderWords(line) : line || "♪"}
+                  fontSize:isAct?"clamp(1.25rem,3.2vw,1.7rem)":"clamp(.82rem,2vw,1.05rem)",
+                  fontWeight:isAct?900:400,fontStyle:dist>=2?"italic":"normal",
+                  ...(isAct ? {
+                    background:"linear-gradient(90deg,#fef3c7,#f59e0b,#fcd34d,#f59e0b,#fef3c7)",
+                    backgroundSize:"300% 100%",
+                    animation:isPlaying?"subShimmer 3s linear infinite":"none",
+                    WebkitBackgroundClip:"text",
+                    backgroundClip:"text",
+                    color:"transparent",
+                    textShadow:"none",
+                  } : {
+                    color:"rgba(255,255,255,.48)",
+                  })}}>
+                  {isAct ? renderWords(line) : line || "·"}
                 </p>
               </div>
             );
@@ -1201,7 +1210,8 @@ export function MoviesPlayer() {
               <div style={{flex:1,minHeight:0,overflow:"hidden"}}>
                 {transcript.length>0 ? (
                   <SubtitleRiser
-                    lines={transcriptLines} active={Math.max(0,liveSubIdx)}
+                    lines={transcriptLines}
+                    active={liveSubIdx >= 0 ? liveSubIdx : 0}
                     isPlaying={isPlaying}
                     onWordClick={(word,e)=>setWordPopup({word,x:e.clientX,y:e.clientY})}
                   />

@@ -147,14 +147,25 @@ router.get("/caption-proxy", async (req, res) => {
     return res.status(403).json({ error: "domínio não permitido" });
   }
 
+  /* Forçar sempre fmt=json3 */
+  targetUrl.searchParams.set("fmt", "json3");
+
   try {
     const r = await fetch(targetUrl.toString(), {
-      headers: { "User-Agent": "Mozilla/5.0 (compatible; NgadaLearn/1.0)" },
+      headers: {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
+        "Accept-Language": "en-US,en;q=0.9",
+        "Accept": "application/json, text/plain, */*",
+      },
       signal: AbortSignal.timeout(8000),
     });
     if (!r.ok) return res.status(r.status).json({ error: "upstream error", events: [] });
-    const data = await r.json();
+    const text = await r.text();
+    let data;
+    try { data = JSON.parse(text); }
+    catch { return res.status(502).json({ error: "resposta não é JSON", events: [] }); }
     res.setHeader("Cache-Control", "public, max-age=3600");
+    res.setHeader("Access-Control-Allow-Origin", "*");
     res.json(data);
   } catch (err) {
     res.status(502).json({ error: err.message, events: [] });

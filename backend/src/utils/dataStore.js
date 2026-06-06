@@ -39,8 +39,19 @@ async function initDB() {
       expires_at  TIMESTAMPTZ NOT NULL,
       created_at  TIMESTAMPTZ NOT NULL DEFAULT NOW()
     );
+    CREATE TABLE IF NOT EXISTS contact_messages (
+      id          SERIAL      PRIMARY KEY,
+      name        TEXT        NOT NULL,
+      email       TEXT        NOT NULL,
+      subject     TEXT        NOT NULL,
+      message     TEXT        NOT NULL,
+      status      TEXT        NOT NULL DEFAULT 'novo',
+      admin_reply TEXT,
+      created_at  TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      replied_at  TIMESTAMPTZ
+    );
   `);
-  console.log("✅ Tabelas users e reset_tokens verificadas/criadas na Neon.");
+  console.log("✅ Tabelas verificadas/criadas na Neon.");
 }
 
 /* ── Converter linha da BD para o formato da aplicação ───────────── */
@@ -173,6 +184,40 @@ async function deleteResetToken(token) {
   await pool.query("DELETE FROM reset_tokens WHERE token = $1", [token]);
 }
 
+/* ── Mensagens de contacto ───────────────────────────────────────── */
+async function createContactMessage({ name, email, subject, message }) {
+  const { rows } = await pool.query(
+    `INSERT INTO contact_messages (name, email, subject, message)
+     VALUES ($1, $2, $3, $4) RETURNING *`,
+    [name.trim(), email.trim().toLowerCase(), subject.trim(), message.trim()]
+  );
+  return rows[0];
+}
+
+async function getContactMessages() {
+  const { rows } = await pool.query(
+    "SELECT * FROM contact_messages ORDER BY created_at DESC"
+  );
+  return rows;
+}
+
+async function replyContactMessage(id, adminReply) {
+  const { rows } = await pool.query(
+    `UPDATE contact_messages
+     SET admin_reply = $1, status = 'respondido', replied_at = NOW()
+     WHERE id = $2 RETURNING *`,
+    [adminReply.trim(), id]
+  );
+  return rows[0] || null;
+}
+
+async function deleteContactMessage(id) {
+  const { rowCount } = await pool.query(
+    "DELETE FROM contact_messages WHERE id = $1", [id]
+  );
+  return rowCount > 0;
+}
+
 module.exports = {
   pool,
   initDB,
@@ -185,4 +230,8 @@ module.exports = {
   saveResetToken,
   getResetToken,
   deleteResetToken,
+  createContactMessage,
+  getContactMessages,
+  replyContactMessage,
+  deleteContactMessage,
 };

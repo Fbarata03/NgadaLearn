@@ -561,33 +561,6 @@ export function LandingPage() {
         </div>
       </section>
 
-      {/* ════════════════════════════════════════
-          CTA FINAL
-      ════════════════════════════════════════ */}
-      <section style={{ background: "#f8f7ff", padding: "80px 24px" }}>
-        <div style={{ maxWidth: 680, margin: "0 auto", textAlign: "center" }}>
-          <div style={{ background: "linear-gradient(135deg,#7c3aed,#4338ca)", borderRadius: 28, padding: "56px 36px", position: "relative", overflow: "hidden" }}>
-            <div style={{ position: "absolute", top: "50%", left: "50%", transform: "translate(-50%,-50%)", width: "75%", height: "75%", background: "radial-gradient(circle,rgba(255,255,255,.1) 0%,transparent 65%)", pointerEvents: "none" }} />
-            <div style={{ position: "relative", zIndex: 1 }}>
-              <div style={{ width: 62, height: 62, borderRadius: "50%", background: "rgba(255,255,255,.15)", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 20px", backdropFilter: "blur(8px)" }}>
-                <TrendingUp size={28} color="#fff" />
-              </div>
-              <h2 style={{ fontSize: "clamp(24px,4vw,38px)", fontWeight: 900, color: "#fff", margin: "0 0 14px", letterSpacing: "-0.5px" }}>A tua jornada começa hoje</h2>
-              <p style={{ fontSize: 16, color: "rgba(255,255,255,.65)", margin: "0 auto 32px", lineHeight: 1.65, maxWidth: 420 }}>
-                US$ 150 — pagamento único. Acesso vitalício a todo o conteúdo, para sempre.
-              </p>
-              <Link to="/subscribe" style={{ textDecoration: "none" }}>
-                <button style={{ background: "#fff", color: "#7c3aed", border: "none", borderRadius: 14, padding: "16px 40px", fontSize: 17, fontWeight: 900, cursor: "pointer", boxShadow: "0 8px 32px rgba(0,0,0,.22)" }}>
-                  Garantir Acesso Vitalício
-                </button>
-              </Link>
-              <p style={{ fontSize: 12, color: "rgba(255,255,255,.35)", marginTop: 14, display: "flex", alignItems: "center", justifyContent: "center", gap: 5 }}>
-                <Lock size={11} /> Pagamento único · Stripe · Sem mensalidades
-              </p>
-            </div>
-          </div>
-        </div>
-      </section>
 
 
       {/* ════════════════════════════════════════

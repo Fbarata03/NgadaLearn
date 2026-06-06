@@ -202,8 +202,14 @@ const YT_HEADERS = {
   "User-Agent":
     "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 " +
     "(KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
-  "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+  "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8",
+  "Accept-Encoding": "gzip, deflate, br",
+  "Cache-Control": "max-age=0",
+  "Cookie": "CONSENT=YES+cb.en+20230203-14-0",
 };
+
+/* Chave pública do cliente web YouTube (hardcoded no próprio YT) */
+const YT_INNERTUBE_KEY = "AIzaSyAO_FJ2SlqU8Q4STEHLGCilw_Y9_11qcW8";
 
 /* Converte events do formato json3 em segmentos */
 function eventsToSegments(events) {
@@ -223,6 +229,62 @@ function eventsToSegments(events) {
     });
   }
   return segments;
+}
+
+/* Estratégia 0 — InnerTube player API (mais fiável, JSON limpo) */
+async function tryInnerTube(videoId) {
+  try {
+    const res = await fetch(
+      `https://www.youtube.com/youtubei/v1/player?key=${YT_INNERTUBE_KEY}`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "X-YouTube-Client-Name": "1",
+          "X-YouTube-Client-Version": "2.20240101.00.00",
+          "User-Agent": YT_HEADERS["User-Agent"],
+          "Accept-Language": "en-US,en;q=0.9",
+        },
+        body: JSON.stringify({
+          context: {
+            client: {
+              clientName: "WEB",
+              clientVersion: "2.20240101.00.00",
+              hl: "en",
+              gl: "US",
+            },
+          },
+          videoId,
+          racyCheckOk: false,
+          contentCheckOk: false,
+        }),
+        signal: AbortSignal.timeout(10000),
+      }
+    );
+    if (!res.ok) return null;
+
+    const data = await res.json().catch(() => null);
+    const tracks = data?.captions?.playerCaptionsTracklistRenderer?.captionTracks || [];
+    const track = tracks.find(t => t.languageCode === "en") ||
+                  tracks.find(t => t.languageCode?.startsWith("en")) ||
+                  tracks[0];
+    if (!track?.baseUrl) return null;
+
+    const captionRes = await fetch(
+      decodeURIComponent(track.baseUrl) + "&fmt=json3",
+      { headers: { "User-Agent": YT_HEADERS["User-Agent"] }, signal: AbortSignal.timeout(8000) }
+    );
+    if (!captionRes.ok) return null;
+
+    const captionData = await captionRes.json().catch(() => null);
+    if (!captionData?.events?.length) return null;
+
+    const segs = eventsToSegments(captionData.events);
+    return segs.length >= 3 ? segs : null;
+  } catch (err) {
+    console.warn(`[transcript/innertube] ${videoId}: ${err.message}`);
+    return null;
+  }
 }
 
 /* Estratégia 1 — Timed Text API directa */
@@ -305,13 +367,14 @@ async function fetchTranscript(videoId) {
   const cached   = cacheGet(cacheKey);
   if (cached !== null) return { data: cached, fromCache: true };
 
-  /* Tenta estratégia 1 (rápida) */
-  let segments = await tryTimedText(videoId);
+  /* Estratégia 0: InnerTube (mais fiável) */
+  let segments = await tryInnerTube(videoId);
 
-  /* Fallback: estratégia 2 (mais fiável para filmes) */
-  if (!segments) {
-    segments = await tryPageCaption(videoId);
-  }
+  /* Estratégia 1: Timed Text API directa */
+  if (!segments) segments = await tryTimedText(videoId);
+
+  /* Estratégia 2: página watch (fallback) */
+  if (!segments) segments = await tryPageCaption(videoId);
 
   if (segments) {
     cacheSet(cacheKey, segments, TRANSCRIPT_TTL);

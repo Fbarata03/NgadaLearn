@@ -534,13 +534,13 @@ export function LandingPage() {
       ════════════════════════════════════════ */}
       <footer style={{ background: "#f8f7ff", borderTop: "1px solid rgba(124,58,237,.1)", padding: "24px 24px", textAlign: "center" }}>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "center", flexWrap: "wrap", gap: "8px 4px", fontSize: 13, color: "#9ca3af" }}>
-          <Link to="/politica-privacidade" style={{ color: "#9ca3af", textDecoration: "none" }}>Política de Privacidade</Link>
+          <Link to="/privacy" style={{ color: "#9ca3af", textDecoration: "none" }}>Política de Privacidade</Link>
           <span style={{ opacity: 0.4 }}>|</span>
-          <Link to="/termos-uso" style={{ color: "#9ca3af", textDecoration: "none" }}>Termos de Uso</Link>
+          <Link to="/terms" style={{ color: "#9ca3af", textDecoration: "none" }}>Termos de Uso</Link>
           <span style={{ opacity: 0.4 }}>|</span>
-          <Link to="/contacto" style={{ color: "#9ca3af", textDecoration: "none" }}>Contacto</Link>
+          <a href="mailto:suporte@ngadalearn.pt" style={{ color: "#9ca3af", textDecoration: "none" }}>Contacto</a>
           <span style={{ opacity: 0.4 }}>|</span>
-          <Link to="/suporte" style={{ color: "#9ca3af", textDecoration: "none" }}>Suporte</Link>
+          <a href="mailto:suporte@ngadalearn.pt" style={{ color: "#9ca3af", textDecoration: "none" }}>Suporte</a>
         </div>
       </footer>
 

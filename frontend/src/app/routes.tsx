@@ -17,6 +17,8 @@ import { ResetPassword } from "./components/ResetPassword";
 import { Demo } from "./components/Demo";
 import { Admin } from "./components/Admin";
 import { Certificate } from "./components/Certificate";
+import { Terms } from "./components/Terms";
+import { Privacy } from "./components/Privacy";
 import { ProtectedRoute } from "./components/ProtectedRoute";
 import { GRAMMAR_LESSONS } from "./data/grammarData";
 
@@ -32,6 +34,8 @@ export const router = createBrowserRouter([
       { index: true, Component: LandingPage },
       { path: "subscribe", Component: Subscribe },
       { path: "demo", Component: Demo },
+      { path: "terms", Component: Terms },
+      { path: "privacy", Component: Privacy },
 
       // ── Protegidas (exigem login + pagamento activo) ──
       {

@@ -190,60 +190,132 @@ function getStatus() {
 }
 
 /* ════════════════════════════════════════════════════════════════════
-   TRANSCRIPT  — legendas temporizadas via YouTube Timed Text API
-   (API não oficial; sem custo de quota)
+   TRANSCRIPT  — legendas temporizadas
+   Estratégia 1: YouTube Timed Text API (rápida)
+   Estratégia 2: Extrair captionTracks da página do vídeo (mais fiável)
    ════════════════════════════════════════════════════════════════════ */
-const TRANSCRIPT_TTL    = 6 * 60 * 60 * 1000;  // 6 horas (sucesso)
-const TRANSCRIPT_FAIL   = 30 * 60 * 1000;       // 30 min  (falha)
+const TRANSCRIPT_TTL  = 6 * 60 * 60 * 1000;  // 6 horas (sucesso)
+const TRANSCRIPT_FAIL = 30 * 60 * 1000;       // 30 min  (falha)
+
+const YT_HEADERS = {
+  "Accept-Language": "en-US,en;q=0.9",
+  "User-Agent":
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 " +
+    "(KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
+  "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+};
+
+/* Converte events do formato json3 em segmentos */
+function eventsToSegments(events) {
+  const segments = [];
+  for (const ev of (events || [])) {
+    if (!ev.segs?.length) continue;
+    const text = ev.segs
+      .map(s => (s.utf8 || "").replace(/\n/g, " "))
+      .join("")
+      .replace(/\s+/g, " ")
+      .trim();
+    if (!text) continue;
+    segments.push({
+      start: (ev.tStartMs  || 0)    / 1000,
+      dur:   Math.max((ev.dDurationMs || 2000) / 1000, 0.3),
+      text,
+    });
+  }
+  return segments;
+}
+
+/* Estratégia 1 — Timed Text API directa */
+async function tryTimedText(videoId) {
+  const urls = [
+    `https://www.youtube.com/api/timedtext?v=${videoId}&lang=en&fmt=json3`,
+    `https://www.youtube.com/api/timedtext?v=${videoId}&lang=en&kind=asr&fmt=json3`,
+    `https://www.youtube.com/api/timedtext?v=${videoId}&lang=en-US&fmt=json3`,
+    `https://www.youtube.com/api/timedtext?v=${videoId}&lang=en-GB&fmt=json3`,
+  ];
+  for (const url of urls) {
+    try {
+      const res = await fetch(url, { signal: AbortSignal.timeout(6000), headers: YT_HEADERS });
+      if (!res.ok) continue;
+      const data = await res.json().catch(() => null);
+      if (!data?.events?.length) continue;
+      const segs = eventsToSegments(data.events);
+      if (segs.length >= 3) return segs;
+    } catch { /* próximo */ }
+  }
+  return null;
+}
+
+/* Estratégia 2 — Extrair captionTracks da página do vídeo */
+async function tryPageCaption(videoId) {
+  try {
+    const res = await fetch(
+      `https://www.youtube.com/watch?v=${videoId}&hl=en`,
+      { signal: AbortSignal.timeout(12000), headers: YT_HEADERS }
+    );
+    if (!res.ok) return null;
+
+    const html = await res.text();
+
+    /* Localizar o array captionTracks dentro do HTML */
+    const ctIdx = html.indexOf('"captionTracks"');
+    if (ctIdx === -1) return null;
+
+    const arrayStart = html.indexOf("[", ctIdx);
+    if (arrayStart === -1) return null;
+
+    /* Extrair o array contando parênteses */
+    let depth = 0, arrayEnd = arrayStart;
+    for (let i = arrayStart; i < Math.min(html.length, arrayStart + 60000); i++) {
+      const c = html[i];
+      if (c === "[" || c === "{") depth++;
+      else if (c === "]" || c === "}") { depth--; if (depth === 0) { arrayEnd = i + 1; break; } }
+    }
+
+    const captionTracks = JSON.parse(html.slice(arrayStart, arrayEnd));
+
+    /* Preferir track em inglês; fallback para o primeiro disponível */
+    const track = captionTracks.find(t =>
+      t.languageCode === "en" || t.languageCode === "en-US" ||
+      t.vssId?.includes(".en") || t.vssId?.startsWith("a.en")
+    ) || captionTracks[0];
+
+    if (!track?.baseUrl) return null;
+
+    /* Buscar o conteúdo da legenda em formato json3 */
+    const captionRes = await fetch(
+      decodeURI(track.baseUrl) + "&fmt=json3",
+      { signal: AbortSignal.timeout(8000), headers: YT_HEADERS }
+    );
+    if (!captionRes.ok) return null;
+
+    const captionData = await captionRes.json().catch(() => null);
+    if (!captionData?.events?.length) return null;
+
+    const segs = eventsToSegments(captionData.events);
+    return segs.length >= 3 ? segs : null;
+  } catch (err) {
+    console.warn(`[transcript/page] ${videoId}: ${err.message}`);
+    return null;
+  }
+}
 
 async function fetchTranscript(videoId) {
   const cacheKey = `transcript:${videoId}`;
   const cached   = cacheGet(cacheKey);
   if (cached !== null) return { data: cached, fromCache: true };
 
-  const headers = {
-    "Accept-Language": "en-US,en;q=0.9",
-    "User-Agent":
-      "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 " +
-      "(KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
-  };
+  /* Tenta estratégia 1 (rápida) */
+  let segments = await tryTimedText(videoId);
 
-  const attempts = [
-    `https://www.youtube.com/api/timedtext?v=${videoId}&lang=en&fmt=json3`,
-    `https://www.youtube.com/api/timedtext?v=${videoId}&lang=en&kind=asr&fmt=json3`,
-    `https://www.youtube.com/api/timedtext?v=${videoId}&lang=en-US&fmt=json3`,
-    `https://www.youtube.com/api/timedtext?v=${videoId}&lang=en-GB&fmt=json3`,
-  ];
+  /* Fallback: estratégia 2 (mais fiável para filmes) */
+  if (!segments) {
+    segments = await tryPageCaption(videoId);
+  }
 
-  for (const url of attempts) {
-    try {
-      const res = await fetch(url, { signal: AbortSignal.timeout(8000), headers });
-      if (!res.ok) continue;
-
-      const data = await res.json().catch(() => null);
-      if (!data?.events?.length) continue;
-
-      const segments = [];
-      for (const ev of data.events) {
-        if (!ev.segs?.length) continue;
-        const text = ev.segs
-          .map(s => (s.utf8 || "").replace(/\n/g, " "))
-          .join("")
-          .replace(/\s+/g, " ")
-          .trim();
-        if (!text) continue;
-        segments.push({
-          start: (ev.tStartMs  || 0)    / 1000,
-          dur:   Math.max((ev.dDurationMs || 2000) / 1000, 0.3),
-          text,
-        });
-      }
-
-      if (segments.length >= 3) {
-        cacheSet(cacheKey, segments, TRANSCRIPT_TTL);
-        return { data: segments, fromCache: false };
-      }
-    } catch { /* tenta o próximo URL */ }
+  if (segments) {
+    cacheSet(cacheKey, segments, TRANSCRIPT_TTL);
+    return { data: segments, fromCache: false };
   }
 
   cacheSet(cacheKey, [], TRANSCRIPT_FAIL);

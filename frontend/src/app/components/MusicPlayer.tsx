@@ -327,7 +327,7 @@ function CinemaLyricDisplay({ lines, activeLine, isPlaying, onNext, onPrev }: {
 /* ════════════════════════════════════════════════════════════════════
    LYRICS RISER — letras a subir com efeito karaoke
    ════════════════════════════════════════════════════════════════════ */
-const LINE_H   = 72;
+const LINE_H   = 60;
 const SLOTS    = 7;
 const CENTER_S = 3;
 
@@ -340,7 +340,7 @@ function LyricsRiser({ lines, active, isPlaying, isLive, onNext, onPrev }: {
 
   if (!lines.length) return null;
 
-  const ty = -(active - CENTER_S) * LINE_H;
+  const ty = -active * LINE_H;
 
   return (
     <div style={{

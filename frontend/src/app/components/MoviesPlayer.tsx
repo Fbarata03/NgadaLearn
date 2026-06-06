@@ -438,7 +438,7 @@ function WordPopup({ word, pos, onClose }: {
 /* ════════════════════════════════════════════════════════════════════
    SUBTITLE RISER — legendas a subir, tema âmbar (filmes)
    ════════════════════════════════════════════════════════════════════ */
-const SL_H    = 72;
+const SL_H    = 60;
 const SL_SLOTS = 7;
 const SL_CTR   = 3;
 
@@ -447,7 +447,7 @@ function SubtitleRiser({ lines, active, isPlaying, onWordClick }: {
   onWordClick?: (word: string, e: React.MouseEvent) => void;
 }) {
   if (!lines.length) return null;
-  const ty = -(active - SL_CTR) * SL_H;
+  const ty = -active * SL_H;
 
   function renderWords(text: string) {
     if (!onWordClick) return <>{text}</>;

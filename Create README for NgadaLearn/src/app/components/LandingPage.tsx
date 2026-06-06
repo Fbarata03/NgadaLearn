@@ -589,19 +589,6 @@ export function LandingPage() {
         </div>
       </section>
 
-      {/* ── CTA fixo mobile ── */}
-      <div className="block lg:hidden" style={{ position: "fixed", bottom: 0, left: 0, right: 0, background: "#fff", borderTop: "1px solid #e5e7eb", padding: "12px 16px", paddingBottom: "max(12px,env(safe-area-inset-bottom))", display: "flex", alignItems: "center", gap: 12, zIndex: 49, boxShadow: "0 -4px 24px rgba(0,0,0,.08)" }}>
-        <div style={{ flexShrink: 0 }}>
-          <div style={{ fontSize: 18, fontWeight: 900, lineHeight: 1, color: "#111" }}>US$ 150</div>
-          <div style={{ fontSize: 11, color: "#7c3aed", fontWeight: 600 }}>acesso vitalício</div>
-        </div>
-        <Link to="/subscribe" style={{ flex: 1, textDecoration: "none" }}>
-          <button style={{ width: "100%", background: "linear-gradient(135deg,#7c3aed,#4f46e5)", color: "#fff", border: "none", borderRadius: 12, padding: "13px 0", fontWeight: 800, fontSize: 15, cursor: "pointer" }}>
-            Garantir Acesso →
-          </button>
-        </Link>
-      </div>
-      <div className="block lg:hidden" style={{ height: 72 }} />
 
       {/* ════════════════════════════════════════
           BOTÃO ÁUDIO FLUTUANTE

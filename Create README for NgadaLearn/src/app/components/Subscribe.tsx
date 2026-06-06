@@ -582,26 +582,6 @@ export function Subscribe() {
               </div>
             </Card>
 
-            <Card className="p-5">
-              <h4 className="font-semibold text-sm mb-3">O que dizem os alunos</h4>
-              <div className="space-y-3">
-                {[
-                  { av: "👩🏽", name: "Maria S.", text: "Consegui emprego internacional em 3 meses!" },
-                  { av: "👨🏻", name: "João C.", text: "Assisto séries sem legenda agora!" },
-                ].map((r) => (
-                  <div key={r.name} className="flex items-start gap-3">
-                    <span className="text-2xl leading-none">{r.av}</span>
-                    <div>
-                      <div className="flex gap-0.5 mb-0.5">
-                        {[...Array(5)].map((_, i) => <Star key={i} className="w-3 h-3 fill-yellow-400 text-yellow-400" />)}
-                      </div>
-                      <p className="text-xs text-gray-600 italic">"{r.text}"</p>
-                      <p className="text-xs text-gray-400 font-medium">{r.name}</p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </Card>
           </div>
 
         </div>

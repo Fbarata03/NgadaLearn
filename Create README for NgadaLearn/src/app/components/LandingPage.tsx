@@ -4,7 +4,7 @@ import {
   Star, Users, Shield, Award, Check, ChevronDown, ChevronUp,
   Headphones, BookOpen, Smartphone, Clock,
   Globe, ArrowRight, MessageCircle, TrendingUp, Lock,
-  Music, VolumeX, Volume2,
+  Music, Volume2,
 } from "lucide-react";
 
 /* ─── Animações ─── */
@@ -562,6 +562,21 @@ export function LandingPage() {
       </section>
 
 
+
+      {/* ════════════════════════════════════════
+          RODAPÉ
+      ════════════════════════════════════════ */}
+      <footer style={{ background: "#f8f7ff", borderTop: "1px solid rgba(124,58,237,.1)", padding: "24px 24px", textAlign: "center" }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "center", flexWrap: "wrap", gap: "8px 4px", fontSize: 13, color: "#9ca3af" }}>
+          <Link to="/politica-privacidade" style={{ color: "#9ca3af", textDecoration: "none" }}>Política de Privacidade</Link>
+          <span style={{ opacity: 0.4 }}>|</span>
+          <Link to="/termos-uso" style={{ color: "#9ca3af", textDecoration: "none" }}>Termos de Uso</Link>
+          <span style={{ opacity: 0.4 }}>|</span>
+          <Link to="/contacto" style={{ color: "#9ca3af", textDecoration: "none" }}>Contacto</Link>
+          <span style={{ opacity: 0.4 }}>|</span>
+          <Link to="/suporte" style={{ color: "#9ca3af", textDecoration: "none" }}>Suporte</Link>
+        </div>
+      </footer>
 
       {/* ════════════════════════════════════════
           BOTÃO ÁUDIO FLUTUANTE

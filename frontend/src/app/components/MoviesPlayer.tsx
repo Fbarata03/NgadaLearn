@@ -727,6 +727,8 @@ export function MoviesPlayer() {
   /* Linhas do transcript memoizadas — evita recriar o array em cada render */
   const transcriptLines = useMemo(() => transcript.map(s => s.text), [transcript]);
 
+  const autoSelectRef = useRef(false);
+
   /* Popup de palavra clicada */
   const [wordPopup, setWordPopup] = useState<{ word: string; x: number; y: number } | null>(null);
 
@@ -907,8 +909,12 @@ export function MoviesPlayer() {
         ...embeddable.filter(v => !v.isOfficial),
       ];
 
-      setResults(sorted.slice(0, 12));
-      if (!sorted.length) setSearchErr("Nenhuma cena encontrada. Tenta outro título.");
+      const top = sorted.slice(0, 12);
+      setResults(top);
+      if (!top.length) setSearchErr("Nenhuma cena encontrada. Tenta outro título.");
+      else if (autoSelectRef.current && top[0]) {
+        setSelected(top[0]); setVidError(false); autoSelectRef.current = false;
+      }
     } catch (e: unknown) {
       setSearchErr(e instanceof Error ? e.message : "Erro na pesquisa.");
     } finally { setLoading(false); }
@@ -964,7 +970,7 @@ export function MoviesPlayer() {
         <div className="space-y-1 max-h-40 overflow-y-auto overscroll-contain pr-1">
           {filteredCurated.map(m=>(
             <button key={m.label}
-              onClick={()=>{setQuery(m.label);searchClips(m.query);}}
+              onClick={()=>{setQuery(m.label);autoSelectRef.current=true;searchClips(m.query);}}
               style={{touchAction:'manipulation'}}
               className="w-full text-left flex items-center gap-2 p-2 rounded-xl bg-white/4 hover:bg-amber-600/20 border border-transparent hover:border-amber-500/25 transition-all">
               <span className="text-base flex-shrink-0">{m.icon}</span>

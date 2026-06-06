@@ -250,7 +250,17 @@ export function LessonPlayer() {
   const [audioError, setAudioError] = useState(false);
   const [ttsPlaying, setTtsPlaying] = useState(false);
   const [ttsProgress, setTtsProgress] = useState(0);
+  const [audioSpeed, setAudioSpeed] = useState<number>(
+    () => parseFloat(localStorage.getItem("ngada_audio_speed") || "1")
+  );
   const audioRef = useRef<HTMLAudioElement>(null);
+
+  const SPEEDS = [0.5, 0.75, 1, 1.25, 1.5];
+  function changeSpeed(s: number) {
+    setAudioSpeed(s);
+    localStorage.setItem("ngada_audio_speed", String(s));
+    if (audioRef.current) audioRef.current.playbackRate = s;
+  }
 
   // Lógica de "Self-Healing": Tenta várias opções de caminhos de áudio
   const [audioSources, setAudioSources] = useState<string[]>([]);
@@ -481,6 +491,7 @@ export function LessonPlayer() {
           </Link>
           <div className="flex-1">
             <Progress value={progressPct} className="h-2" />
+            <p className="text-[10px] text-gray-400 mt-0.5 text-center">Exercícios desta lição</p>
           </div>
           <span className="text-xs text-gray-500 font-medium whitespace-nowrap">
             {exerciseIdx}/{lesson.exercises.length}
@@ -513,7 +524,7 @@ export function LessonPlayer() {
             ref={audioRef}
             src={audioSources[currentSrcIdx] || ""}
             onTimeUpdate={() => setAudioProgress(audioRef.current?.currentTime || 0)}
-            onLoadedMetadata={() => setAudioDuration(audioRef.current?.duration || 0)}
+            onLoadedMetadata={() => { setAudioDuration(audioRef.current?.duration || 0); if(audioRef.current) audioRef.current.playbackRate = audioSpeed; }}
             onEnded={() => setAudioPlaying(false)}
             onError={handleAudioError}
             preload="metadata"
@@ -542,9 +553,23 @@ export function LessonPlayer() {
                   style={{ width: audioDuration ? `${(audioProgress / audioDuration) * 100}%` : "0%" }}
                 />
               </div>
-              <div className="flex justify-between text-xs text-gray-400">
+              <div className="flex justify-between text-xs text-gray-400 mb-3">
                 <span>{formatTime(audioProgress)}</span>
                 <span>{formatTime(audioDuration)}</span>
+              </div>
+              {/* Controlo de velocidade */}
+              <div className="flex items-center gap-1.5">
+                <span className="text-[11px] text-gray-400 flex-shrink-0">Vel.</span>
+                {SPEEDS.map(s => (
+                  <button key={s} onClick={() => changeSpeed(s)}
+                    className={`flex-1 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                      audioSpeed === s
+                        ? "bg-purple-600 text-white shadow"
+                        : "bg-white/10 text-gray-400 hover:bg-white/20"
+                    }`}>
+                    {s}×
+                  </button>
+                ))}
               </div>
             </>
           ) : (

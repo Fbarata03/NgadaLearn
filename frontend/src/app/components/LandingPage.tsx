@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link } from "react-router";
 import {
   Star, Users, Shield, Award, Check, ChevronDown, ChevronUp,
@@ -129,7 +129,16 @@ const RATING_BARS = [
    COMPONENTE
 ═══════════════════════════════════════════════ */
 export function LandingPage() {
-  const [openFaq,    setOpenFaq]    = useState<number | null>(null);
+  const [openFaq, setOpenFaq] = useState<number | null>(null);
+  const [rates, setRates] = useState<{ eur?: number; brl?: number } | null>(null);
+
+  useEffect(() => {
+    fetch("https://open.er-api.com/v6/latest/USD")
+      .then(r => r.json())
+      .then(d => { if (d.rates) setRates({ eur: d.rates.EUR, brl: d.rates.BRL }); })
+      .catch(() => {});
+  }, []);
+
   return (
     <div style={{ fontFamily: "system-ui,-apple-system,sans-serif", overflowX: "hidden" }}>
       <style>{ANIM}</style>
@@ -438,7 +447,12 @@ export function LandingPage() {
                 <span style={{ fontSize: 40, fontWeight: 900, color: "#fff", lineHeight: 1 }}>US$ 15</span>
                 <span style={{ fontSize: 13, color: "rgba(255,255,255,.35)", marginBottom: 6 }}>/mês</span>
               </div>
-              <div style={{ fontSize: 12, color: "rgba(255,255,255,.25)", marginBottom: 24, textDecoration: "line-through" }}>US$ 30/mês</div>
+              <div style={{ fontSize: 12, color: "rgba(255,255,255,.25)", marginBottom: 6, textDecoration: "line-through" }}>US$ 30/mês</div>
+              <p style={{ fontSize: 11, color: "rgba(255,255,255,.22)", marginBottom: 18, lineHeight: 1.4 }}>
+                Preço em dólares americanos (USD)
+                {rates?.eur && ` · ≈ €${Math.round(15 * rates.eur)}`}
+                {rates?.brl && ` · ≈ R$${Math.round(15 * rates.brl)}`}
+              </p>
               <Link to="/subscribe" style={{ textDecoration: "none", display: "block" }}>
                 <button style={{ width: "100%", padding: "13px 0", borderRadius: 13, border: "1.5px solid rgba(124,58,237,.55)", background: "transparent", color: "#a78bfa", fontWeight: 700, fontSize: 15, cursor: "pointer" }}>
                   Começar mensal →
@@ -462,6 +476,11 @@ export function LandingPage() {
               <div style={{ display: "flex", alignItems: "flex-end", gap: 4, marginBottom: 6 }}>
                 <span style={{ fontSize: 40, fontWeight: 900, color: "#fff", lineHeight: 1 }}>US$ 150</span>
               </div>
+              <p style={{ fontSize: 11, color: "rgba(255,255,255,.22)", marginBottom: 8, lineHeight: 1.4 }}>
+                Preço em dólares americanos (USD)
+                {rates?.eur && ` · ≈ €${Math.round(150 * rates.eur)}`}
+                {rates?.brl && ` · ≈ R$${Math.round(150 * rates.brl)}`}
+              </p>
               <div style={{ display: "flex", gap: 10, alignItems: "center", marginBottom: 24 }}>
                 <span style={{ fontSize: 12, color: "rgba(255,255,255,.3)", textDecoration: "line-through" }}>US$ 300</span>
                 <span style={{ fontSize: 11, color: "#4ade80", fontWeight: 700, background: "rgba(74,222,128,.1)", padding: "2px 8px", borderRadius: 99 }}>50% desconto</span>
@@ -532,15 +551,61 @@ export function LandingPage() {
       {/* ════════════════════════════════════════
           RODAPÉ
       ════════════════════════════════════════ */}
-      <footer style={{ background: "#f8f7ff", borderTop: "1px solid rgba(124,58,237,.1)", padding: "24px 24px", textAlign: "center" }}>
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "center", flexWrap: "wrap", gap: "8px 4px", fontSize: 13, color: "#9ca3af" }}>
-          <Link to="/privacy" style={{ color: "#9ca3af", textDecoration: "none" }}>Política de Privacidade</Link>
-          <span style={{ opacity: 0.4 }}>|</span>
-          <Link to="/terms" style={{ color: "#9ca3af", textDecoration: "none" }}>Termos de Uso</Link>
-          <span style={{ opacity: 0.4 }}>|</span>
-          <a href="mailto:suporte@ngadalearn.pt" style={{ color: "#9ca3af", textDecoration: "none" }}>Contacto</a>
-          <span style={{ opacity: 0.4 }}>|</span>
-          <a href="mailto:suporte@ngadalearn.pt" style={{ color: "#9ca3af", textDecoration: "none" }}>Suporte</a>
+      <footer style={{ background: "#07070f", borderTop: "1px solid rgba(124,58,237,.15)", padding: "52px 24px 28px" }}>
+        <div style={{ maxWidth: 1100, margin: "0 auto" }}>
+          {/* 3 colunas */}
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(190px,1fr))", gap: "36px 48px", marginBottom: 40 }}>
+
+            {/* Col 1 — Marca */}
+            <div>
+              <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}>
+                <div style={{ width: 34, height: 34, borderRadius: 10, background: "linear-gradient(135deg,#7c3aed,#4f46e5)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16, fontWeight: 900, color: "#fff" }}>N</div>
+                <span style={{ fontSize: 17, fontWeight: 900, color: "#fff" }}>NgadaLearn</span>
+              </div>
+              <p style={{ fontSize: 13, color: "rgba(255,255,255,.35)", lineHeight: 1.6, margin: "0 0 14px", maxWidth: 200 }}>Do zero à fluência — aprende inglês com música, filmes e conversação real.</p>
+              <p style={{ fontSize: 12, color: "rgba(255,255,255,.2)", margin: 0 }}>Desenvolvido em Portugal 🇵🇹</p>
+            </div>
+
+            {/* Col 2 — Links */}
+            <div>
+              <p style={{ fontSize: 11, fontWeight: 800, letterSpacing: "0.12em", color: "rgba(255,255,255,.3)", textTransform: "uppercase", margin: "0 0 14px" }}>Plataforma</p>
+              <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                {[
+                  { to: "/", label: "Início" },
+                  { to: "/lessons", label: "Conteúdo do Curso" },
+                  { to: "/music", label: "Música" },
+                  { to: "/movies", label: "Filmes" },
+                  { to: "/dashboard", label: "Meu Progresso" },
+                ].map(({ to, label }) => (
+                  <Link key={to} to={to} style={{ fontSize: 13, color: "rgba(255,255,255,.45)", textDecoration: "none" }}
+                    onMouseOver={e => (e.currentTarget.style.color = "#a78bfa")}
+                    onMouseOut={e => (e.currentTarget.style.color = "rgba(255,255,255,.45)")}>{label}</Link>
+                ))}
+              </div>
+            </div>
+
+            {/* Col 3 — Legal & Suporte */}
+            <div>
+              <p style={{ fontSize: 11, fontWeight: 800, letterSpacing: "0.12em", color: "rgba(255,255,255,.3)", textTransform: "uppercase", margin: "0 0 14px" }}>Legal & Suporte</p>
+              <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                <Link to="/privacy" style={{ fontSize: 13, color: "rgba(255,255,255,.45)", textDecoration: "none" }}
+                  onMouseOver={e => (e.currentTarget.style.color = "#a78bfa")}
+                  onMouseOut={e => (e.currentTarget.style.color = "rgba(255,255,255,.45)")}>Política de Privacidade</Link>
+                <Link to="/terms" style={{ fontSize: 13, color: "rgba(255,255,255,.45)", textDecoration: "none" }}
+                  onMouseOver={e => (e.currentTarget.style.color = "#a78bfa")}
+                  onMouseOut={e => (e.currentTarget.style.color = "rgba(255,255,255,.45)")}>Termos de Uso</Link>
+                <a href="mailto:suporte@ngadalearn.pt" style={{ fontSize: 13, color: "rgba(255,255,255,.45)", textDecoration: "none" }}
+                  onMouseOver={e => (e.currentTarget.style.color = "#a78bfa")}
+                  onMouseOut={e => (e.currentTarget.style.color = "rgba(255,255,255,.45)")}>suporte@ngadalearn.pt</a>
+              </div>
+            </div>
+          </div>
+
+          {/* Linha base */}
+          <div style={{ borderTop: "1px solid rgba(255,255,255,.06)", paddingTop: 24, display: "flex", flexWrap: "wrap", gap: 8, justifyContent: "space-between", alignItems: "center" }}>
+            <p style={{ fontSize: 12, color: "rgba(255,255,255,.18)", margin: 0 }}>© 2026 NgadaLearn. Todos os direitos reservados.</p>
+            <p style={{ fontSize: 12, color: "rgba(255,255,255,.15)", margin: 0 }}>Feito com ❤️ em Portugal</p>
+          </div>
         </div>
       </footer>
 

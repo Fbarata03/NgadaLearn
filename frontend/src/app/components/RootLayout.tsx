@@ -16,6 +16,7 @@ import {
   Film,
   Globe,
   Lock,
+  Home,
 } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 
@@ -49,6 +50,7 @@ export function RootLayout() {
 
   const navLinks = isAccessActive
     ? [
+        { to: "/", label: "Início", icon: Home },
         { to: "/lessons", label: "Conteúdo do Curso", icon: BookOpen },
         { to: "/music", label: "Música", icon: Music },
         { to: "/movies", label: "Filmes", icon: Film },

@@ -431,7 +431,7 @@ function VocabList({ search }: { search: string }) {
 export function Lessons() {
   const [tab, setTab] = useState<TabId>("assimil");
   const [search, setSearch] = useState("");
-  const { totalCompleted, totalMinutes } = useProgress();
+  const { totalCompleted, totalMinutes, isCompleted } = useProgress();
   const [onboardingDismissed, setOnboardingDismissed] = useState(
     () => localStorage.getItem("ngada_onboarding_done") === "1"
   );
@@ -517,12 +517,17 @@ export function Lessons() {
         </div>
 
         {/* ── Cards com imagem — linha 1 ── */}
+        {(() => {
+          const doneA = ASSIMIL_LESSONS.filter(l => isCompleted(l.id)).length;
+          const doneP = PIMSLEUR_LESSONS_LIST.filter(l => isCompleted(l.id)).length;
+          const doneL = LEITURAS_LIST.filter(l => isCompleted(l.id)).length;
+          return (
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-3">
           {[
-            { id: "assimil",      count: ASSIMIL_LESSONS.length,      label: "Assimil",      sub: "Método natural",  img: "photo-1481627834876-b7833e8f5570", grad: "from-purple-950/95 via-purple-700/50", ring: "ring-purple-300" },
-            { id: "pimsleur",     count: PIMSLEUR_LESSONS_LIST.length, label: "Pimsleur",    sub: "Áudio & fala",    img: "photo-1505740420928-5e560c06d30e", grad: "from-blue-950/95 via-blue-700/50",   ring: "ring-blue-300"   },
-            { id: "leituras",     count: LEITURAS_LIST.length,         label: "Leituras",    sub: "Vocabulário",     img: "photo-1456513080510-7bf3a84b82f8", grad: "from-green-950/95 via-green-700/50", ring: "ring-green-300"  },
-            { id: "conversacoes", count: CONVERSATIONS.length,         label: "Conversações",sub: "Diálogos reais",  img: "photo-1521737604893-d14cc237f11d", grad: "from-orange-950/95 via-orange-700/50",ring: "ring-orange-300" },
+            { id: "assimil",      count: ASSIMIL_LESSONS.length,      done: doneA, label: "Assimil",      sub: "Método natural",  img: "photo-1481627834876-b7833e8f5570", grad: "from-purple-950/95 via-purple-700/50", ring: "ring-purple-300" },
+            { id: "pimsleur",     count: PIMSLEUR_LESSONS_LIST.length, done: doneP, label: "Pimsleur",    sub: "Áudio & fala",    img: "photo-1505740420928-5e560c06d30e", grad: "from-blue-950/95 via-blue-700/50",   ring: "ring-blue-300"   },
+            { id: "leituras",     count: LEITURAS_LIST.length,         done: doneL, label: "Leituras",    sub: "Vocabulário",     img: "photo-1456513080510-7bf3a84b82f8", grad: "from-green-950/95 via-green-700/50", ring: "ring-green-300"  },
+            { id: "conversacoes", count: CONVERSATIONS.length,         done: null,  label: "Conversações",sub: "Diálogos reais",  img: "photo-1521737604893-d14cc237f11d", grad: "from-orange-950/95 via-orange-700/50",ring: "ring-orange-300" },
           ].map(c => (
             <button key={c.id} onClick={() => goToTab(c.id as TabId)}
               className={`relative overflow-hidden rounded-2xl shadow-lg cursor-pointer transition-all duration-300 hover:scale-[1.03] hover:shadow-2xl aspect-[4/3] ${tab===c.id?"ring-4 "+c.ring+" scale-[1.03]":""}`}>
@@ -533,10 +538,20 @@ export function Lessons() {
                 <p className="text-2xl sm:text-3xl font-black text-white drop-shadow-lg leading-none">{c.count}</p>
                 <p className="text-sm font-bold text-white/90 mt-0.5">{c.label}</p>
                 <p className="text-[11px] text-white/60 hidden sm:block">{c.sub}</p>
+                {c.done !== null && (
+                  <div className="mt-1.5">
+                    <div className="h-1 bg-white/20 rounded-full overflow-hidden">
+                      <div className="h-full bg-white/80 rounded-full transition-all" style={{ width: `${Math.round((c.done/c.count)*100)}%` }} />
+                    </div>
+                    <p className="text-[10px] text-white/55 mt-0.5">{c.done}/{c.count} concluídas</p>
+                  </div>
+                )}
               </div>
             </button>
           ))}
         </div>
+          );
+        })()}
 
         {/* ── Cards com imagem — linha 2 ── */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">

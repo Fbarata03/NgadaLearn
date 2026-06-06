@@ -591,7 +591,8 @@ export function MusicPlayer() {
   const [liveSubIdx,    setLiveSubIdx]    = useState(-1);
   const liveSubIdxRef  = useRef(-1);
   const liveTimerRef   = useRef<ReturnType<typeof setInterval> | null>(null);
-  const autoAdvRef     = useRef<ReturnType<typeof setInterval> | null>(null);
+  const autoAdvRef         = useRef<ReturnType<typeof setInterval> | null>(null);
+  const autoSelectMusicRef = useRef(false);
   const transcriptLines = useMemo(() => transcript.map(s => s.text), [transcript]);
 
   /* ── Sync selectedRef (sempre atual para callbacks do YT) ────── */
@@ -636,8 +637,12 @@ export function MusicPlayer() {
       }
       const videos: YTVideo[] = data.videos || [];
       const filtered = await filterEnglishEmbeddable(videos);
-      setResults(filtered.slice(0, 12));
-      if (!filtered.length) setError("Nenhum vídeo incorporável encontrado.");
+      const top = filtered.slice(0, 12);
+      setResults(top);
+      if (!top.length) setError("Nenhum vídeo incorporável encontrado.");
+      else if (autoSelectMusicRef.current && top[0]) {
+        selectVideo(top[0]); autoSelectMusicRef.current = false;
+      }
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : "Erro na pesquisa.");
     } finally { setLoading(false); }
@@ -913,7 +918,7 @@ export function MusicPlayer() {
         <div className="flex flex-wrap gap-1">
           {SUGGESTED.map(s => (
             <button key={s} type="button"
-              onClick={()=>{setQuery(s);searchVideos(s);}}
+              onClick={()=>{setQuery(s);autoSelectMusicRef.current=true;searchVideos(s);}}
               className="text-[11px] bg-white/8 hover:bg-purple-700/50 border border-white/10 rounded-full px-2.5 py-1 transition-colors">
               {s.length>22 ? s.slice(0,20)+"…" : s}
             </button>

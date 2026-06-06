@@ -263,6 +263,24 @@ export function Dashboard() {
 
       <div style={{ maxWidth: 1100, margin: "0 auto", padding: "28px 20px 60px" }}>
 
+        {/* ── Banner boas-vindas (só quando 0 aulas) ── */}
+        {totalCompleted === 0 && (
+          <div style={{ background: "linear-gradient(135deg,#4f46e5 0%,#7c3aed 100%)", borderRadius: 22, padding: "24px 28px", marginBottom: 24, position: "relative", overflow: "hidden" }}>
+            <div style={{ position:"absolute", top:"-30%", right:"-5%", width:200, height:200, borderRadius:"50%", background:"rgba(255,255,255,.06)", pointerEvents:"none" }} />
+            <h2 style={{ fontWeight: 900, fontSize: "clamp(18px,3vw,22px)", color: "#fff", margin: "0 0 8px" }}>
+              👋 Bem-vindo à NgadaLearn!
+            </h2>
+            <p style={{ fontSize: 14, color: "rgba(255,255,255,.75)", margin: "0 0 18px", lineHeight: 1.65, maxWidth: 520 }}>
+              A tua primeira lição demora apenas 25 minutos. Começa agora e inicia a tua sequência diária.
+            </p>
+            <Link to={`/lessons/${ASSIMIL_LESSONS[0]?.id || ""}`} style={{ textDecoration: "none" }}>
+              <button style={{ background: "#fff", color: "#7c3aed", border: "none", borderRadius: 14, padding: "12px 22px", fontWeight: 800, fontSize: 14, cursor: "pointer", fontFamily: "inherit", boxShadow: "0 6px 20px rgba(0,0,0,.18)", display: "inline-flex", alignItems: "center", gap: 8 }}>
+                ▶ Começar Lição 1 — Primeiros Contatos →
+              </button>
+            </Link>
+          </div>
+        )}
+
         {/* ── Stats cards ── */}
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(220px,1fr))", gap: 16, marginBottom: 24 }}>
           {[
@@ -382,25 +400,30 @@ export function Dashboard() {
           <h2 style={{ fontWeight: 800, fontSize: 16, color: "#111", margin: "0 0 20px", display: "flex", alignItems: "center", gap: 8 }}>
             <Star size={18} color="#f59e0b" /> Conquistas
           </h2>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(140px,1fr))", gap: 12 }}>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(130px,1fr))", gap: 14 }}>
             {achievements.map((a) => (
               <div key={a.title} style={{
-                position: "relative", textAlign: "center", padding: "18px 12px", borderRadius: 20,
+                position: "relative", textAlign: "center",
+                padding: "22px 14px 18px", borderRadius: 22, minHeight: 130,
                 background: a.unlocked ? "linear-gradient(135deg,#fffbeb,#fef3c7)" : "#f9fafb",
                 border: `2px solid ${a.unlocked ? "#fde68a" : "#f3f4f6"}`,
-                boxShadow: a.unlocked ? "0 4px 16px rgba(217,119,6,.15)" : "none",
-                opacity: a.unlocked ? 1 : 0.55,
-                filter: a.unlocked ? "none" : "grayscale(0.4)",
+                boxShadow: a.unlocked ? "0 6px 20px rgba(217,119,6,.18)" : "none",
+                opacity: a.unlocked ? 1 : 0.4,
                 transition: "all .2s",
+                display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
               }}>
-                {a.unlocked && (
-                  <div style={{ position: "absolute", top: -6, right: -6, width: 20, height: 20, borderRadius: "50%", background: "linear-gradient(135deg,#10b981,#059669)", display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 2px 6px rgba(5,150,105,.4)" }}>
-                    <span style={{ color: "#fff", fontSize: 9, fontWeight: 900 }}>✓</span>
+                {a.unlocked ? (
+                  <div style={{ position: "absolute", top: -7, right: -7, width: 22, height: 22, borderRadius: "50%", background: "linear-gradient(135deg,#10b981,#059669)", display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 2px 6px rgba(5,150,105,.4)" }}>
+                    <span style={{ color: "#fff", fontSize: 10, fontWeight: 900 }}>✓</span>
+                  </div>
+                ) : (
+                  <div style={{ position: "absolute", top: 8, right: 10 }}>
+                    <Lock size={14} color="#9ca3af" />
                   </div>
                 )}
-                <div style={{ fontSize: 32, marginBottom: 8, lineHeight: 1 }}>{a.emoji}</div>
-                <p style={{ fontWeight: 800, fontSize: 12, color: "#111", margin: "0 0 4px", lineHeight: 1.3 }}>{a.title}</p>
-                <p style={{ fontSize: 10, color: "#9ca3af", margin: 0 }}>{a.unlocked ? a.desc : `🔒 ${a.desc}`}</p>
+                <div style={{ fontSize: 48, lineHeight: 1, marginBottom: 10 }}>{a.emoji}</div>
+                <p style={{ fontWeight: 800, fontSize: 14, color: "#111", margin: "0 0 5px", lineHeight: 1.3 }}>{a.title}</p>
+                <p style={{ fontSize: 12, color: "#9ca3af", margin: 0, lineHeight: 1.4 }}>{a.desc}</p>
               </div>
             ))}
           </div>

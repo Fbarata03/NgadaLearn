@@ -700,7 +700,8 @@ export function MusicPlayer() {
           modestbranding: 1,
           playsinline:    1,
           autoplay:       0,
-          cc_load_policy: 0,
+          cc_load_policy: 1,   // força o YT a carregar as captions
+          cc_lang_pref:   "en",
           origin:         window.location.origin,
         },
         events: {
@@ -711,66 +712,47 @@ export function MusicPlayer() {
               const state = ytPlayer.current?.getPlayerState?.() ?? -1;
               if (state === -1 || state === 5) skipToNextVideo();
             }, 12000);
+          },
+          onApiChange: async (e: any) => {
+            /* Dispara quando o módulo de captions do YT fica disponível */
+            if (transcriptLoadedRef.current) return;
+            try {
+              const modules: string[] = e.target.getOptions?.() || [];
+              if (!modules.includes("captions")) return;
 
-            /* ── Legendas via player (tentativa imediata + retry 2s) ── */
-            const tryPlayerCaptions = async (): Promise<boolean> => {
-              const vid = selectedRef.current?.id;
-              if (!vid || transcriptLoadedRef.current) return false;
+              /* Esconder o CC nativo do YouTube */
+              try { e.target.setOption("captions", "track", {}); } catch { /* */ }
+
+              const resp = e.target.getPlayerResponse?.();
+              const tracks: any[] = resp?.captions?.playerCaptionsTracklistRenderer?.captionTracks || [];
+              const track = tracks.find((t:any) => t.languageCode === "en") ||
+                            tracks.find((t:any) => t.languageCode?.startsWith("en")) ||
+                            tracks[0];
+              if (!track?.baseUrl) return;
 
               function parseEvents(events: any[]): TimedSub[] {
                 return (events || [])
-                  .filter((ev: any) => ev.segs?.length)
-                  .map((ev: any) => ({
+                  .filter((ev:any) => ev.segs?.length)
+                  .map((ev:any) => ({
                     start: (ev.tStartMs || 0) / 1000,
                     dur:   Math.max((ev.dDurationMs || 2000) / 1000, 0.3),
-                    text:  ev.segs.map((s: any) => (s.utf8 || "").replace(/\n/g, " "))
-                      .join("").replace(/\s+/g, " ").trim(),
+                    text:  ev.segs.map((s:any) => (s.utf8||"").replace(/\n/g," "))
+                             .join("").replace(/\s+/g," ").trim(),
                   }))
-                  .filter((s: any) => s.text);
+                  .filter((s:any) => s.text);
               }
 
-              try {
-                const resp = e.target.getPlayerResponse?.();
-                const tracks: any[] = resp?.captions?.playerCaptionsTracklistRenderer?.captionTracks || [];
-                const track = tracks.find((t: any) => t.languageCode === "en") ||
-                              tracks.find((t: any) => t.languageCode?.startsWith("en")) ||
-                              tracks[0];
-                if (track?.baseUrl) {
-                  const r = await fetch(`${BACKEND}/api/youtube/caption-proxy?url=${encodeURIComponent(track.baseUrl + "&fmt=json3")}`);
-                  if (r.ok) {
-                    const d = await r.json();
-                    const segs = parseEvents(d.events);
-                    if (segs.length >= 3) {
-                      transcriptLoadedRef.current = true;
-                      setTranscript(segs); setTransLoading(false); return true;
-                    }
-                  }
-                }
-              } catch { /* continua */ }
-
-              for (const lang of ["en", "en&kind=asr"]) {
-                try {
-                  const captionUrl = `https://www.youtube.com/api/timedtext?v=${vid}&lang=${lang}&fmt=json3`;
-                  const r = await fetch(`${BACKEND}/api/youtube/caption-proxy?url=${encodeURIComponent(captionUrl)}`);
-                  if (!r.ok) continue;
-                  const d = await r.json();
-                  const segs = parseEvents(d.events);
-                  if (segs.length >= 3) {
-                    transcriptLoadedRef.current = true;
-                    setTranscript(segs); setTransLoading(false); return true;
-                  }
-                } catch { /* próximo */ }
+              const r = await fetch(
+                `${BACKEND}/api/youtube/caption-proxy?url=${encodeURIComponent(track.baseUrl + "&fmt=json3")}`
+              );
+              if (!r.ok) return;
+              const d   = await r.json();
+              const segs = parseEvents(d.events);
+              if (segs.length >= 3) {
+                transcriptLoadedRef.current = true;
+                setTranscript(segs); setTransLoading(false);
               }
-              return false;
-            };
-
-            (async () => {
-              const ok = await tryPlayerCaptions();
-              if (!ok) {
-                await new Promise(r => setTimeout(r, 2000));
-                await tryPlayerCaptions();
-              }
-            })();
+            } catch { /* silencioso */ }
           },
           onStateChange: (e: any) => {
             setIsPlaying(e.data === 1);

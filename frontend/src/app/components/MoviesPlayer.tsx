@@ -714,7 +714,8 @@ export function MoviesPlayer() {
   const [transLoading, setTransLoading] = useState(false);
   const [liveSubIdx,   setLiveSubIdx]   = useState(-1);
   const liveSubIdxRef  = useRef(-1);
-  const liveTimerRef   = useRef<ReturnType<typeof setInterval> | null>(null);
+  const liveTimerRef       = useRef<ReturnType<typeof setInterval> | null>(null);
+  const transcriptLoadedRef = useRef(false); // evita sobrescrever depois de carregado
 
   /* Linhas do transcript memoizadas — evita recriar o array em cada render */
   const transcriptLines = useMemo(() => transcript.map(s => s.text), [transcript]);
@@ -786,10 +787,10 @@ export function MoviesPlayer() {
               if (state === -1 || state === 5) skipToNextClip();
             }, 12000);
 
-            /* ── Buscar legendas no browser (várias estratégias) ── */
-            setTimeout(async () => {
+            /* ── Buscar legendas via player (browser, sem CORS) ── */
+            const tryPlayerCaptions = async (): Promise<boolean> => {
               const vid = selectedRef.current?.id;
-              if (!vid) return;
+              if (!vid || transcriptLoadedRef.current) return false;
 
               function parseEvents(events: any[]): TimedSub[] {
                 return (events || [])
@@ -803,7 +804,7 @@ export function MoviesPlayer() {
                   .filter((s: any) => s.text);
               }
 
-              /* Estratégia A: captionTracks do player → proxy no backend */
+              /* A: captionTracks do getPlayerResponse → proxy backend */
               try {
                 const resp = e.target.getPlayerResponse?.();
                 const tracks: any[] = resp?.captions?.playerCaptionsTracklistRenderer?.captionTracks || [];
@@ -811,17 +812,20 @@ export function MoviesPlayer() {
                               tracks.find((t: any) => t.languageCode?.startsWith("en")) ||
                               tracks[0];
                 if (track?.baseUrl) {
-                  const proxyUrl = `${BACKEND}/api/youtube/caption-proxy?url=${encodeURIComponent(track.baseUrl + "&fmt=json3")}`;
-                  const r = await fetch(proxyUrl);
+                  const url = `${BACKEND}/api/youtube/caption-proxy?url=${encodeURIComponent(track.baseUrl + "&fmt=json3")}`;
+                  const r = await fetch(url);
                   if (r.ok) {
                     const d = await r.json();
                     const segs = parseEvents(d.events);
-                    if (segs.length >= 3) { setTranscript(segs); setTransLoading(false); return; }
+                    if (segs.length >= 3) {
+                      transcriptLoadedRef.current = true;
+                      setTranscript(segs); setTransLoading(false); return true;
+                    }
                   }
                 }
               } catch { /* continua */ }
 
-              /* Estratégia B: timedtext via backend proxy */
+              /* B: timedtext via proxy */
               for (const lang of ["en", "en&kind=asr", "en-US"]) {
                 try {
                   const captionUrl = `https://www.youtube.com/api/timedtext?v=${vid}&lang=${lang}&fmt=json3`;
@@ -829,13 +833,24 @@ export function MoviesPlayer() {
                   if (!r.ok) continue;
                   const d = await r.json();
                   const segs = parseEvents(d.events);
-                  if (segs.length >= 3) { setTranscript(segs); setTransLoading(false); return; }
+                  if (segs.length >= 3) {
+                    transcriptLoadedRef.current = true;
+                    setTranscript(segs); setTransLoading(false); return true;
+                  }
                 } catch { /* próximo */ }
               }
+              return false;
+            };
 
-              /* Todas as estratégias falharam — parar spinner */
-              setTransLoading(false);
-            }, 2000);
+            /* Tentar imediatamente e depois de 2s (captions podem demorar) */
+            (async () => {
+              const ok = await tryPlayerCaptions();
+              if (!ok) {
+                await new Promise(r => setTimeout(r, 2000));
+                const ok2 = await tryPlayerCaptions();
+                if (!ok2) setTransLoading(false);
+              }
+            })();
           },
           onStateChange: (e:any) => {
             setIsPlaying(e.data === 1);
@@ -875,14 +890,21 @@ export function MoviesPlayer() {
 
   /* ── Buscar legendas temporizadas quando o vídeo muda ───────────── */
   useEffect(() => {
-    if (!selected) { setTranscript([]); setLiveSubIdx(-1); liveSubIdxRef.current = -1; return; }
-    setTranscript([]); setLiveSubIdx(-1); liveSubIdxRef.current = -1;
+    if (!selected) {
+      setTranscript([]); setLiveSubIdx(-1);
+      liveSubIdxRef.current = -1; transcriptLoadedRef.current = false; return;
+    }
+    setTranscript([]); setLiveSubIdx(-1);
+    liveSubIdxRef.current = -1; transcriptLoadedRef.current = false;
     setTransLoading(true);
     fetch(`${BACKEND}/api/youtube/transcript/${selected.id}`)
       .then(r => r.json())
       .then(d => {
         const segs = d.segments || [];
-        if (segs.length) { setTranscript(segs); setTransLoading(false); }
+        if (segs.length) {
+          transcriptLoadedRef.current = true;
+          setTranscript(segs); setTransLoading(false);
+        }
         /* senão mantém transLoading=true — o fallback do browser trata */
       })
       .catch(() => setTransLoading(false));

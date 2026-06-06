@@ -601,9 +601,10 @@ export function MusicPlayer() {
   const [transLoading,  setTransLoading]  = useState(false);
   const [liveSubIdx,    setLiveSubIdx]    = useState(-1);
   const liveSubIdxRef  = useRef(-1);
-  const liveTimerRef   = useRef<ReturnType<typeof setInterval> | null>(null);
-  const autoAdvRef         = useRef<ReturnType<typeof setInterval> | null>(null);
-  const autoSelectMusicRef = useRef(false);
+  const liveTimerRef        = useRef<ReturnType<typeof setInterval> | null>(null);
+  const autoAdvRef          = useRef<ReturnType<typeof setInterval> | null>(null);
+  const autoSelectMusicRef  = useRef(false);
+  const transcriptLoadedRef = useRef(false);
   const transcriptLines = useMemo(() => transcript.map(s => s.text), [transcript]);
 
   /* ── Sync selectedRef (sempre atual para callbacks do YT) ────── */
@@ -711,10 +712,10 @@ export function MusicPlayer() {
               if (state === -1 || state === 5) skipToNextVideo();
             }, 12000);
 
-            /* ── Legendas no browser (fallback multi-estratégia) ── */
-            setTimeout(async () => {
+            /* ── Legendas via player (tentativa imediata + retry 2s) ── */
+            const tryPlayerCaptions = async (): Promise<boolean> => {
               const vid = selectedRef.current?.id;
-              if (!vid) return;
+              if (!vid || transcriptLoadedRef.current) return false;
 
               function parseEvents(events: any[]): TimedSub[] {
                 return (events || [])
@@ -728,7 +729,6 @@ export function MusicPlayer() {
                   .filter((s: any) => s.text);
               }
 
-              /* Estratégia A: captionTracks do player → proxy no backend */
               try {
                 const resp = e.target.getPlayerResponse?.();
                 const tracks: any[] = resp?.captions?.playerCaptionsTracklistRenderer?.captionTracks || [];
@@ -736,17 +736,18 @@ export function MusicPlayer() {
                               tracks.find((t: any) => t.languageCode?.startsWith("en")) ||
                               tracks[0];
                 if (track?.baseUrl) {
-                  const proxyUrl = `${BACKEND}/api/youtube/caption-proxy?url=${encodeURIComponent(track.baseUrl + "&fmt=json3")}`;
-                  const r = await fetch(proxyUrl);
+                  const r = await fetch(`${BACKEND}/api/youtube/caption-proxy?url=${encodeURIComponent(track.baseUrl + "&fmt=json3")}`);
                   if (r.ok) {
                     const d = await r.json();
                     const segs = parseEvents(d.events);
-                    if (segs.length >= 3) { setTranscript(segs); setTransLoading(false); return; }
+                    if (segs.length >= 3) {
+                      transcriptLoadedRef.current = true;
+                      setTranscript(segs); setTransLoading(false); return true;
+                    }
                   }
                 }
               } catch { /* continua */ }
 
-              /* Estratégia B: timedtext via backend proxy */
               for (const lang of ["en", "en&kind=asr"]) {
                 try {
                   const captionUrl = `https://www.youtube.com/api/timedtext?v=${vid}&lang=${lang}&fmt=json3`;
@@ -754,10 +755,22 @@ export function MusicPlayer() {
                   if (!r.ok) continue;
                   const d = await r.json();
                   const segs = parseEvents(d.events);
-                  if (segs.length >= 3) { setTranscript(segs); setTransLoading(false); return; }
+                  if (segs.length >= 3) {
+                    transcriptLoadedRef.current = true;
+                    setTranscript(segs); setTransLoading(false); return true;
+                  }
                 } catch { /* próximo */ }
               }
-            }, 2000);
+              return false;
+            };
+
+            (async () => {
+              const ok = await tryPlayerCaptions();
+              if (!ok) {
+                await new Promise(r => setTimeout(r, 2000));
+                await tryPlayerCaptions();
+              }
+            })();
           },
           onStateChange: (e: any) => {
             setIsPlaying(e.data === 1);
@@ -829,16 +842,24 @@ export function MusicPlayer() {
   /* ── Buscar transcript quando o vídeo muda ──────────────────────── */
   useEffect(() => {
     if (!selected) {
-      setTranscript([]); setLiveSubIdx(-1); liveSubIdxRef.current = -1;
+      setTranscript([]); setLiveSubIdx(-1);
+      liveSubIdxRef.current = -1; transcriptLoadedRef.current = false;
       return;
     }
-    setTranscript([]); setLiveSubIdx(-1); liveSubIdxRef.current = -1;
+    setTranscript([]); setLiveSubIdx(-1);
+    liveSubIdxRef.current = -1; transcriptLoadedRef.current = false;
     setTransLoading(true);
     fetch(`${BACKEND}/api/youtube/transcript/${selected.id}`)
       .then(r => r.json())
-      .then(d => { setTranscript(d.segments || []); })
-      .catch(() => {})
-      .finally(() => setTransLoading(false));
+      .then(d => {
+        const segs = d.segments || [];
+        if (segs.length) {
+          transcriptLoadedRef.current = true;
+          setTranscript(segs); setTransLoading(false);
+        }
+        /* senão mantém loading — fallback do player vai tentar */
+      })
+      .catch(() => setTransLoading(false));
   }, [selected?.id]);
 
   /* ── Polling: sync CC em tempo real (100ms) ─────────────────────── */

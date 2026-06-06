@@ -23,7 +23,6 @@ function cacheGet(key) {
 
 function cacheSet(key, data, ttl) {
   if (cache.size >= MAX_CACHE_SIZE) {
-    // Evict oldest entry
     cache.delete(cache.keys().next().value);
   }
   cache.set(key, { data, expiresAt: Date.now() + ttl });
@@ -33,13 +32,12 @@ function cacheSet(key, data, ttl) {
 let quotaUsed    = 0;
 let quotaResetAt = nextMidnightPT();
 
-const QUOTA_DAILY_LIMIT = 9000; // deixa 1000 de margem
+const QUOTA_DAILY_LIMIT = 9000;
 const QUOTA_COSTS = { search: 100, videos: 1 };
 
 function nextMidnightPT() {
-  // YouTube quota reset às 00:00 PT (UTC-8)
   const now = new Date();
-  const ptOffset = 8 * 60; // minutos
+  const ptOffset = 8 * 60;
   const ptNow = new Date(now.getTime() - ptOffset * 60_000);
   const midnight = new Date(ptNow);
   midnight.setHours(24, 0, 0, 0);
@@ -102,7 +100,6 @@ async function apiFetch(url) {
 
 /* ════════════════════════════════════════════════════════════════════
    SEARCH
-   cost: 100 unidades por chamada
    ════════════════════════════════════════════════════════════════════ */
 async function searchVideos({ q, type = "music", maxResults = 12 }) {
   const cacheKey = `search:${type}:${q}:${maxResults}`;
@@ -125,7 +122,7 @@ async function searchVideos({ q, type = "music", maxResults = 12 }) {
     if (type === "movies") {
       params.set("videoDuration", "short");
       params.set("order", "relevance");
-      params.set("videoCaption", "closedCaption"); // apenas vídeos com CC
+      params.set("videoCaption", "closedCaption");
     }
 
     const data = await apiFetch(`${BASE_URL}/search?${params}`);
@@ -146,8 +143,7 @@ async function searchVideos({ q, type = "music", maxResults = 12 }) {
 }
 
 /* ════════════════════════════════════════════════════════════════════
-   VIDEO DETAILS (status + snippet)
-   cost: 1 unidade por vídeo
+   VIDEO DETAILS
    ════════════════════════════════════════════════════════════════════ */
 async function getVideoDetails(ids) {
   const idList    = (Array.isArray(ids) ? ids : ids.split(",")).filter(Boolean).slice(0, 50);
@@ -191,25 +187,102 @@ function getStatus() {
 }
 
 /* ════════════════════════════════════════════════════════════════════
-   TRANSCRIPT  — legendas temporizadas via youtube-transcript
+   TRANSCRIPT — 3 estratégias em cascata
+   0: youtube-transcript (funciona quando IP não bloqueado)
+   1: InnerTube player API (JSON puro, menos bloqueado)
+   2: Timed Text API directa
    ════════════════════════════════════════════════════════════════════ */
 const { YoutubeTranscript } = require("youtube-transcript");
 
-const TRANSCRIPT_TTL  = 6 * 60 * 60 * 1000;  // 6 horas (sucesso)
-const TRANSCRIPT_FAIL = 30 * 60 * 1000;       // 30 min  (falha — evita spam)
+const TRANSCRIPT_TTL  = 6 * 60 * 60 * 1000;
+const TRANSCRIPT_FAIL = 15 * 60 * 1000;
 
-/* Remove tags HTML e caracteres de controlo do texto */
+const YT_UA = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36";
+
 function cleanText(raw) {
-  return raw
-    .replace(/<[^>]*>/g, "")          // tags HTML
-    .replace(/&amp;/g, "&")
-    .replace(/&lt;/g, "<")
-    .replace(/&gt;/g, ">")
-    .replace(/&quot;/g, '"')
-    .replace(/&#39;/g, "'")
-    .replace(/[ -]/g, " ")  // controlo
-    .replace(/\s+/g, " ")
-    .trim();
+  return (raw || "")
+    .replace(/<[^>]*>/g, "")
+    .replace(/&amp;/g, "&").replace(/&lt;/g, "<").replace(/&gt;/g, ">")
+    .replace(/&quot;/g, '"').replace(/&#39;/g, "'")
+    .replace(/\s+/g, " ").trim();
+}
+
+function eventsToSegments(events) {
+  return (events || [])
+    .filter(ev => ev.segs?.length)
+    .map(ev => ({
+      start: (ev.tStartMs  || 0) / 1000,
+      dur:   Math.max((ev.dDurationMs || 2000) / 1000, 0.3),
+      text:  ev.segs.map(s => (s.utf8 || "").replace(/\n/g, " ")).join("").replace(/\s+/g, " ").trim(),
+    }))
+    .filter(s => s.text);
+}
+
+async function tryYoutubeTranscript(videoId) {
+  try {
+    let raw;
+    try { raw = await YoutubeTranscript.fetchTranscript(videoId, { lang: "en" }); }
+    catch { raw = await YoutubeTranscript.fetchTranscript(videoId); }
+    if (!raw?.length) return null;
+    const segs = raw
+      .map(i => ({ start: i.offset / 1000, dur: Math.max(i.duration / 1000, 0.3), text: cleanText(i.text) }))
+      .filter(s => s.text);
+    return segs.length >= 3 ? segs : null;
+  } catch { return null; }
+}
+
+async function tryInnerTube(videoId) {
+  try {
+    const res = await fetch(
+      "https://www.youtube.com/youtubei/v1/player?key=AIzaSyAO_FJ2SlqU8Q4STEHLGCilw_Y9_11qcW8",
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "X-YouTube-Client-Name": "1",
+          "X-YouTube-Client-Version": "2.20240101.00.00",
+          "User-Agent": YT_UA,
+          "Accept-Language": "en-US,en;q=0.9",
+        },
+        body: JSON.stringify({
+          context: { client: { clientName: "WEB", clientVersion: "2.20240101.00.00", hl: "en", gl: "US" } },
+          videoId,
+          racyCheckOk: false, contentCheckOk: false,
+        }),
+        signal: AbortSignal.timeout(10000),
+      }
+    );
+    if (!res.ok) return null;
+    const data = await res.json().catch(() => null);
+    const tracks = data?.captions?.playerCaptionsTracklistRenderer?.captionTracks || [];
+    const track = tracks.find(t => t.languageCode === "en") ||
+                  tracks.find(t => t.languageCode?.startsWith("en")) || tracks[0];
+    if (!track?.baseUrl) return null;
+    const cr = await fetch(
+      decodeURIComponent(track.baseUrl) + "&fmt=json3",
+      { headers: { "User-Agent": YT_UA }, signal: AbortSignal.timeout(8000) }
+    );
+    if (!cr.ok) return null;
+    const cd = await cr.json().catch(() => null);
+    const segs = eventsToSegments(cd?.events);
+    return segs.length >= 3 ? segs : null;
+  } catch { return null; }
+}
+
+async function tryTimedText(videoId) {
+  for (const suffix of ["&lang=en", "&lang=en&kind=asr", "&lang=en-US"]) {
+    try {
+      const r = await fetch(
+        `https://www.youtube.com/api/timedtext?v=${videoId}${suffix}&fmt=json3`,
+        { headers: { "User-Agent": YT_UA }, signal: AbortSignal.timeout(6000) }
+      );
+      if (!r.ok) continue;
+      const d = await r.json().catch(() => null);
+      const segs = eventsToSegments(d?.events);
+      if (segs.length >= 3) return segs;
+    } catch { /* próximo */ }
+  }
+  return null;
 }
 
 async function fetchTranscript(videoId) {
@@ -217,41 +290,15 @@ async function fetchTranscript(videoId) {
   const cached   = cacheGet(cacheKey);
   if (cached !== null) return { data: cached, fromCache: true };
 
-  try {
-    /* Tenta inglês primeiro; fallback para qualquer idioma disponível */
-    let raw;
-    try {
-      raw = await YoutubeTranscript.fetchTranscript(videoId, { lang: "en" });
-    } catch {
-      raw = await YoutubeTranscript.fetchTranscript(videoId);
-    }
+  const segments =
+    await tryYoutubeTranscript(videoId) ||
+    await tryInnerTube(videoId)         ||
+    await tryTimedText(videoId)         ||
+    [];
 
-    if (!raw?.length) {
-      cacheSet(cacheKey, [], TRANSCRIPT_FAIL);
-      return { data: [], fromCache: false };
-    }
-
-    const segments = raw
-      .map(item => ({
-        start: item.offset  / 1000,          // ms → s
-        dur:   Math.max(item.duration / 1000, 0.3),
-        text:  cleanText(item.text),
-      }))
-      .filter(s => s.text.length > 0);
-
-    cacheSet(cacheKey, segments, TRANSCRIPT_TTL);
-    return { data: segments, fromCache: false };
-
-  } catch (err) {
-    const msg = err.message || "";
-    if (msg.includes("disabled") || msg.includes("No transcript")) {
-      console.info(`[transcript] ${videoId}: sem legendas disponíveis`);
-    } else {
-      console.warn(`[transcript] ${videoId}: ${msg}`);
-    }
-    cacheSet(cacheKey, [], TRANSCRIPT_FAIL);
-    return { data: [], fromCache: false };
-  }
+  cacheSet(cacheKey, segments, segments.length ? TRANSCRIPT_TTL : TRANSCRIPT_FAIL);
+  if (!segments.length) console.info(`[transcript] ${videoId}: sem legendas`);
+  return { data: segments, fromCache: false };
 }
 
 module.exports = { searchVideos, getVideoDetails, getStatus, fetchTranscript };

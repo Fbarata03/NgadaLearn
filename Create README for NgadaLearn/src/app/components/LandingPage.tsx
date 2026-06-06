@@ -1,10 +1,9 @@
-import { useState, useRef } from "react";
+import { useState } from "react";
 import { Link } from "react-router";
 import {
   Star, Users, Shield, Award, Check, ChevronDown, ChevronUp,
   Headphones, BookOpen, Smartphone, Clock,
   Globe, ArrowRight, MessageCircle, TrendingUp, Lock,
-  Music, Volume2,
 } from "lucide-react";
 
 /* ─── Animações ─── */
@@ -131,29 +130,9 @@ const RATING_BARS = [
 ═══════════════════════════════════════════════ */
 export function LandingPage() {
   const [openFaq,    setOpenFaq]    = useState<number | null>(null);
-  const [isPlaying,  setIsPlaying]  = useState(false);
-  const audioRef = useRef<HTMLAudioElement>(null);
-
-  function toggleAudio() {
-    const a = audioRef.current;
-    if (!a) return;
-    if (isPlaying) {
-      a.pause();
-      setIsPlaying(false);
-    } else {
-      a.volume = 0.18;
-      a.play().then(() => setIsPlaying(true)).catch(() => {});
-    }
-  }
-
   return (
     <div style={{ fontFamily: "system-ui,-apple-system,sans-serif", overflowX: "hidden" }}>
       <style>{ANIM}</style>
-
-      {/* Áudio ambiente */}
-      <audio ref={audioRef} loop>
-        <source src="/ambient.mp3" type="audio/mpeg" />
-      </audio>
 
       {/* ════════════════════════════════════════
           HERO — split layout
@@ -279,19 +258,6 @@ export function LandingPage() {
                 </div>
               </div>
               <div style={{ fontSize: 10, color: "rgba(255,255,255,.35)", marginTop: 2 }}>1.842 avaliações verificadas</div>
-            </div>
-
-            {/* Card flutuante — Certificado */}
-            <div className="lp-float" style={{ position: "absolute", bottom: "6%", right: "-12%", background: "rgba(16,185,129,.12)", backdropFilter: "blur(20px)", border: "1px solid rgba(16,185,129,.3)", borderRadius: 18, padding: "12px 16px", boxShadow: "0 16px 48px rgba(0,0,0,.4)" }}>
-              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                <div style={{ width: 32, height: 32, borderRadius: 9, background: "rgba(16,185,129,.25)", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                  <Award size={15} color="#34d399" />
-                </div>
-                <div>
-                  <div style={{ fontSize: 11, fontWeight: 800, color: "#34d399" }}>Certificado emitido</div>
-                  <div style={{ fontSize: 10, color: "rgba(52,211,153,.6)" }}>Nível B2 · Inglês</div>
-                </div>
-              </div>
             </div>
 
             {/* Card flutuante — Alunos online */}
@@ -578,26 +544,6 @@ export function LandingPage() {
         </div>
       </footer>
 
-      {/* ════════════════════════════════════════
-          BOTÃO ÁUDIO FLUTUANTE
-      ════════════════════════════════════════ */}
-      <button
-        onClick={toggleAudio}
-        title={isPlaying ? "Pausar música de fundo" : "Activar música de fundo"}
-        style={{
-          position: "fixed", bottom: 80, right: 20, zIndex: 60,
-          width: 48, height: 48, borderRadius: "50%",
-          background: isPlaying ? "linear-gradient(135deg,#7c3aed,#4f46e5)" : "rgba(30,30,50,.85)",
-          backdropFilter: "blur(12px)",
-          border: `1.5px solid ${isPlaying ? "rgba(167,139,250,.6)" : "rgba(255,255,255,.12)"}`,
-          color: isPlaying ? "#fff" : "rgba(255,255,255,.5)",
-          display: "flex", alignItems: "center", justifyContent: "center",
-          cursor: "pointer",
-          boxShadow: isPlaying ? "0 4px 20px rgba(124,58,237,.5)" : "0 4px 16px rgba(0,0,0,.3)",
-          transition: "all .3s ease",
-        }}>
-        {isPlaying ? <Volume2 size={19} /> : <Music size={17} />}
-      </button>
     </div>
   );
 }

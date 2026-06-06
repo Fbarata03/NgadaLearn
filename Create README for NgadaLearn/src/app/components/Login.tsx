@@ -41,6 +41,36 @@ const ANIM = `
     40%,80% { transform:translateX(5px); }
   }
 
+  /* ── Novas animações do painel direito ── */
+  @keyframes lg-bg-shift {
+    0%,100% { background-position:0% 50%; }
+    50%      { background-position:100% 50%; }
+  }
+  @keyframes lg-orb-r {
+    0%,100% { transform:translate(0,0) scale(1); }
+    33%     { transform:translate(25px,-18px) scale(1.12); }
+    66%     { transform:translate(-18px,22px) scale(.9); }
+  }
+  @keyframes lg-ring {
+    0%  { box-shadow:0 0 0 0 rgba(124,58,237,.55), 0 6px 20px rgba(124,58,237,.35); }
+    70% { box-shadow:0 0 0 16px rgba(124,58,237,0), 0 6px 20px rgba(124,58,237,.45); }
+    100%{ box-shadow:0 0 0 0 rgba(124,58,237,0),   0 6px 20px rgba(124,58,237,.35); }
+  }
+  @keyframes lg-shimmer-move {
+    0%   { background-position:-200% 0; }
+    100% { background-position: 200% 0; }
+  }
+  @keyframes lg-particle-up {
+    0%   { transform:translateY(0) scale(1) rotate(0deg);   opacity:0; }
+    12%  { opacity:.65; }
+    88%  { opacity:.35; }
+    100% { transform:translateY(-160px) scale(.3) rotate(200deg); opacity:0; }
+  }
+  @keyframes lg-icon-bob {
+    0%,100% { transform:translateY(0) rotate(-3deg); }
+    50%     { transform:translateY(-5px) rotate(3deg); }
+  }
+
   .lg-blob1  { animation:lg-blob1 12s ease-in-out infinite; }
   .lg-blob2  { animation:lg-blob2 15s ease-in-out infinite; }
   .lg-float  { animation:lg-float 5s ease-in-out infinite; }
@@ -55,6 +85,34 @@ const ANIM = `
   .lg-fade   { animation:lg-fade .4s ease both; }
   .lg-shake  { animation:lg-shake .4s ease; }
   .lg-spin   { animation:lg-spin .8s linear infinite; }
+  .lg-orb-r1 { animation:lg-orb-r 16s ease-in-out infinite; }
+  .lg-orb-r2 { animation:lg-orb-r 20s ease-in-out 4s infinite reverse; }
+  .lg-ring   { animation:lg-ring 2.2s ease-out infinite; }
+  .lg-icon-bob { animation:lg-icon-bob 3s ease-in-out infinite; }
+
+  .lg-right-bg {
+    background:linear-gradient(120deg,#ffffff 0%,#fbf8ff 30%,#f4efff 60%,#faf7ff 80%,#ffffff 100%);
+    background-size:300% 300%;
+    animation:lg-bg-shift 10s ease infinite;
+  }
+
+  .lg-btn-shimmer {
+    position:relative; overflow:hidden;
+  }
+  .lg-btn-shimmer::after {
+    content:''; position:absolute; inset:0; border-radius:inherit;
+    background:linear-gradient(90deg,transparent 0%,rgba(255,255,255,.32) 50%,transparent 100%);
+    background-size:200% 100%;
+    animation:lg-shimmer-move 2.6s linear infinite;
+    pointer-events:none;
+  }
+
+  .lg-particle {
+    position:absolute; border-radius:50%;
+    background:rgba(167,139,250,.55);
+    pointer-events:none;
+    animation:lg-particle-up var(--dur,5s) ease-in-out var(--delay,0s) infinite;
+  }
 
   .lg-input {
     width:100%; height:48px; border-radius:12px;
@@ -283,7 +341,23 @@ export function Login() {
       </div>
 
       {/* DIREITA — Formulário */}
-      <div style={{ background: "#fff", display: "flex", flexDirection: "column" }}>
+      <div className="lg-right-bg" style={{ position: "relative", display: "flex", flexDirection: "column", overflow: "hidden" }}>
+
+        {/* Orbs de fundo */}
+        <div className="lg-orb-r1" style={{ position:"absolute", top:"-8%", right:"-6%", width:340, height:340, borderRadius:"50%", background:"radial-gradient(circle,rgba(124,58,237,.09) 0%,transparent 65%)", filter:"blur(55px)", pointerEvents:"none", zIndex:0 }} />
+        <div className="lg-orb-r2" style={{ position:"absolute", bottom:"-5%", left:"-6%", width:290, height:290, borderRadius:"50%", background:"radial-gradient(circle,rgba(99,102,241,.07) 0%,transparent 65%)", filter:"blur(65px)", pointerEvents:"none", zIndex:0 }} />
+
+        {/* Partículas flutuantes */}
+        {[
+          { size:5, left:"10%", dur:"5.5s",  delay:"0s"   },
+          { size:3, left:"26%", dur:"7s",    delay:"1.3s" },
+          { size:6, left:"44%", dur:"4.8s",  delay:"0.7s" },
+          { size:3, left:"60%", dur:"6.5s",  delay:"2.2s" },
+          { size:5, left:"76%", dur:"5.2s",  delay:"1.6s" },
+          { size:4, left:"89%", dur:"6.8s",  delay:"0.4s" },
+        ].map((p, i) => (
+          <div key={i} className="lg-particle" style={{ width:p.size, height:p.size, bottom:"4%", left:p.left, "--dur":p.dur, "--delay":p.delay } as React.CSSProperties} />
+        ))}
 
         {/* Header mobile */}
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 16px", borderBottom: "1px solid #f0f0f5" }} className="block lg:hidden">
@@ -301,22 +375,13 @@ export function Login() {
         <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", padding: "40px 32px" }}>
           <div style={{ width: "100%", maxWidth: 360 }}>
 
-            {/* Voltar (desktop) */}
-            <div className="lg-in-1 hidden lg:flex" style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 36 }}>
-              <Link to="/" style={{ display: "flex", alignItems: "center", gap: 6, color: "#9ca3af", fontSize: 13, fontWeight: 600, textDecoration: "none", transition: "color .2s" }}
-                onMouseOver={e => (e.currentTarget.style.color = "#7c3aed")}
-                onMouseOut={e => (e.currentTarget.style.color = "#9ca3af")}>
-                <ArrowLeft size={15} /> Voltar ao início
-              </Link>
-            </div>
-
             {/* Título */}
             <div className="lg-in-2" style={{ marginBottom: 30 }}>
-              <div style={{ width: 46, height: 46, borderRadius: 14, background: "linear-gradient(135deg,#7c3aed,#4f46e5)", display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 18, boxShadow: "0 6px 20px rgba(124,58,237,.35)" }}>
-                <GraduationCap size={22} color="#fff" />
+              <div className="lg-ring" style={{ width: 52, height: 52, borderRadius: 16, background: "linear-gradient(135deg,#7c3aed,#4f46e5)", display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 20 }}>
+                <GraduationCap size={24} color="#fff" className="lg-icon-bob" />
               </div>
               <h1 style={{ fontSize: 28, fontWeight: 900, color: "#111", margin: "0 0 6px", letterSpacing: "-0.5px" }}>Entrar na conta</h1>
-              <p style={{ fontSize: 14, color: "#9ca3af", margin: 0 }}>Bem-vindo de volta! Continua a tua jornada.</p>
+              <p style={{ fontSize: 14, color: "#9ca3af", margin: 0 }}>Continua de onde ficaste.</p>
             </div>
 
             {/* Form */}
@@ -358,7 +423,7 @@ export function Login() {
               )}
 
               {/* Botão */}
-              <button type="submit" className="lg-btn lg-in-5" disabled={loading} style={{ marginTop: 4 }}>
+              <button type="submit" className="lg-btn lg-in-5 lg-btn-shimmer" disabled={loading} style={{ marginTop: 4 }}>
                 {loading
                   ? <span style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}>
                       <span className="lg-spin" style={{ display: "inline-block", width: 18, height: 18, borderRadius: "50%", border: "2.5px solid rgba(255,255,255,.3)", borderTopColor: "#fff" }} />

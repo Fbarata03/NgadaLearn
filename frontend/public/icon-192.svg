@@ -5,10 +5,7 @@
       <stop offset="100%" stop-color="#4f46e5"/>
     </linearGradient>
   </defs>
-  <rect width="512" height="512" rx="96" fill="url(#g)"/>
-  <ellipse cx="188" cy="340" rx="52" ry="38" fill="#e9d5ff"/>
-  <rect x="236" y="170" width="22" height="174" rx="11" fill="#e9d5ff"/>
-  <rect x="236" y="170" width="90" height="22" rx="11" fill="#e9d5ff"/>
-  <rect x="306" y="170" width="22" height="90" rx="11" fill="#e9d5ff"/>
-  <ellipse cx="328" cy="282" rx="38" ry="28" fill="#e9d5ff"/>
+  <rect width="512" height="512" rx="110" fill="url(#g)"/>
+  <text x="256" y="370" font-family="Arial Black, sans-serif" font-size="320" font-weight="900"
+        text-anchor="middle" fill="white" letter-spacing="-10">N</text>
 </svg>

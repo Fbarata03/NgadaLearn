@@ -2,7 +2,9 @@ import { useState, useRef } from "react";
 import { Link, useNavigate } from "react-router";
 import { loadStripe } from "@stripe/stripe-js";
 import {
-  Elements, CardElement, useStripe, useElements,
+  Elements,
+  CardNumberElement, CardExpiryElement, CardCvcElement,
+  useStripe, useElements,
 } from "@stripe/react-stripe-js";
 import { Card } from "./ui/card";
 import { Button } from "./ui/button";
@@ -49,67 +51,115 @@ const PLANS = [
 ];
 
 /* ══════════════════════════════════════════
-   CARTÃO 3D ANIMADO
+   CARTÃO 3D ANIMADO — DADOS EM TEMPO REAL
 ══════════════════════════════════════════ */
 const CARD_CSS = `
   @keyframes card-float {
-    0%,100% { transform:perspective(900px) rotateX(4deg) rotateY(-4deg) translateY(0); }
-    50%     { transform:perspective(900px) rotateX(-2deg) rotateY(4deg) translateY(-10px); }
+    0%,100% { transform:rotateX(4deg) rotateY(-4deg) translateY(0px); }
+    50%     { transform:rotateX(-2deg) rotateY(4deg) translateY(-10px); }
   }
   @keyframes card-shine-move {
     0%   { background-position:200% 0; }
     100% { background-position:-200% 0; }
   }
-  @keyframes card-glow-pulse {
-    0%,100% { box-shadow:0 24px 64px rgba(124,58,237,.45), 0 8px 20px rgba(0,0,0,.25); }
-    50%     { box-shadow:0 28px 80px rgba(124,58,237,.65), 0 12px 28px rgba(0,0,0,.3); }
+  @keyframes card-glow {
+    0%,100% { filter:drop-shadow(0 20px 48px rgba(124,58,237,.45)); }
+    50%     { filter:drop-shadow(0 28px 64px rgba(124,58,237,.7)); }
   }
-  .card-3d-idle {
-    animation: card-float 5s ease-in-out infinite, card-glow-pulse 4s ease-in-out infinite;
-    transition: transform .15s ease, box-shadow .15s ease;
+  @keyframes card-dot-blink {
+    0%,100% { opacity:.55; }
+    50%     { opacity:1; }
   }
-  .card-3d-hover {
-    animation: card-glow-pulse 4s ease-in-out infinite;
-    transition: transform .08s ease, box-shadow .08s ease;
+  .card-wrap {
+    transform-style: preserve-3d;
+    transition: transform .6s cubic-bezier(.4,0,.2,1);
+  }
+  .card-wrap-idle {
+    animation: card-float 5s ease-in-out infinite, card-glow 4s ease-in-out infinite;
+  }
+  .card-face {
+    position:absolute; inset:0; border-radius:20px;
+    backface-visibility:hidden; -webkit-backface-visibility:hidden;
+    overflow:hidden;
+  }
+  .card-back {
+    transform: rotateY(180deg);
   }
   .card-shine {
-    background: linear-gradient(105deg,
-      transparent 20%,
-      rgba(255,255,255,.18) 35%,
-      rgba(255,255,255,.38) 50%,
-      rgba(255,255,255,.18) 65%,
-      transparent 80%
-    );
-    background-size: 300% 100%;
-    animation: card-shine-move 3s linear infinite;
+    background:linear-gradient(105deg,transparent 20%,rgba(255,255,255,.2) 40%,rgba(255,255,255,.4) 50%,rgba(255,255,255,.2) 60%,transparent 80%);
+    background-size:300% 100%;
+    animation:card-shine-move 3s linear infinite;
+    pointer-events:none;
   }
   .card-holo {
-    background: linear-gradient(135deg,
-      rgba(255,100,100,.05) 0%,
-      rgba(100,100,255,.07) 25%,
-      rgba(100,255,100,.05) 50%,
-      rgba(255,100,200,.07) 75%,
-      rgba(100,200,255,.05) 100%
-    );
-    background-size: 400% 400%;
-    animation: card-shine-move 6s linear infinite;
+    background:linear-gradient(135deg,rgba(255,80,80,.04),rgba(80,80,255,.06) 25%,rgba(80,255,80,.04) 50%,rgba(255,80,200,.06) 75%,rgba(80,200,255,.04));
+    background-size:400% 400%;
+    animation:card-shine-move 7s linear infinite;
+    pointer-events:none;
+  }
+  .card-num-active {
+    animation:card-dot-blink .8s ease-in-out infinite;
   }
 `;
 
-function Card3D() {
+const BRAND_GRADIENT: Record<string, string> = {
+  visa:       "linear-gradient(135deg,#1a1f71 0%,#1e40af 60%,#2563eb 100%)",
+  mastercard: "linear-gradient(135deg,#1a1a2e 0%,#16213e 50%,#0f3460 100%)",
+  amex:       "linear-gradient(135deg,#005f3d 0%,#007a4d 50%,#1a6696 100%)",
+  discover:   "linear-gradient(135deg,#c05c00 0%,#e07000 60%,#d97706 100%)",
+  unionpay:   "linear-gradient(135deg,#7f1d1d 0%,#991b1b 60%,#b91c1c 100%)",
+};
+
+function BrandLogo({ brand }: { brand: string }) {
+  if (brand === "visa") return (
+    <span style={{ fontFamily:"serif", fontStyle:"italic", fontWeight:900, fontSize:18, color:"#fff", letterSpacing:-1, textShadow:"0 1px 4px rgba(0,0,0,.5)" }}>VISA</span>
+  );
+  if (brand === "mastercard") return (
+    <div style={{ display:"flex" }}>
+      <div style={{ width:26, height:26, borderRadius:"50%", background:"rgba(235,68,68,.9)", marginRight:-10 }} />
+      <div style={{ width:26, height:26, borderRadius:"50%", background:"rgba(251,191,36,.9)" }} />
+    </div>
+  );
+  if (brand === "amex") return (
+    <span style={{ fontFamily:"sans-serif", fontWeight:900, fontSize:13, color:"#fff", letterSpacing:2, textShadow:"0 1px 4px rgba(0,0,0,.5)" }}>AMEX</span>
+  );
+  if (brand === "discover") return (
+    <span style={{ fontFamily:"sans-serif", fontWeight:800, fontSize:11, color:"#fff", letterSpacing:1 }}>DISCOVER</span>
+  );
+  return (
+    <div style={{ display:"flex" }}>
+      <div style={{ width:24, height:24, borderRadius:"50%", background:"rgba(167,139,250,.7)", marginRight:-8 }} />
+      <div style={{ width:24, height:24, borderRadius:"50%", background:"rgba(99,102,241,.7)" }} />
+    </div>
+  );
+}
+
+function Card3D({ name, brand, focused, isFlipped }: {
+  name: string; brand: string; focused: string | null; isFlipped: boolean;
+}) {
   const [tilt, setTilt] = useState({ x: 0, y: 0 });
   const [shine, setShine] = useState({ x: 50, y: 50 });
   const [hovered, setHovered] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 
   const onMove = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (isFlipped) return;
     const rect = ref.current?.getBoundingClientRect();
     if (!rect) return;
     const nx = (e.clientX - rect.left) / rect.width;
     const ny = (e.clientY - rect.top)  / rect.height;
-    setTilt({ x: (ny - .5) * -22, y: (nx - .5) * 22 });
+    setTilt({ x: (ny - .5) * -20, y: (nx - .5) * 20 });
     setShine({ x: nx * 100, y: ny * 100 });
   };
+
+  const gradient = BRAND_GRADIENT[brand] || "linear-gradient(135deg,#6d28d9 0%,#4f46e5 45%,#2563eb 100%)";
+  const displayName = name.trim().toUpperCase() || "NOME NO CARTÃO";
+
+  const wrapTransform = isFlipped
+    ? "perspective(1200px) rotateY(180deg)"
+    : hovered
+      ? `perspective(1200px) rotateX(${tilt.x}deg) rotateY(${tilt.y}deg) scale(1.04)`
+      : "perspective(1200px) rotateX(3deg) rotateY(-3deg)";
 
   return (
     <>
@@ -118,71 +168,95 @@ function Card3D() {
         ref={ref}
         onMouseMove={onMove}
         onMouseEnter={() => setHovered(true)}
-        onMouseLeave={() => { setHovered(false); setTilt({ x:0, y:0 }); setShine({ x:50, y:50 }); }}
-        style={{ perspective: 1000, marginBottom: 20, userSelect: "none" }}
+        onMouseLeave={() => { setHovered(false); setTilt({x:0,y:0}); setShine({x:50,y:50}); }}
+        style={{ perspective: 1200, marginBottom: 22, userSelect:"none" }}
       >
         <div
-          className={hovered ? "card-3d-hover" : "card-3d-idle"}
-          style={{
-            width: "100%", height: 160, borderRadius: 20,
-            background: "linear-gradient(135deg,#6d28d9 0%,#4f46e5 45%,#2563eb 100%)",
-            transform: hovered
-              ? `perspective(900px) rotateX(${tilt.x}deg) rotateY(${tilt.y}deg) scale(1.04)`
-              : undefined,
-            position: "relative", overflow: "hidden", cursor: "default",
-          }}
+          className={`card-wrap ${!isFlipped && !hovered ? "card-wrap-idle" : ""}`}
+          style={{ width:"100%", height:178, position:"relative", transform: wrapTransform }}
         >
-          {/* Grid de fundo */}
-          <div style={{ position:"absolute", inset:0, backgroundImage:"linear-gradient(rgba(255,255,255,.06) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.06) 1px,transparent 1px)", backgroundSize:"32px 32px" }} />
 
-          {/* Holo overlay */}
-          <div className="card-holo" style={{ position:"absolute", inset:0 }} />
+          {/* ── FRENTE ── */}
+          <div className="card-face" style={{ background: gradient, boxShadow:"0 24px 64px rgba(100,50,220,.5)" }}>
+            {/* Grid */}
+            <div style={{ position:"absolute", inset:0, backgroundImage:"linear-gradient(rgba(255,255,255,.06) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.06) 1px,transparent 1px)", backgroundSize:"32px 32px" }} />
+            {/* Holo */}
+            <div className="card-holo" style={{ position:"absolute", inset:0 }} />
+            {/* Shine seguindo rato */}
+            <div style={{
+              position:"absolute", inset:0,
+              background:`radial-gradient(ellipse at ${shine.x}% ${shine.y}%, rgba(255,255,255,.3) 0%, rgba(255,255,255,.06) 40%, transparent 65%)`,
+              opacity: hovered ? 1 : 0.4, transition: hovered ? "none" : "opacity .4s",
+            }} />
+            {/* Shimmer */}
+            <div className="card-shine" style={{ position:"absolute", inset:0 }} />
 
-          {/* Shine seguindo o rato */}
-          <div style={{
-            position:"absolute", inset:0, borderRadius:20,
-            background:`radial-gradient(ellipse at ${shine.x}% ${shine.y}%, rgba(255,255,255,.28) 0%, rgba(255,255,255,.06) 40%, transparent 65%)`,
-            transition: hovered ? "none" : "opacity .4s",
-            opacity: hovered ? 1 : 0.4,
-          }} />
+            {/* Chip */}
+            <div style={{ position:"absolute", top:22, left:24, width:42, height:32, borderRadius:7, background:"linear-gradient(135deg,#fbbf24,#f59e0b,#d97706)", boxShadow:"0 2px 8px rgba(0,0,0,.4)", overflow:"hidden", display:"flex", flexDirection:"column", justifyContent:"space-around", padding:"4px 0" }}>
+              {[0,1,2].map(i => <div key={i} style={{ height:1, background:"rgba(0,0,0,.2)" }} />)}
+            </div>
 
-          {/* Shimmer contínuo */}
-          <div className="card-shine" style={{ position:"absolute", inset:0 }} />
+            {/* Contactless */}
+            <div style={{ position:"absolute", top:24, right:24, display:"flex", flexDirection:"column", gap:1, alignItems:"flex-end" }}>
+              {[6,10,14].map((s,i) => (
+                <div key={i} style={{ width:s, height:s, borderRadius:"50%", border:"1.5px solid rgba(255,255,255,.6)", borderTopColor:"transparent", borderLeftColor:"transparent" }} />
+              ))}
+            </div>
 
-          {/* Chip */}
-          <div style={{
-            position:"absolute", top:22, left:22,
-            width:40, height:30, borderRadius:6,
-            background:"linear-gradient(135deg,#fbbf24,#f59e0b,#d97706)",
-            boxShadow:"0 2px 8px rgba(0,0,0,.35)",
-            display:"flex", alignItems:"center", justifyContent:"center", overflow:"hidden",
-          }}>
-            <div style={{ width:"100%", height:1, background:"rgba(0,0,0,.15)" }} />
+            {/* Número — 4 grupos */}
+            <div style={{ position:"absolute", bottom:44, left:24, display:"flex", gap:12 }}>
+              {["••••","••••","••••","••••"].map((grp, i) => (
+                <span
+                  key={i}
+                  className={focused === "number" ? "card-num-active" : ""}
+                  style={{
+                    color: focused === "number" ? "#fff" : "rgba(255,255,255,.75)",
+                    fontSize:14, fontWeight:700, letterSpacing:3,
+                    fontFamily:"monospace", textShadow:"0 1px 4px rgba(0,0,0,.3)",
+                    animationDelay:`${i * .15}s`,
+                    transition:"color .3s",
+                  }}
+                >
+                  {grp}
+                </span>
+              ))}
+            </div>
+
+            {/* Linha inferior: nome + validade + brand */}
+            <div style={{ position:"absolute", bottom:14, left:24, right:24, display:"flex", justifyContent:"space-between", alignItems:"flex-end" }}>
+              <div>
+                <div style={{ fontSize:8, color:"rgba(255,255,255,.4)", letterSpacing:1.5, marginBottom:2 }}>TITULAR</div>
+                <div style={{ fontSize:11, fontWeight:700, color: displayName === "NOME NO CARTÃO" ? "rgba(255,255,255,.4)" : "#fff", letterSpacing:1, maxWidth:160, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap", transition:"color .3s" }}>
+                  {displayName}
+                </div>
+              </div>
+              <div style={{ textAlign:"center" }}>
+                <div style={{ fontSize:8, color:"rgba(255,255,255,.4)", letterSpacing:1.5, marginBottom:2 }}>VALIDADE</div>
+                <div style={{ fontSize:11, fontWeight:700, color: focused === "expiry" ? "#fff" : "rgba(255,255,255,.5)", letterSpacing:1, transition:"color .3s" }}>
+                  MM / AA
+                </div>
+              </div>
+              <BrandLogo brand={brand} />
+            </div>
           </div>
 
-          {/* Ícone contactless */}
-          <div style={{ position:"absolute", top:22, right:22, fontSize:18, color:"rgba(255,255,255,.65)", lineHeight:1, letterSpacing:-2 }}>
-            <span style={{ display:"block", fontSize:7, marginBottom:1, opacity:.8 }}>(()</span>
-            <span style={{ display:"block", fontSize:11, marginBottom:1 }}>(())</span>
-            <span style={{ display:"block", fontSize:15 }}>((()))</span>
+          {/* ── VERSO (CVV) ── */}
+          <div className="card-face card-back" style={{ background:"linear-gradient(135deg,#1e1b4b,#312e81,#1e1b4b)" }}>
+            {/* Tira magnética */}
+            <div style={{ position:"absolute", top:28, left:0, right:0, height:42, background:"rgba(0,0,0,.85)" }} />
+            {/* Faixa assinatura + CVV */}
+            <div style={{ position:"absolute", top:84, left:24, right:24, height:34, background:"#f0ece8", borderRadius:4, display:"flex", alignItems:"center", justifyContent:"flex-end", padding:"0 12px", gap:12 }}>
+              <div style={{ flex:1, height:10, background:"repeating-linear-gradient(45deg,#ddd 0px,#ddd 4px,#fff 4px,#fff 8px)", borderRadius:2 }} />
+              <div style={{ background:"#fff", border:"1px solid #ddd", borderRadius:4, padding:"2px 10px", fontSize:13, fontWeight:900, letterSpacing:2, color:"#111", minWidth:44, textAlign:"center" }}>
+                •••
+              </div>
+            </div>
+            <div style={{ position:"absolute", top:124, right:24, fontSize:10, color:"rgba(255,255,255,.35)", letterSpacing:1 }}>CVV / CVC</div>
+            <div style={{ position:"absolute", bottom:18, right:24 }}>
+              <BrandLogo brand={brand} />
+            </div>
           </div>
 
-          {/* Número do cartão */}
-          <div style={{ position:"absolute", bottom:40, left:22, color:"rgba(255,255,255,.8)", fontSize:15, fontWeight:700, letterSpacing:5, fontFamily:"monospace", textShadow:"0 1px 4px rgba(0,0,0,.3)" }}>
-            ••••  ••••  ••••  ••••
-          </div>
-
-          {/* Nome + data */}
-          <div style={{ position:"absolute", bottom:14, left:22, right:22, display:"flex", justifyContent:"space-between", alignItems:"flex-end" }}>
-            <span style={{ color:"rgba(255,255,255,.5)", fontSize:10, fontWeight:600, letterSpacing:1.5, textTransform:"uppercase" }}>Nome no Cartão</span>
-            <span style={{ color:"rgba(255,255,255,.5)", fontSize:10, fontWeight:600, letterSpacing:1 }}>MM/AA</span>
-          </div>
-
-          {/* Logo Mastercard */}
-          <div style={{ position:"absolute", bottom:14, right:22, display:"flex" }}>
-            <div style={{ width:24, height:24, borderRadius:"50%", background:"rgba(235,68,68,.85)", marginRight:-8 }} />
-            <div style={{ width:24, height:24, borderRadius:"50%", background:"rgba(251,191,36,.85)" }} />
-          </div>
         </div>
       </div>
     </>
@@ -214,9 +288,15 @@ function PaymentForm({
   });
   const [error,      setError]      = useState("");
   const [processing, setProcessing] = useState(false);
-  const [cardReady,  setCardReady]  = useState(false);
   const [showPw,     setShowPw]     = useState(false);
   const [slowServer, setSlowServer] = useState(false);
+
+  const [cardBrand,    setCardBrand]    = useState("unknown");
+  const [focusedField, setFocusedField] = useState<"number"|"expiry"|"cvc"|null>(null);
+  const [numReady,  setNumReady]  = useState(false);
+  const [expReady,  setExpReady]  = useState(false);
+  const [cvcReady,  setCvcReady]  = useState(false);
+  const cardReady = numReady && expReady && cvcReady;
 
   const set = (f: keyof typeof form) =>
     (e: React.ChangeEvent<HTMLInputElement>) =>
@@ -247,7 +327,7 @@ function PaymentForm({
       }
       const { clientSecret } = await intentRes.json();
 
-      const cardEl = elements.getElement(CardElement);
+      const cardEl = elements.getElement(CardNumberElement);
       if (!cardEl) throw new Error("Elemento de cartão não encontrado.");
 
       const { error: stripeErr, paymentIntent } = await stripe.confirmCardPayment(clientSecret, {
@@ -354,20 +434,61 @@ function PaymentForm({
           Dados do cartão
         </p>
 
-        {/* Cartão 3D visual */}
-        <Card3D />
+        {/* Cartão 3D com dados em tempo real */}
+        <Card3D
+          name={isRenewal ? (user?.name || "") : form.name}
+          brand={cardBrand}
+          focused={focusedField}
+          isFlipped={focusedField === "cvc"}
+        />
 
-        <div className="border-2 border-gray-200 rounded-xl px-4 py-4 bg-white focus-within:border-purple-400 focus-within:shadow-sm transition-all">
-          <CardElement
-            options={CARD_STYLE}
-            onChange={(e) => { setCardReady(e.complete); setError(e.error?.message || ""); }}
-          />
+        {/* Número do cartão */}
+        <div>
+          <label style={{ display:"block", fontSize:12, fontWeight:600, color:"#6b7280", marginBottom:6 }}>Número do cartão</label>
+          <div className="border-2 rounded-xl px-4 py-3.5 bg-white transition-all"
+            style={{ borderColor: focusedField === "number" ? "#7c3aed" : "#e5e7eb", boxShadow: focusedField === "number" ? "0 0 0 3px rgba(124,58,237,.1)" : "none" }}>
+            <CardNumberElement
+              options={CARD_STYLE}
+              onChange={e => { setCardBrand(e.brand || "unknown"); setNumReady(e.complete); setError(e.error?.message || ""); }}
+              onFocus={() => setFocusedField("number")}
+              onBlur={() => setFocusedField(null)}
+            />
+          </div>
         </div>
-        <div className="flex items-center justify-between">
+
+        {/* Validade + CVV lado a lado */}
+        <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:12 }}>
+          <div>
+            <label style={{ display:"block", fontSize:12, fontWeight:600, color:"#6b7280", marginBottom:6 }}>Validade</label>
+            <div className="border-2 rounded-xl px-4 py-3.5 bg-white transition-all"
+              style={{ borderColor: focusedField === "expiry" ? "#7c3aed" : "#e5e7eb", boxShadow: focusedField === "expiry" ? "0 0 0 3px rgba(124,58,237,.1)" : "none" }}>
+              <CardExpiryElement
+                options={CARD_STYLE}
+                onChange={e => { setExpReady(e.complete); setError(e.error?.message || ""); }}
+                onFocus={() => setFocusedField("expiry")}
+                onBlur={() => setFocusedField(null)}
+              />
+            </div>
+          </div>
+          <div>
+            <label style={{ display:"block", fontSize:12, fontWeight:600, color:"#6b7280", marginBottom:6 }}>CVV</label>
+            <div className="border-2 rounded-xl px-4 py-3.5 bg-white transition-all"
+              style={{ borderColor: focusedField === "cvc" ? "#7c3aed" : "#e5e7eb", boxShadow: focusedField === "cvc" ? "0 0 0 3px rgba(124,58,237,.1)" : "none" }}>
+              <CardCvcElement
+                options={CARD_STYLE}
+                onChange={e => { setCvcReady(e.complete); setError(e.error?.message || ""); }}
+                onFocus={() => setFocusedField("cvc")}
+                onBlur={() => setFocusedField(null)}
+              />
+            </div>
+          </div>
+        </div>
+
+        <div className="flex items-center justify-between pt-1">
           <div className="flex items-center gap-2">
-            <img src="https://js.stripe.com/v3/fingerprinted/img/visa-365725566f9578a9589553aa9296d178.svg" alt="Visa" className="h-4 opacity-70" />
-            <img src="https://js.stripe.com/v3/fingerprinted/img/mastercard-4d8844094130711885b5e41b28c9848f.svg" alt="MC" className="h-4 opacity-70" />
-            <img src="https://js.stripe.com/v3/fingerprinted/img/amex-a49b82f46c5cd6a96a6e418a6ca1717c.svg" alt="Amex" className="h-4 opacity-70" />
+            <img src="https://js.stripe.com/v3/fingerprinted/img/visa-365725566f9578a9589553aa9296d178.svg" alt="Visa" className="h-4 opacity-60" />
+            <img src="https://js.stripe.com/v3/fingerprinted/img/mastercard-4d8844094130711885b5e41b28c9848f.svg" alt="MC" className="h-4 opacity-60" />
+            <img src="https://js.stripe.com/v3/fingerprinted/img/amex-a49b82f46c5cd6a96a6e418a6ca1717c.svg" alt="Amex" className="h-4 opacity-60" />
           </div>
           <span className="text-[11px] text-gray-400 flex items-center gap-1">
             <Lock className="w-3 h-3" /> SSL 256-bit
@@ -462,35 +583,38 @@ export function Subscribe() {
   const isRenewal = isAuthenticated && !isAccessActive && user?.plan === "monthly";
 
   return (
-    <div className="min-h-screen" style={{ background: "#f9f8ff", fontFamily: "system-ui,-apple-system,sans-serif" }}>
+    <div className="min-h-screen" style={{ background: "#f4f3ff", fontFamily: "system-ui,-apple-system,sans-serif" }}>
 
-      {/* ── Nav ── */}
-      <header style={{ background: "#fff", borderBottom: "1px solid #ede9fe" }}>
-        <div className="max-w-5xl mx-auto px-5 py-4 flex items-center justify-between">
-          <Link to="/" className="flex items-center gap-2" style={{ textDecoration: "none" }}>
-            <div style={{ width: 32, height: 32, borderRadius: 9, background: "linear-gradient(135deg,#7c3aed,#4f46e5)", display: "flex", alignItems: "center", justifyContent: "center" }}>
-              <GraduationCap size={16} color="#fff" />
-            </div>
-            <span style={{ fontWeight: 900, fontSize: 17, color: "#111" }}>NgadaLearn</span>
-          </Link>
-          <Link to="/login" style={{ fontSize: 13, fontWeight: 600, color: "#7c3aed", textDecoration: "none" }}>
-            Já tens conta? Entrar
-          </Link>
-        </div>
-      </header>
-
-      {/* ── Barra de confiança ── */}
-      <div style={{ background: "linear-gradient(135deg,#7c3aed,#4f46e5)" }}>
-        <div className="flex items-center justify-center gap-4 sm:gap-8 px-4 py-2.5 flex-wrap">
-          {[
-            { icon: Shield, label: "100% seguro" },
-            { icon: Check,  label: "Acesso imediato" },
-            { icon: Lock,   label: "Sem taxas ocultas" },
-          ].map(({ icon: Icon, label }) => (
-            <span key={label} className="flex items-center gap-1.5 text-white text-xs font-semibold">
-              <Icon className="w-3.5 h-3.5 opacity-80" /> {label}
+      {/* ── Hero topo ── */}
+      <div style={{ background: "linear-gradient(135deg,#07070f 0%,#1e1b4b 60%,#312e81 100%)", padding: "36px 24px 32px", textAlign: "center", position: "relative", overflow: "hidden" }}>
+        {/* blobs */}
+        <div style={{ position:"absolute", top:"-30%", left:"-10%", width:380, height:380, borderRadius:"50%", background:"radial-gradient(circle,rgba(124,58,237,.35) 0%,transparent 65%)", filter:"blur(70px)", pointerEvents:"none" }} />
+        <div style={{ position:"absolute", bottom:"-20%", right:"-8%", width:300, height:300, borderRadius:"50%", background:"radial-gradient(circle,rgba(79,70,229,.25) 0%,transparent 65%)", filter:"blur(80px)", pointerEvents:"none" }} />
+        <div style={{ position:"relative", zIndex:1 }}>
+          <div style={{ display:"inline-flex", alignItems:"center", gap:8, background:"rgba(167,139,250,.15)", border:"1px solid rgba(167,139,250,.3)", borderRadius:99, padding:"5px 16px", marginBottom:16 }}>
+            <div style={{ width:6, height:6, borderRadius:"50%", background:"#a78bfa", animation:"lg-pulse 2s ease-in-out infinite" }} />
+            <span style={{ fontSize:12, color:"#c4b5fd", fontWeight:700 }}>2.300+ alunos · 4.9★ · Acesso imediato</span>
+          </div>
+          <h1 style={{ fontSize:"clamp(22px,4vw,38px)", fontWeight:900, color:"#fff", margin:"0 0 10px", letterSpacing:"-0.5px", lineHeight:1.15 }}>
+            Investe na tua{" "}
+            <span style={{ background:"linear-gradient(135deg,#a78bfa,#60a5fa)", WebkitBackgroundClip:"text", WebkitTextFillColor:"transparent", backgroundClip:"text" }}>
+              fluência em inglês
             </span>
-          ))}
+          </h1>
+          <p style={{ fontSize:15, color:"rgba(255,255,255,.5)", maxWidth:420, margin:"0 auto 20px" }}>
+            Acesso completo ao curso — conversação, áudio com nativos e certificado.
+          </p>
+          <div style={{ display:"flex", alignItems:"center", justifyContent:"center", gap:20, flexWrap:"wrap" }}>
+            {[
+              { icon:"🔒", text:"100% seguro" },
+              { icon:"⚡", text:"Acesso imediato" },
+              { icon:"✓",  text:"Sem taxas ocultas" },
+            ].map(({ icon, text }) => (
+              <span key={text} style={{ fontSize:12, color:"rgba(255,255,255,.6)", fontWeight:600, display:"flex", alignItems:"center", gap:5 }}>
+                <span>{icon}</span>{text}
+              </span>
+            ))}
+          </div>
         </div>
       </div>
 
@@ -500,7 +624,7 @@ export function Subscribe() {
           <Button size="lg" onClick={() => setStep("payment")}
             className="w-full h-13 text-[15px] font-black rounded-2xl text-white"
             style={{ background: "linear-gradient(135deg,#7c3aed,#4f46e5)" }}>
-            Continuar com {plan.labelFull} — US$ {plan.price}{plan.period} →
+            Continuar — US$ {plan.price}{plan.period} →
           </Button>
           <p className="text-center text-xs text-gray-400 mt-2">
             Já tens conta?{" "}

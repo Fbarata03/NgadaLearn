@@ -30,11 +30,11 @@ jobs:
           node-version: '20'
 
       - name: Install dependencies
-        working-directory: 'Create README for NgadaLearn'
+        working-directory: 'frontend'
         run: npm ci
 
       - name: Build
-        working-directory: 'Create README for NgadaLearn'
+        working-directory: 'frontend'
         env:
           VITE_STRIPE_PUBLIC_KEY: ${{ secrets.VITE_STRIPE_PUBLIC_KEY }}
           VITE_API_URL: ${{ secrets.VITE_API_URL }}
@@ -43,7 +43,7 @@ jobs:
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: 'Create README for NgadaLearn/dist'
+          path: 'frontend/dist'
 
   deploy:
     environment:

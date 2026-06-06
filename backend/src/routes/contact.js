@@ -7,7 +7,7 @@
 ════════════════════════════════════════════════════════════════════ */
 
 const express = require("express");
-const { verifyToken, requireAdmin } = require("../middleware/auth");
+const { authenticate, requireAdmin } = require("../middleware/authMiddleware");
 const {
   createContactMessage,
   getContactMessages,
@@ -36,7 +36,7 @@ router.post("/", async (req, res) => {
 });
 
 /* ── Listar mensagens — só admin ── */
-router.get("/", verifyToken, requireAdmin, async (req, res) => {
+router.get("/", authenticate, requireAdmin, async (req, res) => {
   try {
     const messages = await getContactMessages();
     res.json({ messages });
@@ -46,7 +46,7 @@ router.get("/", verifyToken, requireAdmin, async (req, res) => {
 });
 
 /* ── Responder mensagem — só admin ── */
-router.post("/:id/reply", verifyToken, requireAdmin, async (req, res) => {
+router.post("/:id/reply", authenticate, requireAdmin, async (req, res) => {
   try {
     const id = parseInt(req.params.id, 10);
     const { reply } = req.body;
@@ -61,7 +61,7 @@ router.post("/:id/reply", verifyToken, requireAdmin, async (req, res) => {
 });
 
 /* ── Apagar mensagem — só admin ── */
-router.delete("/:id", verifyToken, requireAdmin, async (req, res) => {
+router.delete("/:id", authenticate, requireAdmin, async (req, res) => {
   try {
     const id = parseInt(req.params.id, 10);
     const ok = await deleteContactMessage(id);

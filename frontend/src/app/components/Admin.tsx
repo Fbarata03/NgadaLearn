@@ -13,10 +13,28 @@ import {
   Search,
   Filter,
   ShieldCheck,
+  MessageSquare,
+  Trash2,
+  Send,
+  ChevronDown,
+  ChevronUp,
 } from "lucide-react";
 import { Input } from "./ui/input";
 
 type FilterType = "all" | "lifetime" | "monthly_active" | "monthly_expired";
+type AdminTab = "users" | "contact";
+
+interface ContactMessage {
+  id: number;
+  name: string;
+  email: string;
+  subject: string;
+  message: string;
+  status: "novo" | "respondido";
+  admin_reply: string | null;
+  created_at: string;
+  replied_at: string | null;
+}
 
 function formatDate(iso: string) {
   return new Date(iso).toLocaleDateString("pt-PT", {
@@ -36,6 +54,9 @@ function daysLeft(user: User): number | null {
 
 export function Admin() {
   const { user: currentUser, token } = useAuth();
+  const [activeTab, setActiveTab] = useState<AdminTab>("users");
+
+  // ── Utilizadores ──────────────────────────────────────────────────
   const [search,   setSearch]   = useState("");
   const [filter,   setFilter]   = useState<FilterType>("all");
   const [allUsers, setAllUsers] = useState<User[]>([]);
@@ -56,6 +77,62 @@ export function Admin() {
       .catch(() => setLoadErr("Sem ligação ao servidor."))
       .finally(() => setLoading(false));
   }, [token]);
+
+  // ── Mensagens de contacto ─────────────────────────────────────────
+  const [messages,    setMessages]    = useState<ContactMessage[]>([]);
+  const [msgLoading,  setMsgLoading]  = useState(false);
+  const [msgErr,      setMsgErr]      = useState("");
+  const [expandedId,  setExpandedId]  = useState<number | null>(null);
+  const [replyText,   setReplyText]   = useState<Record<number, string>>({});
+  const [replySending, setReplySending] = useState<number | null>(null);
+
+  useEffect(() => {
+    if (!token || activeTab !== "contact") return;
+    setMsgLoading(true);
+    setMsgErr("");
+    fetch(`${API_URL}/api/contact`, {
+      headers: { Authorization: `Bearer ${token}` },
+    })
+      .then((r) => r.json())
+      .then((d) => {
+        if (d.messages) setMessages(d.messages);
+        else setMsgErr("Erro ao carregar mensagens.");
+      })
+      .catch(() => setMsgErr("Sem ligação ao servidor."))
+      .finally(() => setMsgLoading(false));
+  }, [token, activeTab]);
+
+  async function handleReply(id: number) {
+    const text = replyText[id]?.trim();
+    if (!text) return;
+    setReplySending(id);
+    try {
+      const r = await fetch(`${API_URL}/api/contact/${id}/reply`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ reply: text }),
+      });
+      const d = await r.json();
+      if (d.success) {
+        setMessages((prev) => prev.map((m) => m.id === id ? { ...m, ...d.message, status: "respondido" } : m));
+        setReplyText((prev) => ({ ...prev, [id]: "" }));
+      }
+    } finally {
+      setReplySending(null);
+    }
+  }
+
+  async function handleDelete(id: number) {
+    if (!confirm("Apagar esta mensagem?")) return;
+    const r = await fetch(`${API_URL}/api/contact/${id}`, {
+      method: "DELETE",
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    if ((await r.json()).success) {
+      setMessages((prev) => prev.filter((m) => m.id !== id));
+      if (expandedId === id) setExpandedId(null);
+    }
+  }
 
   if (loadErr) {
     return (
@@ -104,6 +181,8 @@ export function Admin() {
     { key: "monthly_expired", label: "Mensal Expirado", count: monthlyExpired, color: "bg-red-100 text-red-700" },
   ];
 
+  const newMessages = messages.filter((m) => m.status === "novo").length;
+
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header do painel */}
@@ -113,7 +192,7 @@ export function Admin() {
             <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7"/></svg>
             Meu Progresso
           </Link>
-          <div className="flex items-center gap-3 mb-1">
+          <div className="flex items-center gap-3 mb-4">
             <div className="w-10 h-10 bg-purple-100 rounded-xl flex items-center justify-center">
               <ShieldCheck className="w-5 h-5 text-purple-700" />
             </div>
@@ -124,10 +203,138 @@ export function Admin() {
               </p>
             </div>
           </div>
+          {/* Tabs */}
+          <div className="flex gap-1 border-b -mb-[1px]">
+            <button
+              onClick={() => setActiveTab("users")}
+              className={`flex items-center gap-2 px-4 py-2.5 text-sm font-semibold border-b-2 transition-colors ${
+                activeTab === "users"
+                  ? "border-purple-600 text-purple-700"
+                  : "border-transparent text-gray-500 hover:text-gray-700"
+              }`}
+            >
+              <Users className="w-4 h-4" /> Utilizadores
+            </button>
+            <button
+              onClick={() => setActiveTab("contact")}
+              className={`flex items-center gap-2 px-4 py-2.5 text-sm font-semibold border-b-2 transition-colors ${
+                activeTab === "contact"
+                  ? "border-purple-600 text-purple-700"
+                  : "border-transparent text-gray-500 hover:text-gray-700"
+              }`}
+            >
+              <MessageSquare className="w-4 h-4" /> Contacto
+              {newMessages > 0 && (
+                <span className="bg-red-500 text-white text-xs font-bold px-1.5 py-0.5 rounded-full">
+                  {newMessages}
+                </span>
+              )}
+            </button>
+          </div>
         </div>
       </div>
 
       <div className="container mx-auto px-4 py-8">
+        {/* ── Tab: Contacto ─────────────────────────────────────────── */}
+        {activeTab === "contact" && (
+          <div>
+            {msgLoading && (
+              <div className="flex items-center justify-center py-16">
+                <div className="animate-spin rounded-full h-8 w-8 border-2 border-purple-600 border-t-transparent" />
+              </div>
+            )}
+            {msgErr && <p className="text-center text-red-500 py-8">{msgErr}</p>}
+            {!msgLoading && !msgErr && messages.length === 0 && (
+              <div className="text-center py-16 text-gray-400">
+                <MessageSquare className="w-12 h-12 mx-auto mb-3 opacity-30" />
+                <p className="font-medium">Nenhuma mensagem de contacto</p>
+              </div>
+            )}
+            {!msgLoading && !msgErr && messages.length > 0 && (
+              <div className="space-y-3">
+                {messages.map((m) => (
+                  <div key={m.id} className="bg-white rounded-2xl border shadow-sm overflow-hidden">
+                    {/* Cabeçalho */}
+                    <button
+                      onClick={() => setExpandedId(expandedId === m.id ? null : m.id)}
+                      className="w-full flex items-center gap-3 px-5 py-4 text-left hover:bg-gray-50 transition-colors"
+                    >
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className="font-semibold text-gray-900 text-sm">{m.name}</span>
+                          <span className="text-xs text-gray-400">{m.email}</span>
+                          {m.status === "novo" ? (
+                            <span className="bg-blue-100 text-blue-700 text-xs font-bold px-2 py-0.5 rounded-full">Novo</span>
+                          ) : (
+                            <span className="bg-green-100 text-green-700 text-xs font-bold px-2 py-0.5 rounded-full">Respondido</span>
+                          )}
+                        </div>
+                        <p className="text-sm text-gray-600 mt-0.5 truncate">{m.subject}</p>
+                      </div>
+                      <div className="flex items-center gap-2 flex-shrink-0">
+                        <span className="text-xs text-gray-400">
+                          {new Date(m.created_at).toLocaleDateString("pt-PT")}
+                        </span>
+                        {expandedId === m.id ? (
+                          <ChevronUp className="w-4 h-4 text-gray-400" />
+                        ) : (
+                          <ChevronDown className="w-4 h-4 text-gray-400" />
+                        )}
+                      </div>
+                    </button>
+
+                    {/* Conteúdo expandido */}
+                    {expandedId === m.id && (
+                      <div className="px-5 pb-5 border-t bg-gray-50/50">
+                        <p className="text-sm text-gray-700 whitespace-pre-wrap mt-4">{m.message}</p>
+
+                        {m.admin_reply && (
+                          <div className="mt-4 bg-purple-50 border border-purple-100 rounded-xl p-4">
+                            <p className="text-xs font-semibold text-purple-700 mb-1">Resposta enviada</p>
+                            <p className="text-sm text-gray-700 whitespace-pre-wrap">{m.admin_reply}</p>
+                          </div>
+                        )}
+
+                        <div className="mt-4 flex gap-2">
+                          <textarea
+                            value={replyText[m.id] ?? ""}
+                            onChange={(e) => setReplyText((prev) => ({ ...prev, [m.id]: e.target.value }))}
+                            placeholder={m.admin_reply ? "Actualizar resposta..." : "Escrever resposta..."}
+                            rows={3}
+                            className="flex-1 text-sm border rounded-xl px-3 py-2 resize-none focus:outline-none focus:ring-2 focus:ring-purple-400"
+                          />
+                          <div className="flex flex-col gap-2">
+                            <button
+                              onClick={() => handleReply(m.id)}
+                              disabled={!replyText[m.id]?.trim() || replySending === m.id}
+                              className="flex items-center gap-1.5 px-3 py-2 bg-purple-600 text-white text-xs font-semibold rounded-xl hover:bg-purple-700 disabled:opacity-40 transition-colors"
+                            >
+                              <Send className="w-3.5 h-3.5" />
+                              {replySending === m.id ? "..." : "Enviar"}
+                            </button>
+                            <button
+                              onClick={() => handleDelete(m.id)}
+                              className="flex items-center gap-1.5 px-3 py-2 bg-red-50 text-red-600 text-xs font-semibold rounded-xl hover:bg-red-100 transition-colors"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                              Apagar
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+            <p className="text-center text-xs text-gray-400 mt-6">
+              Dados em tempo real via Neon PostgreSQL · Painel restrito a administradores
+            </p>
+          </div>
+        )}
+
+        {/* ── Tab: Utilizadores ─────────────────────────────────────── */}
+        {activeTab === "users" && (<>
         {/* Cards de estatísticas */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
           <StatCard
@@ -257,6 +464,7 @@ export function Admin() {
         <p className="text-center text-xs text-gray-400 mt-6">
           Dados em tempo real via Neon PostgreSQL · Painel restrito a administradores
         </p>
+        </>)}
       </div>
     </div>
   );

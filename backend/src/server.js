@@ -15,6 +15,7 @@ const paymentRoutes = require("./routes/payments");
 const youtubeRoutes = require("./routes/youtube");
 const lyricsRoutes  = require("./routes/lyrics");
 const deepgramRoutes = require("./routes/deepgram");
+const contactRoutes  = require("./routes/contact");
 const { initDB }    = require("./utils/dataStore");
 const { seed }      = require("./scripts/seed");
 
@@ -83,6 +84,7 @@ app.use("/api/payments", paymentLimiter, paymentRoutes);
 app.use("/api/youtube",  youtubeRoutes);
 app.use("/api/lyrics",   lyricsRoutes);
 app.use("/api",         deepgramRoutes);
+app.use("/api/contact", contactRoutes);
 
 // ── Health check ──────────────────────────────────────────────────
 app.get("/api/health", (_req, res) => {

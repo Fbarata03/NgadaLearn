@@ -119,8 +119,8 @@ const CURATED: {
 
 const GENRES = ["Todos","Drama","Acção","Sci-Fi","Animação"];
 
-/* ── Legendas pré-carregadas para filmes curados ──────────────── */
-const MOVIE_SUBTITLES: Record<string, string> = {
+/* ── (legendas estáticas removidas — usar CC automático em tempo real) ── */
+const _UNUSED = {
   "Forrest Gump": [
     "My mama always said life was like a box of chocolates.",
     "You never know what you're gonna get.",
@@ -590,21 +590,15 @@ export function MoviesPlayer() {
   const errorTimeout   = useRef<ReturnType<typeof setTimeout>|null>(null);
   const skipTimeoutRef = useRef<ReturnType<typeof setTimeout>|null>(null);
 
-  /* Vocabulário + Frases + Notas */
+  /* Vocabulário + Frases */
   const [vocabWord,   setVocabWord]   = useState("");
   const [vocabTrans,  setVocabTrans]  = useState("");
   const [savedVocab,  setSavedVocab]  = useState<SavedPhrase[]>([]);
   const [phraseEn,    setPhraseEn]    = useState("");
   const [phrasePt,    setPhrasePt]    = useState("");
   const [savedPhrases,setSavedPhrases] = useState<SavedPhrase[]>([]);
-  const [notes,       setNotes]       = useState("");
-  const [tab,         setTab]         = useState<"vocab"|"phrases"|"notes"|"subs">("vocab");
+  const [tab,         setTab]         = useState<"vocab"|"phrases"|"filmes">("vocab");
   const nextId = useRef(0);
-
-  /* Legendas manuais animadas */
-  const [subRaw,    setSubRaw]    = useState("");
-  const [subLines,  setSubLines]  = useState<string[]>([]);
-  const [activeSub, setActiveSub] = useState(0);
 
   /* Legendas temporizadas (tempo real) */
   const [transcript,   setTranscript]   = useState<TimedSub[]>([]);
@@ -763,15 +757,6 @@ export function MoviesPlayer() {
     return () => { if (liveTimerRef.current) clearInterval(liveTimerRef.current); };
   }, [isPlaying, transcript]);
 
-  /* ── Auto-avançar legendas manuais quando não há transcript ─────── */
-  useEffect(() => {
-    if (!isPlaying || !subLines.length || transcript.length > 0) return;
-    const interval = setInterval(() => {
-      setActiveSub(p => (p < subLines.length - 1 ? p + 1 : p));
-    }, 5500);
-    return () => clearInterval(interval);
-  }, [isPlaying, subLines.length, transcript.length]);
-
   /* ── Cleanup ─────────────────────────────────────────────────── */
   useEffect(() => () => {
     try { ytPlayer.current?.destroy(); } catch(_) {}
@@ -784,26 +769,6 @@ export function MoviesPlayer() {
     speedRef.current = speed;
     try { ytPlayer.current?.setPlaybackRate(speed); } catch(_) {}
   }, [speed]);
-
-  /* ── Parse de legendas quando o texto muda ────────────────────── */
-  useEffect(() => {
-    const ls = subRaw.split("\n").map(l => l.trim()).filter(Boolean);
-    setSubLines(ls);
-    setActiveSub(0);
-  }, [subRaw]);
-
-  /* ── Navegação ← → por teclado para legendas ───────────────────── */
-  useEffect(() => {
-    if (!subLines.length) return;
-    function onKey(e: KeyboardEvent) {
-      const tag = (e.target as HTMLElement).tagName;
-      if (tag === "TEXTAREA" || tag === "INPUT") return;
-      if (e.key === "ArrowRight") setActiveSub(p => Math.min(subLines.length - 1, p + 1));
-      if (e.key === "ArrowLeft")  setActiveSub(p => Math.max(0, p - 1));
-    }
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, [subLines.length]);
 
   /* ── Pesquisa ────────────────────────────────────────────────── */
   const searchClips = useCallback(async (raw: string) => {
@@ -882,351 +847,318 @@ export function MoviesPlayer() {
   /* ════════════════════════════════════════════════════════════════
      RENDER
   ════════════════════════════════════════════════════════════════ */
+
+  /* Lista de filmes — reutilizada desktop+mobile */
+  const MovieList = () => (
+    <div className="flex flex-col gap-2 h-full">
+      <form onSubmit={e=>{e.preventDefault();searchClips(query);}}
+        className="flex-shrink-0 bg-white/8 backdrop-blur rounded-2xl p-3 space-y-2.5 border border-amber-500/10">
+        <label className="block text-[11px] font-bold text-amber-300 uppercase tracking-widest">🔍 Pesquisar</label>
+        <div className="flex gap-2">
+          <input value={query} onChange={e=>setQuery(e.target.value)}
+            placeholder="Forrest Gump, Matrix…"
+            className="flex-1 bg-white/10 border border-white/15 rounded-xl px-3 py-2.5 text-sm placeholder-white/35 focus:outline-none focus:border-amber-400 transition-colors" />
+          <button type="submit" disabled={loading} style={{touchAction:'manipulation'}}
+            className="bg-amber-600 hover:bg-amber-500 disabled:opacity-50 px-4 min-h-[44px] rounded-xl text-sm font-bold transition-colors">
+            {loading?"…":"Ir"}
+          </button>
+        </div>
+        <p className="text-[10px] text-amber-400/60">✅ Filtra reacções, paródias e análises automaticamente</p>
+      </form>
+
+      {/* Filmes recomendados */}
+      <div className="flex-shrink-0 bg-white/8 backdrop-blur rounded-2xl p-3 border border-amber-500/10">
+        <div className="flex items-center justify-between mb-2">
+          <p className="text-[11px] font-bold text-amber-300 uppercase tracking-widest">🎞️ Recomendados</p>
+          <div className="flex gap-1 overflow-x-auto overscroll-x-contain">
+            {GENRES.map(g=>(
+              <button key={g} onClick={()=>setGenreFilter(g)} style={{touchAction:'manipulation'}}
+                className={`text-[10px] px-2.5 py-1 min-h-[30px] rounded-full transition-colors font-semibold flex-shrink-0 ${
+                  genreFilter===g?"bg-amber-600 text-white":"bg-white/10 text-white/55 hover:text-white"
+                }`}>{g}</button>
+            ))}
+          </div>
+        </div>
+        <div className="space-y-1 max-h-40 overflow-y-auto overscroll-contain pr-1">
+          {filteredCurated.map(m=>(
+            <button key={m.label}
+              onClick={()=>{setQuery(m.label);searchClips(m.query);}}
+              style={{touchAction:'manipulation'}}
+              className="w-full text-left flex items-center gap-2 p-2 rounded-xl bg-white/4 hover:bg-amber-600/20 border border-transparent hover:border-amber-500/25 transition-all">
+              <span className="text-base flex-shrink-0">{m.icon}</span>
+              <div className="flex-1 min-w-0">
+                <p className="text-xs font-bold truncate">{m.label}</p>
+                <p className="text-[10px] text-white/40 truncate">{m.tip}</p>
+              </div>
+              <span className={`text-[9px] px-1.5 py-0.5 rounded border flex-shrink-0 ${DIFF_COLOR[m.diff]}`}>
+                {m.diff==="Iniciante"?"A1":m.diff==="Intermediário"?"B1":"C1"}
+              </span>
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {searchErr && (
+        <div className="flex-shrink-0 bg-red-500/15 border border-red-400/30 rounded-xl p-2 text-xs text-red-300">⚠️ {searchErr}</div>
+      )}
+
+      <div className="flex-1 overflow-y-auto overscroll-contain space-y-1.5 pr-1">
+        {loading && (
+          <div className="flex flex-col items-center py-8 gap-3">
+            <div className="flex items-end gap-1">
+              {EQ_CLS.map((cls,i)=>(
+                <div key={i} className={cls} style={{width:6,backgroundColor:EQ_COL[i],borderRadius:3,minHeight:3}} />
+              ))}
+            </div>
+            <p className="text-xs text-amber-300">A filtrar…</p>
+          </div>
+        )}
+        {!loading && results.map(clip=>{
+          const active=selected?.id===clip.id;
+          return (
+            <button key={clip.id}
+              onClick={()=>{setSelected(clip);setIsPlaying(false);setVidError(false);}}
+              style={{touchAction:'manipulation'}}
+              className={`w-full text-left flex gap-3 p-3 rounded-xl transition-all border ${
+                active
+                  ? "bg-amber-600/35 border-amber-400/60 shadow-lg shadow-amber-900/30"
+                  : "bg-white/4 hover:bg-white/8 border-transparent hover:border-amber-500/20"
+              }`}>
+              <div className="relative flex-shrink-0">
+                <img src={clip.thumbnail} alt=""
+                  className="w-16 h-11 object-cover rounded-lg" loading="lazy" />
+                {active&&isPlaying&&(
+                  <div className="absolute inset-0 bg-black/55 rounded-lg flex items-center justify-center">
+                    <div className="flex items-end gap-0.5" style={{height:12}}>
+                      {["meq1","meq3","meq5"].map(cls=>(
+                        <div key={cls} className={cls} style={{width:2,backgroundColor:"#fbbf24",borderRadius:2,minHeight:2}} />
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+              <div className="overflow-hidden flex-1">
+                <p className="text-xs font-semibold line-clamp-2 leading-snug text-white">
+                  {clip.title.replace(/&#39;/g,"'").replace(/&amp;/g,"&").replace(/&quot;/g,'"')}
+                </p>
+                <p className="text-[11px] text-amber-300/70 mt-1 truncate">
+                  {clip.channel.replace(/&#39;/g,"'").replace(/&amp;/g,"&")}
+                </p>
+                {clip.isOfficial&&(
+                  <span className="text-[9px] bg-amber-500/20 text-amber-300 px-1.5 py-0.5 rounded-full mt-0.5 inline-block">✓ Oficial</span>
+                )}
+              </div>
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+
   return (
     <>
       <style>{ANIM}</style>
 
-      {/* Popup de palavra clicada */}
+      {/* Popup de palavra */}
       {wordPopup && (
         <>
-          <div className="fixed inset-0 z-[9998]" onClick={() => setWordPopup(null)} />
+          <div className="fixed inset-0 z-[9998]" onClick={()=>setWordPopup(null)} />
           <WordPopup
             word={wordPopup.word}
-            pos={{ x: wordPopup.x, y: wordPopup.y }}
-            onSave={w => {
-              setSavedVocab(p => [...p, { id: nextId.current++, en: w, pt: "" }]);
-              setTab("vocab");
-            }}
-            onClose={() => setWordPopup(null)}
+            pos={{x:wordPopup.x,y:wordPopup.y}}
+            onSave={w=>{setSavedVocab(p=>[...p,{id:nextId.current++,en:w,pt:""}]);setTab("vocab");}}
+            onClose={()=>setWordPopup(null)}
           />
         </>
       )}
 
-      <div className="min-h-screen lg:h-[calc(100vh-4rem)] flex flex-col bg-gradient-to-br from-slate-950 via-amber-950/20 to-slate-950 text-white lg:overflow-hidden">
+      <div className="flex flex-col bg-gradient-to-br from-slate-950 via-amber-950/15 to-slate-950 text-white"
+        style={{minHeight:'100dvh', paddingBottom:'env(safe-area-inset-bottom)'}}>
 
-        {/* Header — compacto */}
-        <div className="flex-shrink-0 bg-gradient-to-r from-amber-800 via-orange-800 to-amber-900 px-4 shadow-xl" style={{height:48}}>
+        {/* Header */}
+        <div className="flex-shrink-0 bg-gradient-to-r from-amber-800 via-orange-800 to-amber-900 px-4 shadow-xl"
+          style={{height:52, paddingTop:'env(safe-area-inset-top)'}}>
           <div className="max-w-7xl mx-auto h-full relative flex items-center justify-center">
-            <Link to="/lessons" className="absolute left-0 flex items-center gap-1.5 text-amber-200 hover:text-white transition-colors min-h-[44px] px-1">
-              <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7"/></svg>
-              <span className="text-sm font-semibold hidden sm:inline">Conteúdo</span>
+            <Link to="/lessons"
+              className="absolute left-0 flex items-center gap-1.5 text-amber-200 hover:text-white transition-colors px-2"
+              style={{minHeight:44,minWidth:44,touchAction:'manipulation'}}>
+              <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7"/>
+              </svg>
+              <span className="text-sm font-semibold hidden sm:inline">Voltar</span>
             </Link>
             <div className="flex items-center gap-2">
-              <span className="text-xl">🎬</span>
-              <h1 className="text-sm sm:text-lg font-black tracking-tight">Filmes para Aprender Inglês</h1>
-              <span className="text-xl">🎬</span>
+              <span className="text-lg">🎬</span>
+              <h1 className="text-sm sm:text-base font-black tracking-tight">Filmes · Inglês</h1>
             </div>
           </div>
         </div>
 
-        <div className="flex-1 lg:min-h-0 max-w-7xl mx-auto w-full px-3 py-2 grid grid-cols-1 lg:grid-cols-3 gap-3">
+        <div className="flex-1 max-w-7xl mx-auto w-full px-3 py-2 lg:grid lg:grid-cols-3 lg:gap-3 lg:overflow-hidden lg:min-h-0">
 
-          {/* ── COLUNA ESQUERDA ──────────────────────────────────── */}
-          <div className="lg:col-span-1 flex flex-col lg:min-h-0 gap-2 order-2 lg:order-1">
-
-            {/* Pesquisa */}
-            <form onSubmit={e=>{e.preventDefault();searchClips(query);}}
-              className="flex-shrink-0 bg-white/8 backdrop-blur rounded-xl p-3 space-y-2 border border-amber-500/10">
-              <label className="block text-xs font-bold text-amber-300 uppercase tracking-widest">
-                🔍 Pesquisar Cenas de Filmes
-              </label>
-              <div className="flex gap-2">
-                <input value={query} onChange={e=>setQuery(e.target.value)}
-                  placeholder="Ex: Forrest Gump, Inception…"
-                  className="flex-1 bg-white/10 border border-white/15 rounded-lg px-3 py-2 text-sm placeholder-white/35 focus:outline-none focus:border-amber-400 transition-colors" />
-                <button type="submit" disabled={loading}
-                  className="bg-amber-600 hover:bg-amber-500 disabled:opacity-50 px-4 py-2 rounded-lg text-sm font-bold transition-colors">
-                  {loading ? "…" : "Ir"}
-                </button>
-              </div>
-              <p className="text-[10px] text-amber-400/70">
-                ✅ Filtro automático: exclui reacções, paródias e análises
-              </p>
-            </form>
-
-            {/* Sugestões curadas — compacto */}
-            <div className="flex-shrink-0 bg-white/8 backdrop-blur rounded-xl p-3 border border-amber-500/10">
-              <div className="flex items-center justify-between mb-2">
-                <p className="text-xs font-bold text-amber-300 uppercase tracking-widest">🎞️ Recomendados</p>
-                <div className="flex gap-1 overflow-x-auto scrollbar-hide overscroll-x-contain pb-0.5">
-                  {GENRES.map(g => (
-                    <button key={g} onClick={()=>setGenreFilter(g)}
-                      className={`text-[10px] px-2 py-1.5 min-h-[28px] rounded-full transition-colors font-semibold flex-shrink-0 ${
-                        genreFilter===g ? "bg-amber-600 text-white" : "bg-white/10 text-white/60 hover:text-white"
-                      }`}>{g}</button>
-                  ))}
-                </div>
-              </div>
-              <div className="space-y-1 max-h-44 overflow-y-auto pr-1">
-                {filteredCurated.map(m => (
-                  <button key={m.label}
-                    onClick={()=>{
-                      setQuery(m.label); searchClips(m.query);
-                      const subs = MOVIE_SUBTITLES[m.label];
-                      if (subs) { setSubRaw(subs); setActiveSub(0); setTab("subs"); }
-                    }}
-                    className="w-full text-left flex items-center gap-2 p-1.5 rounded-lg bg-white/5 hover:bg-amber-600/20 border border-transparent hover:border-amber-500/30 transition-all">
-                    <span className="text-sm flex-shrink-0">{m.icon}</span>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-xs font-bold truncate">{m.label}</p>
-                    </div>
-                    <div className="flex gap-1 flex-shrink-0">
-                      <span className={`text-[9px] px-1 py-0.5 rounded border ${DIFF_COLOR[m.diff]}`}>
-                        {m.diff === "Iniciante" ? "A1" : m.diff === "Intermediário" ? "B1" : "C1"}
-                      </span>
-                      {MOVIE_SUBTITLES[m.label] && (
-                        <span className="text-[9px] bg-amber-500/20 text-amber-300 px-1 py-0.5 rounded font-bold">CC</span>
-                      )}
-                    </div>
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* Resultados — flex-1 scrollável */}
-            {searchErr && (
-              <div className="bg-red-500/15 border border-red-400/30 rounded-xl p-2 text-xs text-red-300 flex-shrink-0">
-                ⚠️ {searchErr}
-              </div>
-            )}
-
-            <div className="max-h-[45vh] lg:max-h-none lg:flex-1 lg:min-h-0 overflow-y-auto space-y-1.5 pr-1">
-              {loading && (
-                <div className="text-center py-6">
-                  <div className="flex justify-center gap-1 mb-2">
-                    {EQ_CLS.map((cls,i) => (
-                      <div key={i} className={cls} style={{width:6,backgroundColor:EQ_COL[i],borderRadius:3,minHeight:3}} />
-                    ))}
-                  </div>
-                  <p className="text-xs text-amber-300">A filtrar…</p>
-                </div>
-              )}
-
-              {!loading && results.map(clip => {
-                const active = selected?.id === clip.id;
-                return (
-                  <button key={clip.id} onClick={()=>{ setSelected(clip); setIsPlaying(false); setVidError(false); }}
-                    className={`w-full text-left flex gap-2.5 p-2.5 rounded-xl transition-all border ${
-                      active
-                        ? "bg-amber-600/40 border-amber-400 shadow-lg shadow-amber-900/40"
-                        : "bg-white/5 hover:bg-white/10 border-transparent hover:border-amber-500/20"
-                    }`}>
-                    <div className="relative flex-shrink-0">
-                      <img src={clip.thumbnail} alt=""
-                        className="w-16 h-11 object-cover rounded-lg" loading="lazy" />
-                      {active && isPlaying && (
-                        <div className="absolute inset-0 bg-black/50 rounded-lg flex items-center justify-center">
-                          <div className="flex items-end gap-0.5" style={{height:12}}>
-                            {["meq1","meq3","meq5"].map(cls => (
-                              <div key={cls} className={cls} style={{width:2,backgroundColor:"#fbbf24",borderRadius:2,minHeight:2}} />
-                            ))}
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                    <div className="overflow-hidden flex-1">
-                      <p className="text-xs font-semibold line-clamp-2 leading-snug">
-                        {clip.title.replace(/&#39;/g,"'").replace(/&amp;/g,"&").replace(/&quot;/g,'"')}
-                      </p>
-                      <p className="text-[11px] text-amber-300/70 mt-0.5 truncate">
-                        {clip.channel.replace(/&#39;/g,"'").replace(/&amp;/g,"&")}
-                      </p>
-                      <div className="flex gap-1 mt-0.5">
-                        {clip.isOfficial && (
-                          <span className="text-[9px] bg-amber-500/20 text-amber-300 px-1 py-0.5 rounded-full">✓ Oficial</span>
-                        )}
-                        <span className="text-[9px] bg-blue-500/20 text-blue-300 px-1 py-0.5 rounded-full">CC</span>
-                      </div>
-                    </div>
-                  </button>
-                );
-              })}
-            </div>
+          {/* Lista — desktop esq, mobile via tab */}
+          <div className="hidden lg:flex lg:col-span-1 lg:flex-col lg:min-h-0 gap-2">
+            <MovieList />
           </div>
 
-          {/* ── COLUNA DIREITA ────────────────────────────────────── */}
-          <div className="lg:col-span-2 flex flex-col lg:min-h-0 gap-2 order-1 lg:order-2">
+          {/* Conteúdo principal */}
+          <div className="lg:col-span-2 flex flex-col gap-2 lg:min-h-0 lg:overflow-y-auto">
 
             {/* Player */}
-            <div className={`rounded-2xl overflow-hidden shadow-2xl aspect-video bg-black relative ${isPlaying ? "movie-glow" : ""}`}>
+            <div className={`rounded-2xl overflow-hidden shadow-2xl aspect-video bg-black relative flex-shrink-0 ${isPlaying?"movie-glow":""}`}>
               <div id="mv-player-root" className="w-full h-full"
-                style={{display: selected && !vidError ? "block" : "none"}} />
+                style={{display:selected&&!vidError?"block":"none"}} />
 
-              {selected && vidError && (
+              {selected&&vidError&&(
                 <div className="absolute inset-0 flex flex-col items-center justify-center gap-4 bg-slate-900">
                   <span className="text-5xl">😔</span>
-                  <p className="text-sm text-white/70 font-semibold">Este vídeo não pode ser incorporado.</p>
-                  <button onClick={tryNext}
-                    className="bg-amber-600 hover:bg-amber-500 px-5 py-2 rounded-lg text-sm font-bold transition-colors">
-                    ▶ Tentar próxima cena
+                  <p className="text-sm text-white/70 font-semibold">Vídeo não disponível.</p>
+                  <button onClick={tryNext} style={{touchAction:'manipulation'}}
+                    className="bg-amber-600 hover:bg-amber-500 px-5 py-3 min-h-[44px] rounded-xl text-sm font-bold transition-colors">
+                    ▶ Próxima cena
                   </button>
                 </div>
               )}
 
-              {!selected && (
-                <div className="absolute inset-0 flex flex-col items-center justify-center text-white/25 gap-4">
+              {!selected&&(
+                <div className="absolute inset-0 flex flex-col items-center justify-center text-white/20 gap-3">
                   <div className="flex items-end gap-1 opacity-30">
-                    {EQ_CLS.map((cls,i) => (
+                    {EQ_CLS.map((cls,i)=>(
                       <div key={i} className={cls} style={{width:8,backgroundColor:EQ_COL[i],borderRadius:3,minHeight:3}} />
                     ))}
                   </div>
-                  <p className="text-xl font-bold">Selecciona uma cena de filme</p>
-                  <p className="text-sm">Pesquisa ou escolhe um filme recomendado</p>
+                  <p className="text-base font-bold">Escolhe uma cena</p>
+                  <p className="text-xs text-white/15">Pesquisa ou selecciona da lista</p>
                 </div>
               )}
             </div>
 
             {/* Now Playing */}
-            {selected && !vidError && (
+            {selected&&!vidError&&(
               <NowPlayingBar clip={selected} isPlaying={isPlaying} ccOn={ccOn} />
             )}
 
-            {/* ✨ Legenda: tempo real → manual → loading */}
-            {transcript.length > 0 ? (
+            {/* CC em tempo real */}
+            {transcript.length>0 ? (
               <CinemaSubDisplay
                 lines={transcriptLines}
-                active={Math.max(0, liveSubIdx)}
+                active={Math.max(0,liveSubIdx)}
                 isPlaying={isPlaying}
                 isLive
-                onWordClick={(word, e) => setWordPopup({ word, x: e.clientX, y: e.clientY })}
+                onWordClick={(word,e)=>setWordPopup({word,x:e.clientX,y:e.clientY})}
               />
-            ) : subLines.length > 0 ? (
-              <CinemaSubDisplay
-                lines={subLines}
-                active={activeSub}
-                isPlaying={isPlaying}
-                onWordClick={(word, e) => setWordPopup({ word, x: e.clientX, y: e.clientY })}
-              />
-            ) : transLoading && selected ? (
-              <div className="flex items-center gap-2 text-xs text-amber-400/50 justify-center py-2">
+            ) : transLoading&&selected ? (
+              <div className="flex items-center gap-2 text-xs text-amber-400/50 justify-center py-2 flex-shrink-0">
                 <div className="w-3 h-3 border border-amber-400/40 border-t-amber-400 rounded-full animate-spin" />
-                A carregar legendas automáticas…
+                A carregar legendas em tempo real…
               </div>
             ) : null}
 
-            {/* CC + Velocidade — barra compacta (1 linha) */}
-            <div className="flex-shrink-0 bg-white/8 backdrop-blur rounded-xl px-4 py-3 border border-amber-500/10 flex items-center gap-3 flex-wrap">
-              {/* CC toggle */}
+            {/* CC + Velocidade */}
+            <div className="flex-shrink-0 bg-white/8 backdrop-blur rounded-2xl px-4 py-3 border border-amber-500/10 flex items-center gap-3 flex-wrap">
               <div className="flex items-center gap-2 flex-shrink-0">
-                <span className="text-[11px] font-bold text-amber-300 uppercase tracking-widest">💬 CC</span>
+                <span className="text-[11px] font-bold text-amber-300 uppercase tracking-wider">CC</span>
                 <button
-                  onClick={() => {
-                    const next = !ccOn;
-                    setCcOn(next);
-                    if (selected) {
-                      const cur = selected;
-                      setSelected(null);
-                      setTimeout(() => setSelected(cur), 100);
-                    }
-                  }}
-                  title={ccOn ? "Desativar legendas" : "Ativar legendas"}
-                  className={`relative w-10 h-5 rounded-full transition-colors flex-shrink-0 ${ccOn ? "bg-blue-600" : "bg-white/20"}`}>
-                  <div className={`absolute top-0.5 w-4 h-4 bg-white rounded-full shadow transition-transform ${ccOn ? "translate-x-5" : "translate-x-0.5"}`} />
+                  onClick={()=>{const n=!ccOn;setCcOn(n);if(selected){const c=selected;setSelected(null);setTimeout(()=>setSelected(c),80);}}}
+                  style={{touchAction:'manipulation'}}
+                  className={`relative w-11 h-6 rounded-full transition-colors flex-shrink-0 ${ccOn?"bg-blue-600":"bg-white/20"}`}>
+                  <div className={`absolute top-1 w-4 h-4 bg-white rounded-full shadow transition-transform ${ccOn?"translate-x-6":"translate-x-1"}`} />
                 </button>
-                <span className={`text-xs font-semibold ${ccOn ? "text-blue-300" : "text-white/35"}`}>
-                  {ccOn ? "On" : "Off"}
-                </span>
+                <span className={`text-xs font-semibold ${ccOn?"text-blue-300":"text-white/30"}`}>{ccOn?"On":"Off"}</span>
               </div>
-              <div className="w-px h-5 bg-white/15 flex-shrink-0" />
-              {/* Velocidade */}
-              <div className="flex items-center gap-2 flex-1 min-w-0">
-                <span className="text-[11px] font-bold text-amber-300 uppercase tracking-widest flex-shrink-0">🐢 Vel.</span>
-                <div className="flex gap-1.5 flex-1">
-                  {SPEED_OPT.map(({label,value,color}) => (
-                    <button key={value} onClick={()=>setSpeed(value)}
-                      className={`flex-1 py-1.5 min-h-[44px] rounded-lg text-sm font-black transition-all ${
+              <div className="w-px h-5 bg-white/12 flex-shrink-0" />
+              <div className="flex items-center gap-2 flex-1">
+                <span className="text-[11px] font-bold text-amber-300 uppercase tracking-wider flex-shrink-0">Vel.</span>
+                <div className="flex gap-2 flex-1">
+                  {SPEED_OPT.map(({label,value,color})=>(
+                    <button key={value} onClick={()=>setSpeed(value)} style={{touchAction:'manipulation'}}
+                      className={`flex-1 py-2.5 min-h-[44px] rounded-xl text-sm font-black transition-all ${
                         speed===value
-                          ? `${color} text-white shadow-md scale-105`
-                          : "bg-white/10 hover:bg-white/20 text-white/70"
+                          ? `${color} text-white shadow-lg scale-105`
+                          : "bg-white/10 hover:bg-white/15 text-white/60"
                       }`}>
                       {label}
                     </button>
                   ))}
                 </div>
-                <span className={`text-xs font-bold flex-shrink-0 hidden sm:block ${
-                  speed===0.5  ? "text-red-300" :
-                  speed===0.75 ? "text-yellow-300" : "text-green-300"
-                }`}>
-                  {speed===0.5?"Muito lento":speed===0.75?"Lento":"Normal"}
-                </span>
               </div>
             </div>
 
-            {/* Vocabulário + Frases + Notas */}
-            <div className="min-h-[300px] lg:flex-1 lg:min-h-0 flex flex-col bg-white/8 backdrop-blur rounded-xl overflow-hidden border border-amber-500/10">
-
-              {/* Tabs */}
-              <div className="flex-shrink-0 flex border-b border-white/10">
-                {([
-                  { id:"vocab",   icon:"📖", label:"Vocab" },
-                  { id:"phrases", icon:"💬", label:"Frases" },
-                  { id:"notes",   icon:"🗒️", label:"Notas" },
-                  { id:"subs",    icon:"📺", label:"Legendas" },
-                ] as const).map(t => (
-                  <button key={t.id} onClick={()=>setTab(t.id)}
-                    className={`flex-1 py-2 min-h-[44px] text-xs font-bold transition-colors ${
-                      tab===t.id
-                        ? "bg-amber-700/50 text-white border-b-2 border-amber-400"
-                        : "text-white/50 hover:text-white hover:bg-white/5"
+            {/* Tabs */}
+            <div className="flex-shrink-0 flex rounded-2xl overflow-hidden border border-white/10">
+              {([
+                {id:"vocab",   icon:"📖", label:"Vocab"},
+                {id:"phrases", icon:"💬", label:"Frases"},
+                {id:"filmes",  icon:"🎬", label:"Filmes", mobileOnly:true},
+              ] as const).map((t,i)=>(
+                <button key={t.id} onClick={()=>setTab(t.id)} style={{touchAction:'manipulation'}}
+                  className={`flex-1 py-3 min-h-[44px] text-xs font-bold transition-colors
+                    ${t.id==="filmes" ? "lg:hidden" : ""}
+                    ${i>0 ? "border-l border-white/10" : ""}
+                    ${tab===t.id
+                      ? "bg-amber-700/60 text-white"
+                      : "bg-white/4 text-white/50 hover:text-white hover:bg-white/8"
                     }`}>
-                    {t.icon} {t.label}
-                  </button>
-                ))}
-              </div>
+                  {t.icon} {t.label}
+                </button>
+              ))}
+            </div>
 
-              <div className="flex-1 min-h-0 overflow-y-auto p-3 pb-6">
+            {/* Conteúdo tabs */}
+            <div className="flex flex-col bg-white/8 backdrop-blur rounded-2xl overflow-hidden border border-amber-500/10" style={{minHeight:260}}>
+              <div className="flex-1 overflow-y-auto overscroll-contain p-3 pb-5">
 
-                {/* ── Vocabulário ── */}
+                {/* Lista mobile */}
+                {tab==="filmes" && (
+                  <div className="h-full flex flex-col lg:hidden">
+                    <MovieList />
+                  </div>
+                )}
+
+                {/* Vocabulário */}
                 {tab==="vocab" && (
                   <div className="space-y-3">
-                    <p className="text-xs text-white/50">
-                      Guarda palavras que não conheces enquanto vês a cena.
-                    </p>
+                    <p className="text-xs text-white/45">Guarda palavras novas — clica numa palavra na legenda para adicionar.</p>
                     <div className="grid grid-cols-2 gap-2">
                       <div>
-                        <label className="text-[10px] font-bold text-amber-300 uppercase tracking-widest block mb-1">
-                          Palavra (EN)
-                        </label>
+                        <label className="text-[10px] font-bold text-amber-300 uppercase tracking-widest block mb-1.5">EN</label>
                         <input value={vocabWord} onChange={e=>setVocabWord(e.target.value)}
                           onKeyDown={e=>e.key==="Enter"&&saveVocab()}
                           placeholder="Ex: tremendous"
-                          className="w-full bg-black/30 border border-white/10 rounded-lg px-3 py-2 text-sm text-white placeholder-white/30 focus:outline-none focus:border-amber-400 transition-colors" />
+                          className="w-full bg-black/30 border border-white/10 rounded-xl px-3 py-2.5 text-sm text-white placeholder-white/25 focus:outline-none focus:border-amber-400 transition-colors" />
                       </div>
                       <div>
-                        <label className="text-[10px] font-bold text-amber-300 uppercase tracking-widest block mb-1">
-                          Tradução (PT)
-                        </label>
+                        <label className="text-[10px] font-bold text-amber-300 uppercase tracking-widest block mb-1.5">PT</label>
                         <input value={vocabTrans} onChange={e=>setVocabTrans(e.target.value)}
                           onKeyDown={e=>e.key==="Enter"&&saveVocab()}
                           placeholder="Ex: tremendo"
-                          className="w-full bg-black/30 border border-white/10 rounded-lg px-3 py-2 text-sm text-white placeholder-white/30 focus:outline-none focus:border-amber-400 transition-colors" />
+                          className="w-full bg-black/30 border border-white/10 rounded-xl px-3 py-2.5 text-sm text-white placeholder-white/25 focus:outline-none focus:border-amber-400 transition-colors" />
                       </div>
                     </div>
-                    <button onClick={saveVocab} disabled={!vocabWord.trim()}
-                      className="w-full py-2 bg-amber-600 hover:bg-amber-500 disabled:opacity-40 rounded-lg text-sm font-bold transition-colors">
+                    <button onClick={saveVocab} disabled={!vocabWord.trim()} style={{touchAction:'manipulation'}}
+                      className="w-full py-3 min-h-[44px] bg-amber-600 hover:bg-amber-500 disabled:opacity-40 rounded-xl text-sm font-bold transition-colors">
                       + Guardar Palavra
                     </button>
-
-                    {savedVocab.length > 0 && (
+                    {savedVocab.length>0&&(
                       <>
-                        <div className="space-y-1.5 max-h-52 overflow-y-auto">
-                          {savedVocab.map(v => (
-                            <div key={v.id} className="mslide flex items-center gap-2 bg-white/5 rounded-lg px-3 py-2">
+                        <div className="space-y-1.5 max-h-48 overflow-y-auto overscroll-contain">
+                          {savedVocab.map(v=>(
+                            <div key={v.id} className="mslide flex items-center gap-2 bg-white/5 rounded-xl px-3 py-2.5">
                               <span className="text-sm font-bold text-amber-300">{v.en}</span>
-                              {v.pt && <><span className="text-white/30">→</span><span className="text-sm text-white/70">{v.pt}</span></>}
-                              <button onClick={()=>setSavedVocab(p=>p.filter(x=>x.id!==v.id))}
-                                className="ml-auto text-white/30 hover:text-red-400 text-xs transition-colors">✕</button>
+                              {v.pt&&<><span className="text-white/25">→</span><span className="text-sm text-white/65">{v.pt}</span></>}
+                              <button onClick={()=>setSavedVocab(p=>p.filter(x=>x.id!==v.id))} style={{touchAction:'manipulation'}}
+                                className="ml-auto text-white/25 hover:text-red-400 text-xs transition-colors p-1">✕</button>
                             </div>
                           ))}
                         </div>
                         <div className="flex gap-2">
-                          <button onClick={exportVocab}
-                            className="flex-1 py-1.5 bg-white/10 hover:bg-white/20 rounded-lg text-xs font-semibold transition-colors">
+                          <button onClick={exportVocab} style={{touchAction:'manipulation'}}
+                            className="flex-1 py-2 bg-white/10 hover:bg-white/15 rounded-xl text-xs font-semibold transition-colors">
                             💾 Exportar .txt
                           </button>
-                          <button onClick={()=>setSavedVocab([])}
-                            className="px-3 py-1.5 bg-red-500/20 hover:bg-red-500/30 text-red-300 rounded-lg text-xs font-semibold transition-colors">
-                            🗑️ Limpar
+                          <button onClick={()=>setSavedVocab([])} style={{touchAction:'manipulation'}}
+                            className="px-4 py-2 bg-red-500/15 hover:bg-red-500/25 text-red-300 rounded-xl text-xs font-semibold transition-colors">
+                            🗑️
                           </button>
                         </div>
                       </>
@@ -1234,43 +1166,36 @@ export function MoviesPlayer() {
                   </div>
                 )}
 
-                {/* ── Frases Memoráveis ── */}
+                {/* Frases */}
                 {tab==="phrases" && (
                   <div className="space-y-3">
-                    <p className="text-xs text-white/50">
-                      Guarda falas icónicas ou frases úteis da cena.
-                    </p>
+                    <p className="text-xs text-white/45">Guarda falas icónicas da cena.</p>
                     <div>
-                      <label className="text-[10px] font-bold text-amber-300 uppercase tracking-widest block mb-1">
-                        🇬🇧 Fala em inglês
-                      </label>
+                      <label className="text-[10px] font-bold text-amber-300 uppercase tracking-widest block mb-1.5">🇬🇧 Fala em inglês</label>
                       <textarea value={phraseEn} onChange={e=>setPhraseEn(e.target.value)}
                         placeholder='"Life is like a box of chocolates…"'
-                        rows={2}
-                        className="w-full bg-black/30 border border-white/10 rounded-lg px-3 py-2 text-sm text-white placeholder-white/30 focus:outline-none focus:border-amber-400 transition-colors resize-none font-mono" />
+                        rows={3}
+                        className="w-full bg-black/30 border border-white/10 rounded-xl p-3 text-sm text-white placeholder-white/25 resize-none focus:outline-none focus:border-amber-400 transition-colors font-mono" />
                     </div>
                     <div>
-                      <label className="text-[10px] font-bold text-amber-300 uppercase tracking-widest block mb-1">
-                        🇵🇹 Tradução (opcional)
-                      </label>
+                      <label className="text-[10px] font-bold text-amber-300 uppercase tracking-widest block mb-1.5">🇵🇹 Tradução (opcional)</label>
                       <textarea value={phrasePt} onChange={e=>setPhrasePt(e.target.value)}
                         placeholder='"A vida é como uma caixa de chocolates…"'
                         rows={2}
-                        className="w-full bg-black/30 border border-white/10 rounded-lg px-3 py-2 text-sm text-white placeholder-white/30 focus:outline-none focus:border-amber-400 transition-colors resize-none font-mono" />
+                        className="w-full bg-black/30 border border-white/10 rounded-xl p-3 text-sm text-white placeholder-white/25 resize-none focus:outline-none focus:border-amber-400 transition-colors font-mono" />
                     </div>
-                    <button onClick={savePhrase} disabled={!phraseEn.trim()}
-                      className="w-full py-2 bg-amber-600 hover:bg-amber-500 disabled:opacity-40 rounded-lg text-sm font-bold transition-colors">
+                    <button onClick={savePhrase} disabled={!phraseEn.trim()} style={{touchAction:'manipulation'}}
+                      className="w-full py-3 min-h-[44px] bg-amber-600 hover:bg-amber-500 disabled:opacity-40 rounded-xl text-sm font-bold transition-colors">
                       💬 Guardar Frase
                     </button>
-
-                    {savedPhrases.length > 0 && (
-                      <div className="space-y-2 max-h-52 overflow-y-auto">
-                        {savedPhrases.map(p => (
-                          <div key={p.id} className="mslide bg-white/5 rounded-lg px-3 py-2 relative">
-                            <p className="text-sm font-semibold text-amber-200 italic">"{p.en}"</p>
-                            {p.pt && <p className="text-xs text-white/50 mt-0.5 italic">"{p.pt}"</p>}
-                            <button onClick={()=>setSavedPhrases(prev=>prev.filter(x=>x.id!==p.id))}
-                              className="absolute top-2 right-2 text-white/25 hover:text-red-400 text-xs transition-colors">✕</button>
+                    {savedPhrases.length>0&&(
+                      <div className="space-y-2 max-h-48 overflow-y-auto overscroll-contain">
+                        {savedPhrases.map(p=>(
+                          <div key={p.id} className="mslide bg-white/5 rounded-xl px-3 py-2.5 relative">
+                            <p className="text-sm font-semibold text-amber-200 italic pr-6">"{p.en}"</p>
+                            {p.pt&&<p className="text-xs text-white/45 mt-0.5 italic">"{p.pt}"</p>}
+                            <button onClick={()=>setSavedPhrases(prev=>prev.filter(x=>x.id!==p.id))} style={{touchAction:'manipulation'}}
+                              className="absolute top-2.5 right-2.5 text-white/20 hover:text-red-400 text-xs transition-colors">✕</button>
                           </div>
                         ))}
                       </div>
@@ -1278,113 +1203,10 @@ export function MoviesPlayer() {
                   </div>
                 )}
 
-                {/* ── Anotações ── */}
-                {tab==="notes" && (
-                  <div>
-                    <label className="text-xs font-bold text-amber-300 uppercase tracking-widest block mb-2">
-                      🗒️ Bloco de Anotações
-                    </label>
-                    <textarea value={notes} onChange={e=>setNotes(e.target.value)}
-                      placeholder={`Escreve enquanto vês a cena:\n• Sotaque ou pronúncia notada\n• Expressões idiomáticas\n• Contexto cultural\n• Dúvidas para pesquisar…`}
-                      rows={10}
-                      className="w-full bg-black/30 border border-white/10 rounded-xl p-3 text-sm text-white placeholder-white/25 resize-y focus:outline-none focus:border-amber-400 font-mono leading-7 transition-colors" />
-                    {notes && (
-                      <div className="flex justify-between mt-2">
-                        <span className="text-xs text-white/35">{notes.length} caracteres</span>
-                        <button onClick={()=>{
-                          const a = document.createElement("a");
-                          a.href = URL.createObjectURL(new Blob([notes],{type:"text/plain"}));
-                          a.download = `notas-${(selected?.title||"filme").replace(/[^a-z0-9]/gi,"_").slice(0,25)}.txt`;
-                          a.click();
-                        }} className="text-xs bg-amber-600 hover:bg-amber-500 px-3 py-1 rounded-lg font-semibold transition-colors">
-                          💾 Guardar .txt
-                        </button>
-                      </div>
-                    )}
-                  </div>
-                )}
-
-                {/* ── Legendas Interactivas ── */}
-                {tab==="subs" && (
-                  <div className="space-y-3">
-
-                    {/* Estado das legendas automáticas */}
-                    {selected && (
-                      <div className={`rounded-lg px-3 py-2 text-xs flex items-center gap-2 ${
-                        transcript.length > 0
-                          ? "bg-green-500/15 border border-green-500/30 text-green-300"
-                          : transLoading
-                          ? "bg-amber-500/10 border border-amber-500/20 text-amber-400/70"
-                          : "bg-white/5 border border-white/10 text-white/40"
-                      }`}>
-                        {transcript.length > 0 ? (
-                          <><span className="animate-pulse">●</span> Legendas em tempo real activas — {transcript.length} linhas</>
-                        ) : transLoading ? (
-                          <><div className="w-3 h-3 border border-amber-400/50 border-t-amber-400 rounded-full animate-spin flex-shrink-0" /> A carregar legendas automáticas…</>
-                        ) : (
-                          <>○ Sem legendas automáticas — usa o campo abaixo</>
-                        )}
-                      </div>
-                    )}
-
-                    <div>
-                      <label className="text-[10px] font-bold text-amber-300 uppercase tracking-widest block mb-1">
-                        📋 Legendas manuais — uma frase por linha
-                      </label>
-                      <textarea value={subRaw} onChange={e=>setSubRaw(e.target.value)}
-                        placeholder={"Life is like a box of chocolates.\nYou never know what you're gonna get.\nRun, Forrest, run!\n…"}
-                        rows={6}
-                        className="w-full bg-black/30 border border-white/10 rounded-lg px-3 py-2 text-sm text-white placeholder-white/25 resize-y focus:outline-none focus:border-amber-400 font-mono leading-7 transition-colors" />
-                      {subRaw && (
-                        <p className="text-[10px] text-amber-400/60 mt-1">
-                          ✓ {subLines.length} linhas · Auto-avança a cada ~5.5 s quando o vídeo está a reproduzir
-                        </p>
-                      )}
-                    </div>
-
-                    {subLines.length > 0 && !transcript.length && (
-                      <>
-                        <div className="flex items-center gap-2">
-                          <button onClick={()=>setActiveSub(p=>Math.max(0,p-1))}
-                            disabled={activeSub===0}
-                            className="bg-white/10 hover:bg-white/20 disabled:opacity-30 px-4 py-2 rounded-lg text-sm font-bold transition-colors">
-                            ← Anterior
-                          </button>
-                          <div className="flex-1 text-center text-xs text-amber-400/60 font-mono">
-                            {activeSub+1} / {subLines.length}
-                          </div>
-                          <button onClick={()=>setActiveSub(p=>Math.min(subLines.length-1,p+1))}
-                            disabled={activeSub>=subLines.length-1}
-                            className="bg-white/10 hover:bg-white/20 disabled:opacity-30 px-4 py-2 rounded-lg text-sm font-bold transition-colors">
-                            Próxima →
-                          </button>
-                        </div>
-                        <button onClick={()=>{setSubRaw("");setSubLines([]);setActiveSub(0);}}
-                          className="w-full py-1.5 bg-red-500/15 hover:bg-red-500/25 text-red-300 rounded-lg text-xs font-semibold transition-colors">
-                          🗑️ Limpar Legendas
-                        </button>
-                        <p className="text-[11px] text-white/35 text-center">
-                          💡 Use ← → ou as teclas do teclado · Clica nas palavras para ouvir
-                        </p>
-                      </>
-                    )}
-
-                    {!subRaw && !transcript.length && (
-                      <div className="text-center py-3">
-                        <p className="text-xs text-white/40 mb-2">Como usar:</p>
-                        <div className="space-y-1 text-[11px] text-white/30 text-left">
-                          <p>1️⃣ As legendas automáticas carregam sozinhas (quando disponíveis)</p>
-                          <p>2️⃣ Ou cola as legendas acima (uma frase por linha)</p>
-                          <p>3️⃣ Clica em qualquer palavra para ouvir a pronúncia e guardar no vocabulário</p>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                )}
               </div>
-            </div>{/* fim painel tabs */}
+            </div>
 
-          </div>{/* fim coluna direita */}
+          </div>{/* fim conteúdo */}
         </div>{/* fim grid */}
       </div>{/* fim root */}
     </>

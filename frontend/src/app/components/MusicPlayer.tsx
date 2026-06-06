@@ -538,11 +538,8 @@ export function MusicPlayer() {
   const [autoDelay,   setAutoDelay]   = useState(5);
   const autoTimer = useRef<ReturnType<typeof setInterval>|null>(null);
 
-  /* Notas */
-  const [notes, setNotes] = useState("");
-
-  /* Tab principal */
-  const [tab, setTab] = useState<"lyrics"|"notes">("lyrics");
+  /* Tab principal — "lyrics" (letras) | "list" (lista de músicas no mobile) */
+  const [tab, setTab] = useState<"lyrics"|"list">("lyrics");
 
   /* Auto-busca de letra */
   const [fetchingLyrics, setFetchingLyrics] = useState(false);
@@ -890,416 +887,347 @@ export function MusicPlayer() {
   /* ══════════════════════════════════════════════════════════════════
      RENDER
   ══════════════════════════════════════════════════════════════════ */
+
+  /* Lista de músicas — reutilizada em desktop (esq) e tab mobile */
+  const MusicList = () => (
+    <div className="flex flex-col gap-2 h-full">
+      <form onSubmit={e=>{e.preventDefault();searchVideos(query);}}
+        className="flex-shrink-0 bg-white/10 backdrop-blur rounded-2xl p-3 space-y-2.5">
+        <label className="block text-[11px] font-bold text-purple-300 uppercase tracking-widest">
+          🔍 Pesquisar
+        </label>
+        <div className="flex gap-2">
+          <input value={query} onChange={e=>setQuery(e.target.value)}
+            placeholder="Adele, Ed Sheeran…"
+            className="flex-1 bg-white/10 border border-white/20 rounded-xl px-3 py-2.5 text-sm placeholder-white/35 focus:outline-none focus:border-purple-400 transition-colors" />
+          <button type="submit" disabled={loading}
+            className="bg-purple-600 hover:bg-purple-500 disabled:opacity-50 px-4 min-h-[44px] rounded-xl text-sm font-bold transition-colors">
+            {loading ? "…" : "Ir"}
+          </button>
+        </div>
+        <div className="flex flex-wrap gap-1">
+          {SUGGESTED.map(s => (
+            <button key={s} type="button"
+              onClick={()=>{setQuery(s);searchVideos(s);}}
+              className="text-[11px] bg-white/8 hover:bg-purple-700/50 border border-white/10 rounded-full px-2.5 py-1 transition-colors">
+              {s.length>22 ? s.slice(0,20)+"…" : s}
+            </button>
+          ))}
+        </div>
+      </form>
+
+      {error && (
+        <div className="flex-shrink-0 bg-red-500/15 border border-red-400/30 rounded-xl p-3 text-xs text-red-300">⚠️ {error}</div>
+      )}
+
+      <div className="flex-1 overflow-y-auto space-y-1.5 overscroll-contain pr-1">
+        {loading && (
+          <div className="flex flex-col items-center justify-center py-10 gap-3">
+            <div className="flex items-end gap-1">
+              {EQ_CLS.slice(0,5).map((cls,i) => (
+                <div key={i} className={cls} style={{width:6,backgroundColor:EQ_COL[i],borderRadius:3,minHeight:3}} />
+              ))}
+            </div>
+            <p className="text-xs text-purple-300">A carregar…</p>
+          </div>
+        )}
+        {results.map(video => {
+          const active = selected?.id === video.id;
+          return (
+            <button key={video.id} onClick={()=>selectVideo(video)}
+              className={`w-full text-left flex gap-3 p-3 rounded-xl transition-all border ${
+                active
+                  ? "bg-purple-600/40 border-purple-400/60 shadow-lg shadow-purple-900/40"
+                  : "bg-white/4 hover:bg-white/8 border-transparent hover:border-white/10"
+              }`}
+              style={{touchAction:'manipulation'}}>
+              <div className="relative flex-shrink-0">
+                <img src={video.thumbnail} alt=""
+                  className="w-16 h-11 object-cover rounded-lg" loading="lazy" />
+                {active && isPlaying && (
+                  <div className="absolute inset-0 bg-black/60 rounded-lg flex items-center justify-center">
+                    <div className="flex items-end gap-0.5" style={{height:12}}>
+                      {["eq1","eq3","eq5"].map(cls=>(
+                        <div key={cls} className={cls} style={{width:2,backgroundColor:"#c084fc",borderRadius:2,minHeight:2}} />
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+              <div className="overflow-hidden flex-1">
+                <p className="text-xs font-semibold line-clamp-2 leading-snug text-white">{htmlDecode(video.title)}</p>
+                <p className="text-[11px] text-purple-300/80 mt-1 truncate">{htmlDecode(video.channel)}</p>
+              </div>
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+
   return (
     <>
       <style>{ANIM_STYLE}</style>
-      <div className="min-h-screen lg:h-[calc(100vh-4rem)] flex flex-col bg-gradient-to-br from-slate-900 via-purple-950 to-slate-900 text-white lg:overflow-hidden">
+      <div className="flex flex-col bg-gradient-to-br from-slate-900 via-purple-950 to-slate-900 text-white"
+        style={{minHeight:'100dvh', paddingBottom:'env(safe-area-inset-bottom)'}}>
 
-        {/* Header — compacto */}
-        <div className="flex-shrink-0 bg-gradient-to-r from-purple-800 via-violet-700 to-indigo-800 px-4 shadow-xl" style={{height:48}}>
+        {/* Header */}
+        <div className="flex-shrink-0 bg-gradient-to-r from-purple-800 via-violet-700 to-indigo-800 px-4 shadow-xl"
+          style={{height:52, paddingTop:'env(safe-area-inset-top)'}}>
           <div className="max-w-7xl mx-auto h-full relative flex items-center justify-center">
-            <Link to="/lessons" className="absolute left-0 flex items-center gap-1.5 text-purple-200 hover:text-white transition-colors min-h-[44px] px-1">
-              <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7"/></svg>
-              <span className="text-sm font-semibold hidden sm:inline">Conteúdo</span>
+            <Link to="/lessons"
+              className="absolute left-0 flex items-center gap-1.5 text-purple-200 hover:text-white transition-colors px-2"
+              style={{minHeight:44,minWidth:44,touchAction:'manipulation'}}>
+              <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7"/>
+              </svg>
+              <span className="text-sm font-semibold hidden sm:inline">Voltar</span>
             </Link>
             <div className="flex items-center gap-2">
-              <span className="text-xl">🎵</span>
-              <h1 className="text-sm sm:text-lg font-black tracking-tight">Música para Aprender Inglês</h1>
-              <span className="text-xl">🎵</span>
+              <span className="text-lg">🎵</span>
+              <h1 className="text-sm sm:text-base font-black tracking-tight">Música · Inglês</h1>
             </div>
           </div>
         </div>
 
-        <div className="flex-1 lg:min-h-0 max-w-7xl mx-auto w-full px-3 py-2 grid grid-cols-1 lg:grid-cols-3 gap-3">
+        {/* ── DESKTOP: grid lado a lado ── MOBILE: coluna única ── */}
+        <div className="flex-1 max-w-7xl mx-auto w-full px-3 py-2 lg:grid lg:grid-cols-3 lg:gap-3 lg:overflow-hidden lg:min-h-0">
 
-          {/* ── Coluna Esquerda: pesquisa ─────────────────────────── */}
-          <div className="lg:col-span-1 flex flex-col lg:min-h-0 gap-2 order-2 lg:order-1">
-            <form onSubmit={e=>{e.preventDefault();searchVideos(query);}}
-              className="flex-shrink-0 bg-white/10 backdrop-blur rounded-xl p-3 space-y-2">
-              <label className="block text-xs font-bold text-purple-200 uppercase tracking-widest">
-                🔍 Pesquisar Música Oficial
-              </label>
-              <div className="flex gap-2">
-                <input value={query} onChange={e=>setQuery(e.target.value)}
-                  placeholder="Ex: Adele Hello official…"
-                  className="flex-1 bg-white/10 border border-white/20 rounded-lg px-3 py-2 text-sm placeholder-white/40 focus:outline-none focus:border-purple-400 transition-colors" />
-                <button type="submit" disabled={loading}
-                  className="bg-purple-600 hover:bg-purple-500 disabled:opacity-50 px-4 py-2 min-h-[44px] rounded-lg text-sm font-bold transition-colors">
-                  {loading ? "…" : "Ir"}
-                </button>
-              </div>
-              <div className="flex flex-wrap gap-1">
-                {SUGGESTED.map(s => (
-                  <button key={s} type="button"
-                    onClick={() => {setQuery(s); searchVideos(s);}}
-                    className="text-xs bg-purple-800/60 hover:bg-purple-700 rounded-full px-2 py-1 transition-colors">
-                    {s.length>24 ? s.slice(0,22)+"…" : s}
-                  </button>
-                ))}
-              </div>
-            </form>
-
-            {error && (
-              <div className="bg-red-500/20 border border-red-400/40 rounded-xl p-3 text-sm text-red-300">
-                ⚠️ {error}
-              </div>
-            )}
-
-            <div className="max-h-[40vh] lg:max-h-none lg:flex-1 lg:min-h-0 overflow-y-auto space-y-1.5 pr-1">
-              {loading && (
-                <div className="text-center py-8">
-                  <div className="flex justify-center gap-1 mb-2">
-                    {EQ_CLS.slice(0,5).map((cls,i) => (
-                      <div key={i} className={cls} style={{width:6,backgroundColor:EQ_COL[i],borderRadius:3,minHeight:3}} />
-                    ))}
-                  </div>
-                  <p className="text-sm text-purple-300">A carregar…</p>
-                </div>
-              )}
-              {results.map(video => {
-                const active = selected?.id === video.id;
-                return (
-                  <button key={video.id} onClick={() => selectVideo(video)}
-                    className={`w-full text-left flex gap-2.5 p-2.5 rounded-xl transition-all border ${
-                      active
-                        ? "bg-purple-600/50 border-purple-400 shadow-lg shadow-purple-900/50"
-                        : "bg-white/5 hover:bg-white/10 border-transparent"
-                    }`}>
-                    <div className="relative flex-shrink-0">
-                      <img src={video.thumbnail} alt=""
-                        className="w-16 h-11 object-cover rounded-lg" loading="lazy" />
-                      {active && isPlaying && (
-                        <div className="absolute inset-0 bg-black/50 rounded-lg flex items-center justify-center">
-                          <div className="flex items-end gap-0.5" style={{height:12}}>
-                            {["eq1","eq3","eq5"].map(cls => (
-                              <div key={cls} className={cls} style={{width:2,backgroundColor:"#c084fc",borderRadius:2,minHeight:2}} />
-                            ))}
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                    <div className="overflow-hidden flex-1">
-                      <p className="text-xs font-semibold line-clamp-2 leading-snug">{htmlDecode(video.title)}</p>
-                      <p className="text-[11px] text-purple-300 mt-0.5 truncate">{htmlDecode(video.channel)}</p>
-                    </div>
-                  </button>
-                );
-              })}
-            </div>
+          {/* ══ Lista (desktop esquerda, mobile via tab) ══ */}
+          <div className="hidden lg:flex lg:col-span-1 lg:flex-col lg:min-h-0 gap-2">
+            <MusicList />
           </div>
 
-          {/* ── Coluna Direita: player + legenda ──────────────────── */}
-          <div className="lg:col-span-2 flex flex-col lg:min-h-0 gap-2 order-1 lg:order-2">
+          {/* ══ Conteúdo principal ══ */}
+          <div className="lg:col-span-2 flex flex-col gap-2 lg:min-h-0 lg:overflow-y-auto">
 
-            {/* Player — gerido pela YouTube IFrame API */}
-            <div className={`rounded-2xl overflow-hidden shadow-2xl aspect-video relative bg-black ${isPlaying ? "player-glow" : ""}`}>
-              {/* Contentor onde o YT.Player injeta o iframe */}
-              <div
-                id="yt-player-root"
-                className="w-full h-full"
-                style={{ display: selected && !vidError ? "block" : "none" }}
-              />
+            {/* Player */}
+            <div className={`rounded-2xl overflow-hidden shadow-2xl aspect-video relative bg-black flex-shrink-0 ${isPlaying?"player-glow":""}`}>
+              <div id="yt-player-root" className="w-full h-full"
+                style={{display: selected&&!vidError ? "block":"none"}} />
 
-              {/* Erro de embed */}
               {selected && vidError && (
                 <div className="absolute inset-0 flex flex-col items-center justify-center gap-4 bg-slate-900">
                   <span className="text-5xl">😔</span>
-                  <p className="text-white/70 text-sm font-semibold">Este vídeo não pode ser incorporado.</p>
-                  <button onClick={tryNextVideo}
-                    className="bg-purple-600 hover:bg-purple-700 px-5 py-2 rounded-lg text-sm font-bold transition-colors">
-                    ▶ Tentar próximo vídeo
+                  <p className="text-white/70 text-sm font-semibold">Vídeo não disponível.</p>
+                  <button onClick={tryNextVideo} style={{touchAction:'manipulation'}}
+                    className="bg-purple-600 hover:bg-purple-700 px-5 py-3 min-h-[44px] rounded-xl text-sm font-bold transition-colors">
+                    ▶ Próximo vídeo
                   </button>
                 </div>
               )}
 
-              {/* Estado inicial */}
               {!selected && (
-                <div className="absolute inset-0 flex flex-col items-center justify-center text-white/30 gap-4">
+                <div className="absolute inset-0 flex flex-col items-center justify-center text-white/25 gap-4">
                   <div className="flex items-end gap-1 opacity-40">
-                    {EQ_CLS.map(cls => (
+                    {EQ_CLS.map(cls=>(
                       <div key={cls} className={cls} style={{width:7,backgroundColor:"#a855f7",borderRadius:3,minHeight:3}} />
                     ))}
                   </div>
-                  <p className="text-lg font-semibold">Selecciona uma música para começar</p>
+                  <p className="text-base font-semibold">Escolhe uma música</p>
+                  <p className="text-xs text-white/20">Pesquisa ou selecciona da lista</p>
                 </div>
               )}
             </div>
 
-            {/* Now Playing bar com legenda activa */}
+            {/* Now Playing */}
             {selected && !vidError && (
-              <NowPlayingBar
-                video={selected}
-                isPlaying={isPlaying}
-                activeLyric={activeLyricText()}
-              />
+              <NowPlayingBar video={selected} isPlaying={isPlaying} activeLyric={activeLyricText()} />
             )}
 
-            {/* ✨ CC automático em tempo real (quando transcript disponível) */}
+            {/* CC em tempo real */}
             {transcript.length > 0 && (
-              <CinemaTranscript
-                lines={transcriptLines}
-                active={liveSubIdx}
-                isPlaying={isPlaying}
-              />
+              <CinemaTranscript lines={transcriptLines} active={liveSubIdx} isPlaying={isPlaying} />
             )}
             {transLoading && selected && !transcript.length && (
-              <div className="flex items-center gap-2 text-xs text-purple-400/50 justify-center py-1">
+              <div className="flex items-center gap-2 text-xs text-purple-400/50 justify-center py-1 flex-shrink-0">
                 <div className="w-3 h-3 border border-purple-400/40 border-t-purple-400 rounded-full animate-spin" />
-                A carregar legendas automáticas…
+                A carregar legendas em tempo real…
               </div>
             )}
 
-            {/* ✨ Legenda Animada Cinema (letra manual) */}
+            {/* Legenda da letra manual */}
             {lines.length > 0 && (
-              <CinemaLyricDisplay
-                lines={lines}
-                activeLine={activeLine}
-                isPlaying={isPlaying}
-              />
+              <CinemaLyricDisplay lines={lines} activeLine={activeLine} isPlaying={isPlaying} />
             )}
 
             {/* Velocidade */}
-            <div className="bg-white/10 backdrop-blur rounded-xl px-4 py-3 flex items-center gap-3">
-              <p className="text-xs font-bold text-purple-200 uppercase tracking-widest flex-shrink-0">🐢 Velocidade</p>
-              <div className="flex gap-1.5 flex-1">
+            <div className="flex-shrink-0 bg-white/8 backdrop-blur rounded-2xl px-4 py-3 flex items-center gap-3 border border-white/8">
+              <p className="text-[11px] font-bold text-purple-300 uppercase tracking-wider flex-shrink-0">Velocidade</p>
+              <div className="flex gap-2 flex-1">
                 {SPEED_OPTIONS.map(({label,value}) => (
-                  <button
-                    key={value}
-                    onClick={() => setSpeed(value)}
-                    className={`flex-1 py-2 min-h-[44px] rounded-lg text-sm font-black transition-all ${
-                      speed === value
-                        ? value === 0.5  ? "bg-red-600 text-white shadow-md scale-105"
-                        : value === 0.75 ? "bg-yellow-600 text-white shadow-md scale-105"
-                        :                  "bg-green-600 text-white shadow-md scale-105"
-                        : "bg-white/10 hover:bg-white/20 text-white/70"
-                    }`}
-                  >
+                  <button key={value} onClick={()=>setSpeed(value)} style={{touchAction:'manipulation'}}
+                    className={`flex-1 py-2.5 min-h-[44px] rounded-xl text-sm font-black transition-all ${
+                      speed===value
+                        ? value===0.5  ? "bg-red-600 text-white shadow-lg scale-105"
+                        : value===0.75 ? "bg-yellow-600 text-white shadow-lg scale-105"
+                        :                "bg-green-600 text-white shadow-lg scale-105"
+                        : "bg-white/10 hover:bg-white/15 text-white/60"
+                    }`}>
                     {label}
                   </button>
                 ))}
               </div>
-              <span className={`text-[11px] font-bold flex-shrink-0 hidden sm:block ${
-                speed === 0.5  ? "text-red-300"    :
-                speed === 0.75 ? "text-yellow-300" : "text-green-300"
-              }`}>
-                {speed === 0.5 ? "Muito lento" : speed === 0.75 ? "Lento" : "Normal"}
-              </span>
             </div>
 
-            {/* ── SECÇÃO PRINCIPAL: LETRAS / NOTAS ─────────────────── */}
-            <div className="min-h-[300px] lg:flex-1 lg:min-h-0 flex flex-col bg-white/10 backdrop-blur rounded-xl overflow-hidden">
+            {/* ── Tabs: 🎤 Letras | 🔍 Músicas (mobile only para lista) ── */}
+            <div className="flex-shrink-0 flex rounded-2xl overflow-hidden border border-white/10">
+              <button onClick={()=>setTab("lyrics")} style={{touchAction:'manipulation'}}
+                className={`flex-1 py-3 min-h-[44px] text-sm font-bold transition-colors ${
+                  tab==="lyrics"
+                    ? "bg-purple-700/70 text-white"
+                    : "bg-white/5 text-white/50 hover:text-white hover:bg-white/8"
+                }`}>
+                🎤 Letras
+              </button>
+              <div className="w-px bg-white/10" />
+              <button onClick={()=>setTab("list")} style={{touchAction:'manipulation'}}
+                className={`flex-1 py-3 min-h-[44px] text-sm font-bold transition-colors lg:hidden ${
+                  tab==="list"
+                    ? "bg-indigo-700/70 text-white"
+                    : "bg-white/5 text-white/50 hover:text-white hover:bg-white/8"
+                }`}>
+                🔍 Músicas
+              </button>
+            </div>
 
-              {/* Tabs */}
-              <div className="flex-shrink-0 flex border-b border-white/10">
-                <button onClick={()=>setTab("lyrics")}
-                  className={`flex-1 py-2.5 min-h-[44px] text-sm font-bold transition-colors ${
-                    tab==="lyrics"
-                      ? "bg-purple-700/60 text-white border-b-2 border-purple-400"
-                      : "text-white/50 hover:text-white hover:bg-white/5"
-                  }`}>
-                  🎤 Legenda
-                </button>
-                <button onClick={()=>setTab("notes")}
-                  className={`flex-1 py-2.5 min-h-[44px] text-sm font-bold transition-colors ${
-                    tab==="notes"
-                      ? "bg-indigo-700/60 text-white border-b-2 border-indigo-400"
-                      : "text-white/50 hover:text-white hover:bg-white/5"
-                  }`}>
-                  🗒️ Anotações
-                </button>
-              </div>
-              {/* Conteúdo da aba — scrollável */}
-              <div className="flex-1 min-h-0 overflow-y-auto pb-6">
+            {/* ── Conteúdo das tabs ── */}
+            <div className="flex-1 bg-white/8 backdrop-blur rounded-2xl overflow-hidden border border-white/8 flex flex-col" style={{minHeight:280}}>
 
-              {/* ── Aba LETRAS ────────────────────────────────────── */}
+              {/* Lista mobile */}
+              {tab==="list" && (
+                <div className="flex-1 p-3 overflow-hidden flex flex-col lg:hidden">
+                  <MusicList />
+                </div>
+              )}
+
+              {/* Letras */}
               {tab==="lyrics" && (
-                <div>
-                  {/* Sub-tabs: Editar / Ver */}
-                  <div className="flex gap-2 px-4 pt-3 pb-2 border-b border-white/5">
-                    <button onClick={()=>setLyricsMode("edit")}
-                      className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
-                        lyricsMode==="edit"
-                          ? "bg-purple-600 text-white"
-                          : "bg-white/10 text-white/60 hover:text-white"
+                <div className="flex flex-col flex-1 overflow-hidden">
+                  {/* Sub-tabs */}
+                  <div className="flex-shrink-0 flex gap-2 px-4 pt-3 pb-2 border-b border-white/8">
+                    <button onClick={()=>setLyricsMode("edit")} style={{touchAction:'manipulation'}}
+                      className={`px-4 py-2 min-h-[40px] rounded-xl text-xs font-bold transition-all ${
+                        lyricsMode==="edit" ? "bg-purple-600 text-white" : "bg-white/10 text-white/55 hover:text-white"
                       }`}>
                       ✏️ Editar Letra
                     </button>
-                    <button onClick={()=>setLyricsMode("view")}
-                      disabled={!lines.length}
-                      className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all disabled:opacity-40 ${
-                        lyricsMode==="view"
-                          ? "bg-violet-600 text-white"
-                          : "bg-white/10 text-white/60 hover:text-white"
+                    <button onClick={()=>setLyricsMode("view")} disabled={!lines.length} style={{touchAction:'manipulation'}}
+                      className={`px-4 py-2 min-h-[40px] rounded-xl text-xs font-bold transition-all disabled:opacity-35 ${
+                        lyricsMode==="view" ? "bg-violet-600 text-white" : "bg-white/10 text-white/55 hover:text-white"
                       }`}>
-                      🎤 Legenda Interactiva {lines.length>0 && `(${lines.length} linhas)`}
+                      🎤 Interactiva {lines.length>0 && `(${lines.length})`}
                     </button>
-
-                    {/* Estatísticas rápidas */}
                     {wordCount > 0 && (
-                      <span className="ml-auto text-xs text-yellow-300 bg-yellow-500/10 px-2 py-1.5 rounded-lg">
-                        🟡 {wordCount} palavra{wordCount!==1?"s":""} marcada{wordCount!==1?"s":""}
+                      <span className="ml-auto text-xs text-yellow-300 bg-yellow-500/10 px-2.5 py-2 rounded-xl self-center">
+                        🟡 {wordCount}
                       </span>
                     )}
                   </div>
 
-                  {/* MODO EDIÇÃO */}
-                  {lyricsMode==="edit" && (
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3 p-4">
+                  <div className="flex-1 overflow-y-auto overscroll-contain pb-4">
 
-                      {/* ── Buscar letra automaticamente ── */}
-                      {selected && (
-                        <div className="md:col-span-2 flex flex-wrap items-center gap-2 p-3 bg-purple-900/30 border border-purple-500/20 rounded-xl">
-                          <button
-                            onClick={() => { setLyricsFetchMsg(""); fetchAutoLyrics(selected.title, selected.channel); }}
-                            disabled={fetchingLyrics}
-                            className="bg-gradient-to-r from-purple-600 to-violet-600 hover:from-purple-500 hover:to-violet-500 disabled:opacity-50 px-4 py-2 rounded-xl text-xs font-black transition-all flex items-center gap-2 shadow-lg">
-                            {fetchingLyrics ? "⏳ A buscar no Letras.mus.br…" : "✨ Buscar Letra + Tradução PT"}
-                          </button>
-                          {lyricsFetchMsg && (
-                            <span className={`text-xs font-semibold ${lyricsFetchMsg.startsWith("✅") ? "text-green-300" : "text-red-300"}`}>
-                              {lyricsFetchMsg}
-                            </span>
-                          )}
-                          {!lyricsFetchMsg && !fetchingLyrics && (
-                            <span className="text-xs text-white/35">
-                              Letras.mus.br · formato "Artista - Música" · preenche EN + PT automaticamente
-                            </span>
-                          )}
+                    {/* EDIÇÃO */}
+                    {lyricsMode==="edit" && (
+                      <div className="p-4 space-y-3">
+                        {selected && (
+                          <div className="flex flex-wrap items-center gap-2 p-3 bg-purple-900/30 border border-purple-500/20 rounded-xl">
+                            <button
+                              onClick={()=>{setLyricsFetchMsg("");fetchAutoLyrics(selected.title,selected.channel);}}
+                              disabled={fetchingLyrics} style={{touchAction:'manipulation'}}
+                              className="bg-gradient-to-r from-purple-600 to-violet-600 hover:from-purple-500 hover:to-violet-500 disabled:opacity-50 px-4 py-2.5 rounded-xl text-xs font-black transition-all flex items-center gap-2 shadow-lg min-h-[44px]">
+                              {fetchingLyrics ? "⏳ A buscar…" : "✨ Buscar Letra + Tradução PT"}
+                            </button>
+                            {lyricsFetchMsg && (
+                              <span className={`text-xs font-semibold ${lyricsFetchMsg.startsWith("✅")?"text-green-300":"text-red-300"}`}>
+                                {lyricsFetchMsg}
+                              </span>
+                            )}
+                          </div>
+                        )}
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                          <div>
+                            <label className="text-[11px] font-bold text-purple-300 uppercase tracking-widest block mb-2">🇬🇧 Inglês</label>
+                            <textarea value={rawEn} onChange={e=>setRawEn(e.target.value)}
+                              placeholder={"Cole a letra em inglês,\numa linha por verso…"}
+                              rows={8}
+                              className="w-full bg-black/30 border border-white/10 rounded-xl p-3 text-sm text-white placeholder-white/25 resize-none focus:outline-none focus:border-purple-400 font-mono leading-6 transition-colors" />
+                          </div>
+                          <div>
+                            <label className="text-[11px] font-bold text-purple-300 uppercase tracking-widest block mb-2">🇵🇹 Tradução (opcional)</label>
+                            <textarea value={rawPt} onChange={e=>setRawPt(e.target.value)}
+                              placeholder={"Traduz cada verso\n(uma linha por verso)…"}
+                              rows={8}
+                              className="w-full bg-black/30 border border-white/10 rounded-xl p-3 text-sm text-white placeholder-white/25 resize-none focus:outline-none focus:border-purple-400 font-mono leading-6 transition-colors" />
+                          </div>
                         </div>
-                      )}
-
-                      <div>
-                        <label className="text-xs font-bold text-purple-300 uppercase tracking-widest block mb-2">
-                          🇬🇧 Letra em Inglês
-                        </label>
-                        <textarea value={rawEn} onChange={e=>setRawEn(e.target.value)}
-                          placeholder={"Cole a letra em inglês aqui,\numa linha por verso…"}
-                          rows={7}
-                          className="w-full bg-black/30 border border-white/10 rounded-xl p-3 text-sm text-white placeholder-white/25 resize-none focus:outline-none focus:border-purple-400 font-mono leading-6 transition-colors" />
-                      </div>
-                      <div>
-                        <label className="text-xs font-bold text-purple-300 uppercase tracking-widest block mb-2">
-                          🇵🇹 Tradução linha a linha (opcional)
-                        </label>
-                        <textarea value={rawPt} onChange={e=>setRawPt(e.target.value)}
-                          placeholder={"Traduz cada verso aqui\n(uma linha por verso)…"}
-                          rows={7}
-                          className="w-full bg-black/30 border border-white/10 rounded-xl p-3 text-sm text-white placeholder-white/25 resize-none focus:outline-none focus:border-purple-400 font-mono leading-6 transition-colors" />
-                      </div>
-                      {rawEn && (
-                        <div className="md:col-span-2 flex justify-end">
-                          <button onClick={()=>setLyricsMode("view")}
-                            className="bg-violet-600 hover:bg-violet-500 px-4 py-2 rounded-lg text-sm font-bold transition-colors">
+                        {rawEn && (
+                          <button onClick={()=>setLyricsMode("view")} style={{touchAction:'manipulation'}}
+                            className="w-full py-3 min-h-[44px] bg-violet-600 hover:bg-violet-500 rounded-xl text-sm font-bold transition-colors">
                             ▶ Ver Legenda Interactiva →
                           </button>
-                        </div>
-                      )}
-                    </div>
-                  )}
-
-                  {/* MODO LEGENDA INTERACTIVA */}
-                  {lyricsMode==="view" && (
-                    <div className="p-4">
-                      {/* Controlos karaoke */}
-                      <div className="flex flex-wrap items-center gap-2 mb-4 pb-3 border-b border-white/10">
-                        {/* Prev / Next */}
-                        <button onClick={()=>setActiveLine(p=>Math.max(0,p-1))}
-                          disabled={activeLine===0}
-                          className="bg-white/10 hover:bg-white/20 disabled:opacity-30 px-3 py-1.5 rounded-lg text-xs font-bold transition-colors">
-                          ← Anterior
-                        </button>
-                        <button onClick={()=>setActiveLine(p=>Math.min(lines.length-1,p+1))}
-                          disabled={activeLine>=lines.length-1}
-                          className="bg-white/10 hover:bg-white/20 disabled:opacity-30 px-3 py-1.5 rounded-lg text-xs font-bold transition-colors">
-                          Próxima →
-                        </button>
-
-                        {/* Auto */}
-                        <button onClick={()=>setAutoMode(p=>!p)}
-                          className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
-                            autoMode
-                              ? "bg-green-600 text-white shadow-lg shadow-green-900/50"
-                              : "bg-white/10 text-white/70 hover:text-white"
-                          }`}>
-                          {autoMode ? "⏸ Parar Auto" : "▶ Auto Karaoke"}
-                        </button>
-
-                        {/* Delay do auto */}
-                        <div className="flex gap-1">
-                          {AUTO_DELAYS.map(d => (
-                            <button key={d.value} onClick={()=>setAutoDelay(d.value)}
-                              className={`px-2 py-1 rounded text-[11px] font-bold transition-colors ${
-                                autoDelay===d.value
-                                  ? "bg-purple-600 text-white"
-                                  : "bg-white/10 text-white/50 hover:text-white"
-                              }`}>
-                              {d.label}
-                            </button>
-                          ))}
-                        </div>
-
-                        {/* Linha actual */}
-                        <span className="ml-auto text-xs text-white/40 font-mono">
-                          {activeLine+1}/{lines.length}
-                        </span>
-
-                        {/* Reset */}
-                        <button onClick={()=>{setActiveLine(0);setAutoMode(false);}}
-                          className="text-xs text-white/40 hover:text-white transition-colors px-2">
-                          ↺ Reset
-                        </button>
+                        )}
                       </div>
+                    )}
 
-                      {/* Legenda linha a linha */}
-                      <InteractiveLyrics
-                        lines={lines}
-                        activeLine={activeLine}
-                        onLineClick={setActiveLine}
-                        onWordClick={handleWordClick}
-                        onDifficultyChange={handleDifficultyChange}
-                      />
-
-                      {/* Legenda da legenda 😄 */}
-                      <div className="flex flex-wrap gap-3 mt-3 pt-3 border-t border-white/10 text-[11px] text-white/40">
-                        <span>🟡 Palavra marcada (clica para destacar)</span>
-                        <span>⭐ Difícil</span>
-                        <span>✅ Aprendi</span>
-                        <span>○ Normal</span>
+                    {/* MODO INTERACTIVO */}
+                    {lyricsMode==="view" && (
+                      <div className="p-3">
+                        {/* Controlos karaoke */}
+                        <div className="flex flex-wrap items-center gap-2 mb-3 pb-3 border-b border-white/8">
+                          <button onClick={()=>setActiveLine(p=>Math.max(0,p-1))} disabled={activeLine===0}
+                            style={{touchAction:'manipulation'}}
+                            className="bg-white/10 hover:bg-white/20 disabled:opacity-30 px-4 py-2.5 min-h-[44px] rounded-xl text-xs font-bold transition-colors">
+                            ← Ant.
+                          </button>
+                          <button onClick={()=>setActiveLine(p=>Math.min(lines.length-1,p+1))} disabled={activeLine>=lines.length-1}
+                            style={{touchAction:'manipulation'}}
+                            className="bg-white/10 hover:bg-white/20 disabled:opacity-30 px-4 py-2.5 min-h-[44px] rounded-xl text-xs font-bold transition-colors">
+                            Próx. →
+                          </button>
+                          <button onClick={()=>setAutoMode(p=>!p)} style={{touchAction:'manipulation'}}
+                            className={`px-4 py-2.5 min-h-[44px] rounded-xl text-xs font-bold transition-all ${
+                              autoMode ? "bg-green-600 text-white shadow-lg" : "bg-white/10 text-white/60 hover:text-white"
+                            }`}>
+                            {autoMode ? "⏸ Parar" : "▶ Auto"}
+                          </button>
+                          <div className="flex gap-1">
+                            {AUTO_DELAYS.map(d=>(
+                              <button key={d.value} onClick={()=>setAutoDelay(d.value)} style={{touchAction:'manipulation'}}
+                                className={`px-2.5 py-2 min-h-[36px] rounded-lg text-[11px] font-bold transition-colors ${
+                                  autoDelay===d.value ? "bg-purple-600 text-white" : "bg-white/10 text-white/45 hover:text-white"
+                                }`}>
+                                {d.label}
+                              </button>
+                            ))}
+                          </div>
+                          <span className="ml-auto text-xs text-white/35 font-mono">{activeLine+1}/{lines.length}</span>
+                          <button onClick={()=>{setActiveLine(0);setAutoMode(false);}} style={{touchAction:'manipulation'}}
+                            className="text-xs text-white/35 hover:text-white transition-colors px-2 py-1">
+                            ↺
+                          </button>
+                        </div>
+                        <InteractiveLyrics
+                          lines={lines}
+                          activeLine={activeLine}
+                          onLineClick={setActiveLine}
+                          onWordClick={handleWordClick}
+                          onDifficultyChange={handleDifficultyChange}
+                        />
+                        <div className="flex flex-wrap gap-3 mt-3 pt-3 border-t border-white/8 text-[10px] text-white/35">
+                          <span>🟡 Marcar palavra</span>
+                          <span>⭐ Difícil</span>
+                          <span>✅ Aprendi</span>
+                          <span>○ Normal</span>
+                        </div>
                       </div>
-                    </div>
-                  )}
+                    )}
+                  </div>
                 </div>
               )}
+            </div>
 
-              {/* ── Aba NOTAS ─────────────────────────────────────── */}
-              {tab==="notes" && (
-                <div className="p-3">
-                  <label className="text-xs font-bold text-indigo-300 uppercase tracking-widest block mb-2">
-                    🗒️ Anotações
-                  </label>
-                  <textarea value={notes} onChange={e=>setNotes(e.target.value)}
-                    placeholder={`Palavras novas, frases, pronúncias difíceis…`}
-                    rows={8}
-                    className="w-full bg-black/30 border border-white/10 rounded-xl p-3 text-sm text-white placeholder-white/25 resize-none focus:outline-none focus:border-indigo-400 font-mono leading-7 transition-colors" />
-                  {notes && (
-                    <div className="flex justify-between items-center mt-2">
-                      <span className="text-xs text-white/40">{notes.length} caracteres</span>
-                      <button onClick={()=>{
-                        const a = document.createElement("a");
-                        a.href = URL.createObjectURL(new Blob([notes],{type:"text/plain"}));
-                        a.download = `notas-${(selected?.title||"musica").replace(/[^a-z0-9]/gi,"_").slice(0,30)}.txt`;
-                        a.click();
-                      }} className="text-xs bg-indigo-600 hover:bg-indigo-500 px-4 py-1.5 rounded-lg font-semibold transition-colors">
-                        💾 Guardar .txt
-                      </button>
-                    </div>
-                  )}
-                </div>
-              )}
-              </div>{/* fim conteúdo aba */}
-            </div>{/* fim painel letras */}
-
-          </div>{/* fim coluna direita */}
+          </div>{/* fim conteúdo principal */}
         </div>{/* fim grid */}
       </div>{/* fim root */}
     </>

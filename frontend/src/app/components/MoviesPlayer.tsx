@@ -773,12 +773,50 @@ export function MoviesPlayer() {
         },
         events: {
           onReady: (e:any) => {
-            void e;
             if (errorTimeout.current) clearTimeout(errorTimeout.current);
             errorTimeout.current = setTimeout(() => {
               const state = ytPlayer.current?.getPlayerState?.() ?? -1;
               if (state === -1 || state === 5) skipToNextClip();
             }, 12000);
+
+            /* ── Buscar legendas directamente do player (cliente) ──
+               Mais fiável que o backend: o browser do utilizador
+               não tem o IP bloqueado pelo YouTube.             ── */
+            setTimeout(() => {
+              try {
+                const resp = e.target.getPlayerResponse?.();
+                const tracks = resp?.captions?.playerCaptionsTracklistRenderer?.captionTracks;
+                if (!tracks?.length) return;
+
+                const engTrack = (
+                  tracks.find((t: any) => t.languageCode === "en") ||
+                  tracks.find((t: any) => t.languageCode?.startsWith("en")) ||
+                  tracks[0]
+                );
+                if (!engTrack?.baseUrl) return;
+
+                fetch(decodeURIComponent(engTrack.baseUrl) + "&fmt=json3")
+                  .then(r => r.ok ? r.json() : null)
+                  .then((data: any) => {
+                    if (!data?.events) return;
+                    const segs: TimedSub[] = data.events
+                      .filter((ev: any) => ev.segs?.length)
+                      .map((ev: any) => ({
+                        start: (ev.tStartMs || 0) / 1000,
+                        dur:   Math.max((ev.dDurationMs || 2000) / 1000, 0.3),
+                        text:  ev.segs
+                          .map((s: any) => (s.utf8 || "").replace(/\n/g, " "))
+                          .join("").replace(/\s+/g, " ").trim(),
+                      }))
+                      .filter((s: any) => s.text);
+                    if (segs.length >= 3) {
+                      setTranscript(segs);
+                      setTransLoading(false);
+                    }
+                  })
+                  .catch(() => {});
+              } catch { /* getPlayerResponse não disponível */ }
+            }, 1500);
           },
           onStateChange: (e:any) => {
             setIsPlaying(e.data === 1);

@@ -914,6 +914,7 @@ export function MoviesPlayer() {
   [genreFilter]);
 
   function tryNext() { skipToNextClip(); }
+  const [mobileListOpen, setMobileListOpen] = useState(false);
 
   /* ════════════════════════════════════════════════════════════════
      RENDER
@@ -1042,6 +1043,31 @@ export function MoviesPlayer() {
         </>
       )}
 
+      {/* Drawer mobile — lista de filmes */}
+      {mobileListOpen && (
+        <div style={{position:"fixed",inset:0,zIndex:100,background:"rgba(0,0,0,.75)",backdropFilter:"blur(6px)"}}
+          onClick={()=>setMobileListOpen(false)}>
+          <div style={{position:"absolute",bottom:0,left:0,right:0,
+            background:"linear-gradient(160deg,#1a0800,#2d1200)",
+            borderRadius:"20px 20px 0 0",
+            padding:"16px 16px calc(16px + env(safe-area-inset-bottom))",
+            maxHeight:"78dvh",display:"flex",flexDirection:"column",gap:12}}
+            onClick={e=>e.stopPropagation()}>
+            <div style={{display:"flex",alignItems:"center",justifyContent:"space-between"}}>
+              <p style={{fontWeight:800,color:"#fff",fontSize:16,margin:0}}>🎬 Filmes</p>
+              <button onClick={()=>setMobileListOpen(false)}
+                style={{background:"rgba(245,158,11,.2)",border:"1px solid rgba(245,158,11,.3)",borderRadius:10,
+                  padding:"6px 14px",color:"#fcd34d",cursor:"pointer",fontSize:13,fontWeight:700}}>
+                ✕ Fechar
+              </button>
+            </div>
+            <div style={{flex:1,overflow:"hidden"}}>
+              <MovieList />
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Root — sem scroll */}
       <div className="flex flex-col text-white"
         style={{height:"100dvh",overflow:"hidden",
@@ -1066,7 +1092,7 @@ export function MoviesPlayer() {
               <span style={{fontSize:18}}>🎬</span>
               <h1 style={{fontSize:15,fontWeight:900,margin:0,letterSpacing:"-.3px"}}>Filmes · Inglês</h1>
             </div>
-            <button className="lg:hidden" onClick={()=>{/* mobile drawer */}}
+            <button className="lg:hidden" onClick={()=>setMobileListOpen(true)}
               style={{position:"absolute",right:12,background:"rgba(245,158,11,.2)",
                 border:"1px solid rgba(245,158,11,.3)",borderRadius:10,
                 padding:"6px 12px",color:"#fcd34d",fontSize:12,fontWeight:700,cursor:"pointer"}}>

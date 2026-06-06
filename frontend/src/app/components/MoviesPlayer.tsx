@@ -319,6 +319,12 @@ const EQ_CLS  = ["meq1","meq2","meq3","meq4","meq5"];
 const EQ_COL  = ["#fbbf24","#f59e0b","#d97706","#fcd34d","#fef08a"];
 
 /* ── Utilitários ─────────────────────────────────────────────────── */
+function htmlDecode(str: string): string {
+  return str
+    .replace(/&#39;/g, "'").replace(/&quot;/g, '"')
+    .replace(/&amp;/g, "&").replace(/&lt;/g, "<").replace(/&gt;/g, ">");
+}
+
 function isBadTitle(title: string): boolean {
   const t = title.toLowerCase();
   return BAD_WORDS.some(w => t.includes(w));
@@ -352,7 +358,9 @@ function MovieEQ({active}:{active:boolean}) {
 
 /* ── Barra Now Playing ───────────────────────────────────────────── */
 function NowPlayingBar({clip,isPlaying,ccOn}:{clip:MovieClip;isPlaying:boolean;ccOn:boolean}) {
-  const text = `${clip.title} — ${clip.channel}   •   ${clip.title} — ${clip.channel}   •   `;
+  const safeTitle = htmlDecode(clip.title);
+  const safeChan  = htmlDecode(clip.channel);
+  const text = `${safeTitle} — ${safeChan}   •   ${safeTitle} — ${safeChan}   •   `;
   return (
     <div className="mslide flex items-center gap-3 bg-black/60 backdrop-blur border border-amber-500/30 rounded-xl px-4 py-3">
       <MovieEQ active={isPlaying} />

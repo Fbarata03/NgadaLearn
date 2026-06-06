@@ -261,7 +261,7 @@ export function LandingPage() {
             </div>
 
             {/* Card flutuante — Alunos online */}
-            <div className="lp-float2" style={{ position: "absolute", top: "30%", right: "-14%", background: "rgba(255,255,255,.07)", backdropFilter: "blur(16px)", border: "1px solid rgba(255,255,255,.12)", borderRadius: 16, padding: "12px 16px", boxShadow: "0 12px 40px rgba(0,0,0,.3)" }}>
+            <div className="lp-float2" style={{ position: "absolute", top: "30%", right: "8px", background: "rgba(255,255,255,.07)", backdropFilter: "blur(16px)", border: "1px solid rgba(255,255,255,.12)", borderRadius: 16, padding: "12px 16px", boxShadow: "0 12px 40px rgba(0,0,0,.3)" }}>
               <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 6 }}>
                 <div className="lp-pulse" style={{ width: 7, height: 7, borderRadius: "50%", background: "#4ade80", flexShrink: 0 }} />
                 <span style={{ fontSize: 11, fontWeight: 700, color: "#fff" }}>A estudar agora</span>

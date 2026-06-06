@@ -159,7 +159,7 @@ export function Admin() {
     (u: User) => u.plan === "monthly" && !checkAccessActive(u)
   ).length;
   const totalRevenue =
-    lifetime * 20 + (monthlyActive + monthlyExpired) * 5;
+    lifetime * 150 + (monthlyActive + monthlyExpired) * 15;
 
   // Filtros
   const filtered = allUsers.filter((u: User) => {
@@ -349,7 +349,7 @@ export function Admin() {
             bg="bg-purple-50"
             label="Plano Vitalício"
             value={lifetime}
-            sub={`US$ ${lifetime * 20} receita`}
+            sub={`US$ ${lifetime * 150} receita`}
           />
           <StatCard
             icon={<CheckCircle2 className="w-5 h-5 text-green-600" />}

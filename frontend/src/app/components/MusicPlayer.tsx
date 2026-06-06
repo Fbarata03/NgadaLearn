@@ -738,15 +738,15 @@ export function MusicPlayer() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selected?.id]);
 
-  /* ── Auto-avanço de letras quando o CC não está disponível ─────── */
+  /* ── Auto-avanço de letras (sempre activo enquanto toca) ────────── */
   useEffect(() => {
     if (autoAdvRef.current) clearInterval(autoAdvRef.current);
-    if (!isPlaying || !lines.length || transcript.length > 0) return;
+    if (!isPlaying || !lines.length) return;
     autoAdvRef.current = setInterval(() => {
       setActiveLine(p => (p >= lines.length - 1 ? p : p + 1));
-    }, 4500);
+    }, 4000);
     return () => { if (autoAdvRef.current) clearInterval(autoAdvRef.current); };
-  }, [isPlaying, lines.length, transcript.length]);
+  }, [isPlaying, lines.length]);
 
   /* ── Unmount: limpar player, timeouts e polling ─────────────────── */
   useEffect(() => {
@@ -1040,21 +1040,21 @@ export function MusicPlayer() {
               <NowPlayingBar video={selected} isPlaying={isPlaying} activeLyric={activeLyricText()} />
             )}
 
-            {/* ── Legenda principal: CC em tempo real OU letras com auto-avanço ── */}
-            {transcript.length > 0 ? (
+            {/* ── Legenda principal ── letras prioritárias, CC como fallback ── */}
+            {lines.length > 0 ? (
+              <LyricsRiser
+                lines={lines.map(l => l.en)}
+                active={activeLine}
+                isPlaying={isPlaying}
+                onNext={() => setActiveLine(p => Math.min(lines.length-1, p+1))}
+                onPrev={() => setActiveLine(p => Math.max(0, p-1))}
+              />
+            ) : transcript.length > 0 ? (
               <LyricsRiser
                 lines={transcriptLines}
                 active={Math.max(0, liveSubIdx)}
                 isPlaying={isPlaying}
                 isLive
-              />
-            ) : lines.length > 0 ? (
-              <LyricsRiser
-                lines={lines.map(l => l.en)}
-                active={activeLine}
-                isPlaying={isPlaying}
-                onNext={() => { setActiveLine(p => Math.min(lines.length-1, p+1)); if(autoAdvRef.current){clearInterval(autoAdvRef.current);autoAdvRef.current=null;} }}
-                onPrev={() => { setActiveLine(p => Math.max(0, p-1)); if(autoAdvRef.current){clearInterval(autoAdvRef.current);autoAdvRef.current=null;} }}
               />
             ) : transLoading && selected ? (
               <div className="flex items-center gap-2 text-xs text-purple-400/50 justify-center py-3 flex-shrink-0">

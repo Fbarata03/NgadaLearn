@@ -446,8 +446,25 @@ function SubtitleRiser({ lines, active, isPlaying, onWordClick }: {
   lines: string[]; active: number; isPlaying: boolean;
   onWordClick?: (word: string, e: React.MouseEvent) => void;
 }) {
+  const wrapRef = useRef<HTMLDivElement>(null);
+  const [wrapH, setWrapH] = useState(320);
+
+  useEffect(() => {
+    const el = wrapRef.current;
+    if (!el) return;
+    const ro = new ResizeObserver(es => setWrapH(es[0].contentRect.height));
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
+
   if (!lines.length) return null;
-  const ty = -active * SL_H;
+
+  const PROG  = 3;
+  const BADGE = 28;
+  const HINT  = onWordClick ? 20 : 0;
+  const clipH = Math.max(SL_H * 3, wrapH - PROG - BADGE - HINT);
+  const padV  = Math.max(0, (clipH - SL_H) / 2);
+  const ty    = -active * SL_H;
 
   function renderWords(text: string) {
     if (!onWordClick) return <>{text}</>;
@@ -472,96 +489,62 @@ function SubtitleRiser({ lines, active, isPlaying, onWordClick }: {
   }
 
   return (
-    <div style={{
-      position:"relative",
-      background:"linear-gradient(160deg,rgba(10,4,1,.98) 0%,rgba(45,18,2,.98) 50%,rgba(18,6,1,.98) 100%)",
-      border:"1px solid rgba(245,158,11,.28)",
-      borderRadius:22,overflow:"hidden",
-      boxShadow:"0 0 40px rgba(180,83,9,.10), inset 0 0 80px rgba(180,83,9,.03)",
+    <div ref={wrapRef} style={{
+      height:"100%",position:"relative",
+      background:"linear-gradient(160deg,rgba(8,3,0,.99) 0%,rgba(38,15,2,.99) 50%,rgba(15,5,0,.99) 100%)",
+      border:"1px solid rgba(245,158,11,.22)",borderRadius:20,overflow:"hidden",
+      display:"flex",flexDirection:"column",
     }}>
       {/* Progresso */}
-      <div style={{height:3,background:"rgba(245,158,11,.1)"}}>
+      <div style={{height:PROG,background:"rgba(245,158,11,.1)",flexShrink:0}}>
+        <div style={{height:"100%",width:`${Math.max(0,Math.round(((active+1)/lines.length)*100))}%`,
+          background:"linear-gradient(90deg,#f59e0b,#d97706)",transition:"width .25s ease",borderRadius:2}}/>
+      </div>
+
+      {/* Badge */}
+      <div style={{height:BADGE,display:"flex",alignItems:"center",padding:"0 16px",flexShrink:0}}>
+        <span className="live-badge" style={{fontSize:9,fontWeight:700,letterSpacing:".1em",
+          background:"rgba(34,197,94,.12)",color:"#4ade80",border:"1px solid rgba(34,197,94,.3)",borderRadius:99,padding:"2px 8px"}}>● CC AO VIVO</span>
+        <div style={{flex:1}}/>
+        <span style={{fontSize:10,fontFamily:"monospace",color:"rgba(245,158,11,.3)"}}>{active+1}/{lines.length}</span>
+      </div>
+
+      {/* Clip window */}
+      <div style={{height:clipH,overflow:"hidden",position:"relative",flexShrink:0}}>
+        <div style={{position:"absolute",top:0,left:0,right:0,zIndex:10,pointerEvents:"none",
+          height:clipH*0.32,background:"linear-gradient(to bottom,rgba(8,3,0,1) 0%,rgba(8,3,0,.7) 60%,transparent 100%)"}}/>
         <div style={{
-          height:"100%",
-          width:`${Math.max(0,Math.round(((active+1)/lines.length)*100))}%`,
-          background:"linear-gradient(90deg,#f59e0b,#d97706)",
-          transition:"width .25s ease",borderRadius:2,
-        }}/>
-      </div>
-
-      {/* Badge live */}
-      <div style={{position:"absolute",top:10,right:14,zIndex:20}}>
-        <span className="live-badge" style={{
-          fontSize:9,fontWeight:700,letterSpacing:".1em",
-          background:"rgba(34,197,94,.12)",color:"#4ade80",
-          border:"1px solid rgba(34,197,94,.3)",borderRadius:99,padding:"2px 8px",
-        }}>● CC AO VIVO</span>
-      </div>
-
-      {/* Orbs */}
-      <div style={{position:"absolute",inset:0,overflow:"hidden",pointerEvents:"none"}}>
-        <div style={{position:"absolute",top:"20%",left:"5%",width:100,height:100,borderRadius:"50%",
-          background:"rgba(245,158,11,.09)",filter:"blur(35px)",animation:"mglow 4.5s ease-in-out infinite"}}/>
-        <div style={{position:"absolute",bottom:"20%",right:"5%",width:75,height:75,borderRadius:"50%",
-          background:"rgba(234,88,12,.07)",filter:"blur(28px)",animation:"mglow 5.5s 1s ease-in-out infinite"}}/>
-      </div>
-
-      {/* Fade topo */}
-      <div style={{
-        position:"absolute",top:0,left:0,right:0,zIndex:10,pointerEvents:"none",
-        height:SL_H*2.2,
-        background:"linear-gradient(to bottom,rgba(10,4,1,1) 0%,rgba(10,4,1,.75) 55%,transparent 100%)",
-      }}/>
-
-      {/* Container deslizante */}
-      <div style={{height:SL_SLOTS*SL_H,overflow:"hidden",position:"relative"}}>
-        <div style={{
-          transform:`translateY(${ty}px)`,
-          transition:"transform .5s cubic-bezier(.4,0,.2,1)",
-          paddingTop:SL_CTR*SL_H,
-          paddingBottom:SL_CTR*SL_H,
+          transform:`translateY(${ty}px)`,transition:"transform .5s cubic-bezier(.4,0,.2,1)",
+          paddingTop:padV,paddingBottom:padV,
         }}>
           {lines.map((line, i) => {
             const dist  = Math.abs(i - active);
             const isAct = i === active;
-            const opacity = dist===0?1:dist===1?.38:dist===2?.16:.06;
+            const opacity = dist===0?1:dist===1?.4:dist===2?.18:.07;
             const scale   = dist===0?1:dist===1?.92:.84;
             return (
-              <div key={i} style={{
-                height:SL_H,display:"flex",alignItems:"center",
+              <div key={i} style={{height:SL_H,display:"flex",alignItems:"center",
                 justifyContent:"center",padding:"0 28px",
-                opacity,transform:`scale(${scale})`,
-                transition:"opacity .5s ease, transform .5s ease",
-              }}>
-                <p style={{
-                  textAlign:"center",lineHeight:1.3,margin:0,
-                  fontSize:isAct?"clamp(1.25rem,3.2vw,1.75rem)":"clamp(.85rem,2.2vw,1.08rem)",
-                  fontWeight:isAct?800:400,
-                  fontStyle:dist>=2?"italic":"normal",
+                opacity,transform:`scale(${scale})`,transition:"opacity .5s ease, transform .5s ease"}}>
+                <p style={{textAlign:"center",lineHeight:1.3,margin:0,
+                  fontSize:isAct?"clamp(1.2rem,3vw,1.65rem)":"clamp(.82rem,2vw,1.05rem)",
+                  fontWeight:isAct?800:400,fontStyle:dist>=2?"italic":"normal",
                   color:isAct?"#fff":"rgba(255,255,255,.5)",
-                  textShadow:isAct?"0 2px 30px rgba(0,0,0,.9),0 0 50px rgba(245,158,11,.2)":"none",
-                }}>
+                  textShadow:isAct?"0 2px 28px rgba(0,0,0,.9),0 0 48px rgba(245,158,11,.18)":"none"}}>
                   {isAct ? renderWords(line) : line || "♪"}
                 </p>
               </div>
             );
           })}
         </div>
+        <div style={{position:"absolute",bottom:0,left:0,right:0,zIndex:10,pointerEvents:"none",
+          height:clipH*0.28,background:"linear-gradient(to top,rgba(8,3,0,1) 0%,rgba(8,3,0,.65) 60%,transparent 100%)"}}/>
       </div>
 
-      {/* Fade base */}
-      <div style={{
-        position:"absolute",bottom:0,left:0,right:0,zIndex:10,pointerEvents:"none",
-        height:SL_H*1.8,
-        background:"linear-gradient(to top,rgba(10,4,1,1) 0%,rgba(10,4,1,.65) 55%,transparent 100%)",
-      }}/>
-
-      {/* Indicador de clique */}
-      {onWordClick && (
-        <p style={{
-          textAlign:"center",fontSize:9,color:"rgba(255,255,255,.18)",
-          paddingBottom:12,position:"relative",zIndex:20,margin:0,
-        }}>Clica numa palavra para ouvir</p>
+      {/* Dica de clique */}
+      {HINT>0&&(
+        <p style={{flexShrink:0,height:HINT,display:"flex",alignItems:"center",justifyContent:"center",
+          fontSize:10,color:"rgba(245,158,11,.25)",margin:0}}>Clica numa palavra para ouvir 🔊</p>
       )}
     </div>
   );
@@ -1059,101 +1042,108 @@ export function MoviesPlayer() {
         </>
       )}
 
-      <div className="flex flex-col bg-gradient-to-br from-slate-950 via-amber-950/15 to-slate-950 text-white"
-        style={{minHeight:'100dvh', paddingBottom:'env(safe-area-inset-bottom)'}}>
+      {/* Root — sem scroll */}
+      <div className="flex flex-col text-white"
+        style={{height:"100dvh",overflow:"hidden",
+          background:"linear-gradient(160deg,#0a0500 0%,#1c0a00 45%,#080300 100%)",
+          paddingBottom:"env(safe-area-inset-bottom)"}}>
 
         {/* Header */}
-        <div className="flex-shrink-0 bg-gradient-to-r from-amber-800 via-orange-800 to-amber-900 px-4 shadow-xl"
-          style={{height:52, paddingTop:'env(safe-area-inset-top)'}}>
-          <div className="max-w-7xl mx-auto h-full relative flex items-center justify-center">
-            <Link to="/lessons"
-              className="absolute left-0 flex items-center gap-1.5 text-amber-200 hover:text-white transition-colors px-2"
-              style={{minHeight:44,minWidth:44,touchAction:'manipulation'}}>
-              <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+        <div style={{flexShrink:0,height:52,paddingTop:"env(safe-area-inset-top)",
+          background:"rgba(0,0,0,.4)",backdropFilter:"blur(20px)",
+          borderBottom:"1px solid rgba(245,158,11,.15)"}}>
+          <div style={{maxWidth:1400,margin:"0 auto",height:"100%",position:"relative",
+            display:"flex",alignItems:"center",justifyContent:"center",padding:"0 16px"}}>
+            <Link to="/lessons" style={{position:"absolute",left:16,display:"flex",alignItems:"center",
+              gap:6,color:"rgba(253,230,138,.7)",textDecoration:"none",fontSize:14,fontWeight:600}}
+              className="hover:text-white transition-colors">
+              <svg xmlns="http://www.w3.org/2000/svg" width={18} height={18} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7"/>
               </svg>
-              <span className="text-sm font-semibold hidden sm:inline">Voltar</span>
+              <span className="hidden sm:inline">Voltar</span>
             </Link>
-            <div className="flex items-center gap-2">
-              <span className="text-lg">🎬</span>
-              <h1 className="text-sm sm:text-base font-black tracking-tight">Filmes · Inglês</h1>
+            <div style={{display:"flex",alignItems:"center",gap:8}}>
+              <span style={{fontSize:18}}>🎬</span>
+              <h1 style={{fontSize:15,fontWeight:900,margin:0,letterSpacing:"-.3px"}}>Filmes · Inglês</h1>
             </div>
+            <button className="lg:hidden" onClick={()=>{/* mobile drawer */}}
+              style={{position:"absolute",right:12,background:"rgba(245,158,11,.2)",
+                border:"1px solid rgba(245,158,11,.3)",borderRadius:10,
+                padding:"6px 12px",color:"#fcd34d",fontSize:12,fontWeight:700,cursor:"pointer"}}>
+              🎬 Lista
+            </button>
           </div>
         </div>
 
-        <div className="flex-1 max-w-7xl mx-auto w-full px-3 pt-2
-          lg:grid lg:grid-cols-3 lg:gap-3 lg:overflow-hidden lg:min-h-0">
+        {/* Main grid */}
+        <div style={{flex:1,overflow:"hidden",maxWidth:1400,margin:"0 auto",width:"100%",padding:"10px 12px 8px"}}>
+          <style>{`@media(min-width:1024px){.movie-grid{grid-template-columns:320px 1fr!important;}}`}</style>
+          <div className="movie-grid" style={{display:"grid",gridTemplateColumns:"1fr",gap:12,height:"100%",overflow:"hidden"}}>
 
-          {/* Lista — desktop esq, rola de forma independente */}
-          <div className="hidden lg:flex lg:col-span-1 lg:flex-col lg:min-h-0 lg:overflow-hidden gap-2 pb-2">
-            <MovieList />
-          </div>
-
-          {/* Coluna principal */}
-          <div className="lg:col-span-2 flex flex-col lg:min-h-0 lg:overflow-hidden gap-2">
-
-            {/* Player — sticky no mobile, fixo no desktop */}
-            <div className={`flex-shrink-0 rounded-2xl overflow-hidden shadow-2xl aspect-video bg-black relative lg:max-h-[44vh] sticky top-[52px] lg:static z-10 ${isPlaying?"movie-glow":""}`}>
-              <div id="mv-player-root" className="w-full h-full"
-                style={{display:selected&&!vidError?"block":"none"}} />
-
-              {selected&&vidError&&(
-                <div className="absolute inset-0 flex flex-col items-center justify-center gap-4 bg-slate-900">
-                  <span className="text-5xl">😔</span>
-                  <p className="text-sm text-white/70 font-semibold">Vídeo não disponível.</p>
-                  <button onClick={tryNext} style={{touchAction:'manipulation'}}
-                    className="bg-amber-600 hover:bg-amber-500 px-5 py-3 min-h-[44px] rounded-xl text-sm font-bold transition-colors">
-                    ▶ Próxima cena
-                  </button>
-                </div>
-              )}
-
-              {!selected&&(
-                <div className="absolute inset-0 flex flex-col items-center justify-center text-white/20 gap-3">
-                  <div className="flex items-end gap-1 opacity-30">
-                    {EQ_CLS.map((cls,i)=>(
-                      <div key={i} className={cls} style={{width:8,backgroundColor:EQ_COL[i],borderRadius:3,minHeight:3}} />
-                    ))}
-                  </div>
-                  <p className="text-base font-bold">Escolhe uma cena</p>
-                  <p className="text-xs text-white/15">Pesquisa ou selecciona da lista</p>
-                </div>
-              )}
+            {/* Lista (desktop esquerda) */}
+            <div className="hidden lg:flex flex-col" style={{overflow:"hidden",gap:8}}>
+              <MovieList />
             </div>
 
-            {/* Conteúdo abaixo do player */}
-            <div className="flex-1 flex flex-col gap-1.5 pb-2 overflow-hidden">
+            {/* Coluna principal */}
+            <div style={{display:"flex",flexDirection:"column",gap:10,overflow:"hidden",minWidth:0}}>
+
+              {/* Player */}
+              <div className={`flex-shrink-0 rounded-2xl overflow-hidden shadow-2xl bg-black relative ${isPlaying?"movie-glow":""}`}
+                style={{aspectRatio:"16/9",maxHeight:"min(42vh,480px)"}}>
+                <div id="mv-player-root" className="w-full h-full"
+                  style={{display:selected&&!vidError?"block":"none"}}/>
+
+                {selected&&vidError&&(
+                  <div style={{position:"absolute",inset:0,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:16,background:"#100500"}}>
+                    <span style={{fontSize:48}}>😔</span>
+                    <p style={{color:"rgba(255,255,255,.6)",fontSize:14,fontWeight:600,margin:0}}>Vídeo não disponível.</p>
+                    <button onClick={tryNext} style={{touchAction:"manipulation",background:"#d97706",border:"none",borderRadius:14,padding:"12px 24px",color:"#fff",fontWeight:700,fontSize:14,cursor:"pointer"}}>▶ Próxima cena</button>
+                  </div>
+                )}
+
+                {!selected&&(
+                  <div style={{position:"absolute",inset:0,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:12,color:"rgba(255,255,255,.2)"}}>
+                    <div style={{display:"flex",alignItems:"flex-end",gap:3,opacity:.35}}>
+                      {EQ_CLS.map((cls,i)=><div key={i} className={cls} style={{width:7,backgroundColor:EQ_COL[i],borderRadius:3,minHeight:3}}/>)}
+                    </div>
+                    <p style={{fontSize:15,fontWeight:600,margin:0}}>Escolhe uma cena</p>
+                  </div>
+                )}
+              </div>
 
               {/* Now Playing */}
               {selected&&!vidError&&(
-                <NowPlayingBar clip={selected} isPlaying={isPlaying} ccOn={true} />
+                <div style={{flexShrink:0}}>
+                  <NowPlayingBar clip={selected} isPlaying={isPlaying} ccOn={true}/>
+                </div>
               )}
 
-              {/* CC em tempo real — SubtitleRiser */}
-              {transcript.length>0 ? (
-                <SubtitleRiser
-                  lines={transcriptLines}
-                  active={Math.max(0,liveSubIdx)}
-                  isPlaying={isPlaying}
-                  onWordClick={(word,e)=>setWordPopup({word,x:e.clientX,y:e.clientY})}
-                />
-              ) : transLoading&&selected ? (
-                <div className="flex items-center gap-2 text-xs text-amber-400/50 justify-center py-3">
-                  <div className="w-3 h-3 border border-amber-400/40 border-t-amber-400 rounded-full animate-spin" />
-                  A carregar legenda…
-                </div>
-              ) : null}
-
-              {/* Lista de filmes — mobile inline */}
-              <div className="lg:hidden bg-white/8 backdrop-blur rounded-2xl border border-amber-500/10 overflow-hidden p-3" style={{minHeight:220}}>
-                <MovieList />
+              {/* SubtitleRiser — preenche todo o espaço restante */}
+              <div style={{flex:1,minHeight:0,overflow:"hidden"}}>
+                {transcript.length>0 ? (
+                  <SubtitleRiser
+                    lines={transcriptLines} active={Math.max(0,liveSubIdx)}
+                    isPlaying={isPlaying}
+                    onWordClick={(word,e)=>setWordPopup({word,x:e.clientX,y:e.clientY})}
+                  />
+                ) : transLoading&&selected ? (
+                  <div style={{height:"100%",display:"flex",alignItems:"center",justifyContent:"center",gap:8}}>
+                    <div style={{width:14,height:14,border:"2px solid rgba(245,158,11,.4)",borderTopColor:"#f59e0b",borderRadius:"50%",animation:"spin .8s linear infinite"}}/>
+                    <span style={{fontSize:12,color:"rgba(245,158,11,.5)"}}>A carregar legenda…</span>
+                  </div>
+                ) : (
+                  <div style={{height:"100%",display:"flex",alignItems:"center",justifyContent:"center",flexDirection:"column",gap:10,color:"rgba(245,158,11,.22)"}}>
+                    <span style={{fontSize:40}}>🎬</span>
+                    <span style={{fontSize:13}}>A legenda aparece quando o vídeo tocar</span>
+                  </div>
+                )}
               </div>
 
-            </div>{/* fim área rolável */}
-
-          </div>{/* fim coluna principal */}
-        </div>{/* fim grid */}
-      </div>{/* fim root */}
+            </div>
+          </div>
+        </div>
+      </div>
     </>
   );
 }

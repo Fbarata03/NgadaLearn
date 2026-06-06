@@ -766,9 +766,7 @@ export function MoviesPlayer() {
           modestbranding: 1,
           playsinline:    1,
           autoplay:       0,
-          cc_load_policy: 1,
-          cc_lang_pref:   "en",
-          hl:             "en",
+          cc_load_policy: 0,
           origin:         window.location.origin,
         },
         events: {
@@ -779,44 +777,56 @@ export function MoviesPlayer() {
               if (state === -1 || state === 5) skipToNextClip();
             }, 12000);
 
-            /* ── Buscar legendas directamente do player (cliente) ──
-               Mais fiável que o backend: o browser do utilizador
-               não tem o IP bloqueado pelo YouTube.             ── */
-            setTimeout(() => {
+            /* ── Buscar legendas no browser (várias estratégias) ── */
+            setTimeout(async () => {
+              const vid = selectedRef.current?.id;
+              if (!vid) return;
+
+              function parseEvents(events: any[]): TimedSub[] {
+                return (events || [])
+                  .filter((ev: any) => ev.segs?.length)
+                  .map((ev: any) => ({
+                    start: (ev.tStartMs || 0) / 1000,
+                    dur:   Math.max((ev.dDurationMs || 2000) / 1000, 0.3),
+                    text:  ev.segs.map((s: any) => (s.utf8 || "").replace(/\n/g, " "))
+                      .join("").replace(/\s+/g, " ").trim(),
+                  }))
+                  .filter((s: any) => s.text);
+              }
+
+              /* Estratégia A: captionTracks do player → proxy no backend */
               try {
                 const resp = e.target.getPlayerResponse?.();
-                const tracks = resp?.captions?.playerCaptionsTracklistRenderer?.captionTracks;
-                if (!tracks?.length) return;
+                const tracks: any[] = resp?.captions?.playerCaptionsTracklistRenderer?.captionTracks || [];
+                const track = tracks.find((t: any) => t.languageCode === "en") ||
+                              tracks.find((t: any) => t.languageCode?.startsWith("en")) ||
+                              tracks[0];
+                if (track?.baseUrl) {
+                  const proxyUrl = `${BACKEND}/api/youtube/caption-proxy?url=${encodeURIComponent(track.baseUrl + "&fmt=json3")}`;
+                  const r = await fetch(proxyUrl);
+                  if (r.ok) {
+                    const d = await r.json();
+                    const segs = parseEvents(d.events);
+                    if (segs.length >= 3) { setTranscript(segs); setTransLoading(false); return; }
+                  }
+                }
+              } catch { /* continua */ }
 
-                const engTrack = (
-                  tracks.find((t: any) => t.languageCode === "en") ||
-                  tracks.find((t: any) => t.languageCode?.startsWith("en")) ||
-                  tracks[0]
-                );
-                if (!engTrack?.baseUrl) return;
+              /* Estratégia B: timedtext via backend proxy */
+              for (const lang of ["en", "en&kind=asr", "en-US"]) {
+                try {
+                  const captionUrl = `https://www.youtube.com/api/timedtext?v=${vid}&lang=${lang}&fmt=json3`;
+                  const r = await fetch(`${BACKEND}/api/youtube/caption-proxy?url=${encodeURIComponent(captionUrl)}`);
+                  if (!r.ok) continue;
+                  const d = await r.json();
+                  const segs = parseEvents(d.events);
+                  if (segs.length >= 3) { setTranscript(segs); setTransLoading(false); return; }
+                } catch { /* próximo */ }
+              }
 
-                fetch(decodeURIComponent(engTrack.baseUrl) + "&fmt=json3")
-                  .then(r => r.ok ? r.json() : null)
-                  .then((data: any) => {
-                    if (!data?.events) return;
-                    const segs: TimedSub[] = data.events
-                      .filter((ev: any) => ev.segs?.length)
-                      .map((ev: any) => ({
-                        start: (ev.tStartMs || 0) / 1000,
-                        dur:   Math.max((ev.dDurationMs || 2000) / 1000, 0.3),
-                        text:  ev.segs
-                          .map((s: any) => (s.utf8 || "").replace(/\n/g, " "))
-                          .join("").replace(/\s+/g, " ").trim(),
-                      }))
-                      .filter((s: any) => s.text);
-                    if (segs.length >= 3) {
-                      setTranscript(segs);
-                      setTransLoading(false);
-                    }
-                  })
-                  .catch(() => {});
-              } catch { /* getPlayerResponse não disponível */ }
-            }, 1500);
+              /* Todas as estratégias falharam — parar spinner */
+              setTransLoading(false);
+            }, 2000);
           },
           onStateChange: (e:any) => {
             setIsPlaying(e.data === 1);
@@ -861,7 +871,11 @@ export function MoviesPlayer() {
     setTransLoading(true);
     fetch(`${BACKEND}/api/youtube/transcript/${selected.id}`)
       .then(r => r.json())
-      .then(d => { setTranscript(d.segments || []); setTransLoading(false); })
+      .then(d => {
+        const segs = d.segments || [];
+        if (segs.length) { setTranscript(segs); setTransLoading(false); }
+        /* senão mantém transLoading=true — o fallback do browser trata */
+      })
       .catch(() => setTransLoading(false));
   }, [selected?.id]);
 
@@ -1191,15 +1205,41 @@ export function MoviesPlayer() {
                     isPlaying={isPlaying}
                     onWordClick={(word,e)=>setWordPopup({word,x:e.clientX,y:e.clientY})}
                   />
-                ) : transLoading&&selected ? (
-                  <div style={{height:"100%",display:"flex",alignItems:"center",justifyContent:"center",gap:8}}>
-                    <div style={{width:14,height:14,border:"2px solid rgba(245,158,11,.4)",borderTopColor:"#f59e0b",borderRadius:"50%",animation:"spin .8s linear infinite"}}/>
-                    <span style={{fontSize:12,color:"rgba(245,158,11,.5)"}}>A carregar legenda…</span>
-                  </div>
                 ) : (
-                  <div style={{height:"100%",display:"flex",alignItems:"center",justifyContent:"center",flexDirection:"column",gap:10,color:"rgba(245,158,11,.22)"}}>
-                    <span style={{fontSize:40}}>🎬</span>
-                    <span style={{fontSize:13}}>A legenda aparece quando o vídeo tocar</span>
+                  /* Box estiloso sempre visível — spinner dentro quando loading */
+                  <div style={{
+                    height:"100%",
+                    background:"linear-gradient(160deg,rgba(8,3,0,.99) 0%,rgba(38,15,2,.99) 50%,rgba(15,5,0,.99) 100%)",
+                    border:"1px solid rgba(245,158,11,.22)",
+                    borderRadius:20,
+                    overflow:"hidden",
+                    display:"flex",flexDirection:"column",
+                    alignItems:"center",justifyContent:"center",gap:14,
+                  }}>
+                    {transLoading && selected ? (
+                      <>
+                        <div style={{display:"flex",alignItems:"flex-end",gap:3}}>
+                          {EQ_CLS.map((cls,i)=>(
+                            <div key={i} className={cls} style={{width:5,backgroundColor:EQ_COL[i],borderRadius:3,minHeight:3}} />
+                          ))}
+                        </div>
+                        <span style={{fontSize:12,color:"rgba(245,158,11,.55)",fontWeight:600}}>A carregar legenda…</span>
+                      </>
+                    ) : selected ? (
+                      <>
+                        <span style={{fontSize:38,opacity:.35}}>🎬</span>
+                        <span style={{fontSize:13,color:"rgba(245,158,11,.35)",textAlign:"center",padding:"0 24px"}}>
+                          Legenda indisponível para este clip
+                        </span>
+                      </>
+                    ) : (
+                      <>
+                        <span style={{fontSize:38,opacity:.25}}>🎬</span>
+                        <span style={{fontSize:13,color:"rgba(245,158,11,.22)",textAlign:"center",padding:"0 24px"}}>
+                          Escolhe uma cena para ver a legenda
+                        </span>
+                      </>
+                    )}
                   </div>
                 )}
               </div>

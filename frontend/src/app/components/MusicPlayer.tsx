@@ -699,6 +699,7 @@ export function MusicPlayer() {
           modestbranding: 1,
           playsinline:    1,
           autoplay:       0,
+          cc_load_policy: 0,
           origin:         window.location.origin,
         },
         events: {
@@ -710,35 +711,53 @@ export function MusicPlayer() {
               if (state === -1 || state === 5) skipToNextVideo();
             }, 12000);
 
-            /* ── Legendas do player (fallback cliente) ── */
-            setTimeout(() => {
+            /* ── Legendas no browser (fallback multi-estratégia) ── */
+            setTimeout(async () => {
+              const vid = selectedRef.current?.id;
+              if (!vid) return;
+
+              function parseEvents(events: any[]): TimedSub[] {
+                return (events || [])
+                  .filter((ev: any) => ev.segs?.length)
+                  .map((ev: any) => ({
+                    start: (ev.tStartMs || 0) / 1000,
+                    dur:   Math.max((ev.dDurationMs || 2000) / 1000, 0.3),
+                    text:  ev.segs.map((s: any) => (s.utf8 || "").replace(/\n/g, " "))
+                      .join("").replace(/\s+/g, " ").trim(),
+                  }))
+                  .filter((s: any) => s.text);
+              }
+
+              /* Estratégia A: captionTracks do player → proxy no backend */
               try {
                 const resp = e.target.getPlayerResponse?.();
-                const tracks = resp?.captions?.playerCaptionsTracklistRenderer?.captionTracks;
-                if (!tracks?.length) return;
-                const engTrack = (
-                  tracks.find((t: any) => t.languageCode === "en") ||
-                  tracks.find((t: any) => t.languageCode?.startsWith("en")) ||
-                  tracks[0]
-                );
-                if (!engTrack?.baseUrl) return;
-                fetch(decodeURIComponent(engTrack.baseUrl) + "&fmt=json3")
-                  .then(r => r.ok ? r.json() : null)
-                  .then((data: any) => {
-                    if (!data?.events || transcript.length > 0) return;
-                    const segs: TimedSub[] = data.events
-                      .filter((ev: any) => ev.segs?.length)
-                      .map((ev: any) => ({
-                        start: (ev.tStartMs || 0) / 1000,
-                        dur:   Math.max((ev.dDurationMs || 2000) / 1000, 0.3),
-                        text:  ev.segs.map((s: any) => (s.utf8 || "").replace(/\n/g, " ")).join("").replace(/\s+/g, " ").trim(),
-                      }))
-                      .filter((s: any) => s.text);
-                    if (segs.length >= 3) { setTranscript(segs); setTransLoading(false); }
-                  })
-                  .catch(() => {});
-              } catch { /* getPlayerResponse não disponível */ }
-            }, 1500);
+                const tracks: any[] = resp?.captions?.playerCaptionsTracklistRenderer?.captionTracks || [];
+                const track = tracks.find((t: any) => t.languageCode === "en") ||
+                              tracks.find((t: any) => t.languageCode?.startsWith("en")) ||
+                              tracks[0];
+                if (track?.baseUrl) {
+                  const proxyUrl = `${BACKEND}/api/youtube/caption-proxy?url=${encodeURIComponent(track.baseUrl + "&fmt=json3")}`;
+                  const r = await fetch(proxyUrl);
+                  if (r.ok) {
+                    const d = await r.json();
+                    const segs = parseEvents(d.events);
+                    if (segs.length >= 3) { setTranscript(segs); setTransLoading(false); return; }
+                  }
+                }
+              } catch { /* continua */ }
+
+              /* Estratégia B: timedtext via backend proxy */
+              for (const lang of ["en", "en&kind=asr"]) {
+                try {
+                  const captionUrl = `https://www.youtube.com/api/timedtext?v=${vid}&lang=${lang}&fmt=json3`;
+                  const r = await fetch(`${BACKEND}/api/youtube/caption-proxy?url=${encodeURIComponent(captionUrl)}`);
+                  if (!r.ok) continue;
+                  const d = await r.json();
+                  const segs = parseEvents(d.events);
+                  if (segs.length >= 3) { setTranscript(segs); setTransLoading(false); return; }
+                } catch { /* próximo */ }
+              }
+            }, 2000);
           },
           onStateChange: (e: any) => {
             setIsPlaying(e.data === 1);

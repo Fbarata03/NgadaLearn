@@ -128,6 +128,40 @@ router.get("/transcript/:videoId", detailsLimiter, async (req, res) => {
 });
 
 /* ════════════════════════════════════════════════════════════════════
+   GET /api/youtube/caption-proxy
+   ?url=<encoded caption URL>  — proxy para evitar CORS no browser
+   ════════════════════════════════════════════════════════════════════ */
+router.get("/caption-proxy", async (req, res) => {
+  const rawUrl = String(req.query.url || "").trim();
+  if (!rawUrl) return res.status(400).json({ error: "url em falta" });
+
+  let targetUrl;
+  try {
+    targetUrl = new URL(rawUrl);
+  } catch {
+    return res.status(400).json({ error: "url inválido" });
+  }
+
+  /* Apenas permitir domínios YouTube */
+  if (!["www.youtube.com", "youtube.com"].includes(targetUrl.hostname)) {
+    return res.status(403).json({ error: "domínio não permitido" });
+  }
+
+  try {
+    const r = await fetch(targetUrl.toString(), {
+      headers: { "User-Agent": "Mozilla/5.0 (compatible; NgadaLearn/1.0)" },
+      signal: AbortSignal.timeout(8000),
+    });
+    if (!r.ok) return res.status(r.status).json({ error: "upstream error", events: [] });
+    const data = await r.json();
+    res.setHeader("Cache-Control", "public, max-age=3600");
+    res.json(data);
+  } catch (err) {
+    res.status(502).json({ error: err.message, events: [] });
+  }
+});
+
+/* ════════════════════════════════════════════════════════════════════
    GET /api/youtube/ping  — testa a chave API directamente
    ════════════════════════════════════════════════════════════════════ */
 router.get("/ping", async (req, res) => {

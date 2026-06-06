@@ -82,14 +82,15 @@ const API_STT  = `${BACKEND}/api/transcribe`;
 const API_TTS  = (v: string) => `${BACKEND}/api/speak?voice=${v}`;
 const API_CHAT = `${BACKEND}/api/conversation`;
 
-/* Foto do Batila — professor africano profissional */
+/* Avatar cartoon animado do Batila — DiceBear Avataaars */
 const BATILA_PHOTO =
-  "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=400&h=400&q=85&crop=face";
+  "https://api.dicebear.com/9.x/avataaars/png?seed=BatilaEnglishTutor&size=400&backgroundColor=b6e3f4&skinColor=ae5d29&top=shortHairDreads01&accessories=prescription01&clotheType=blazerShirt&clotheColor=3c4f5c&eyeType=happy&eyebrowType=raisedExcited&mouthType=smile";
 
+/* Voz masculina Deepgram Aura — Orion (americano) */
 const VOICES = {
-  beginner: "aura-orion-en",
+  beginner:     "aura-orion-en",
   intermediate: "aura-orion-en",
-  advanced: "aura-orion-en",
+  advanced:     "aura-orion-en",
 };
 
 const TOPICS = [
@@ -256,7 +257,9 @@ export function ConversationPractice() {
         u.rate    = difficulty === "beginner" ? 0.88 : 0.95;
         u.pitch   = 0.95;
         const voices = window.speechSynthesis.getVoices();
-        const pref   = voices.find(v => v.lang === "en-US" && v.name.toLowerCase().includes("male"))
+        /* Preferir voz masculina inglesa */
+        const pref   = voices.find(v => v.lang === "en-US" && /daniel|david|james|oliver|google uk english male|microsoft david/i.test(v.name))
+                    || voices.find(v => v.lang === "en-GB" && /daniel|oliver/i.test(v.name))
                     || voices.find(v => v.lang.startsWith("en-US"))
                     || voices.find(v => v.lang.startsWith("en"));
         if (pref) u.voice = pref;
@@ -403,7 +406,10 @@ export function ConversationPractice() {
               src={BATILA_PHOTO}
               alt="Batila"
               style={{ width: 120, height: 120, borderRadius: "50%", objectFit: "cover", display: "block", border: "3px solid rgba(124,58,237,0.6)", boxShadow: "0 8px 32px rgba(124,58,237,0.3)" }}
-              onError={e => { (e.target as HTMLImageElement).src = "https://ui-avatars.com/api/?name=Batila&background=7c3aed&color=fff&size=256&bold=true"; }}
+              onError={e => {
+                (e.target as HTMLImageElement).src =
+                  "https://api.dicebear.com/9.x/avataaars/png?seed=BatilaFallback&size=400&backgroundColor=b6e3f4";
+              }}
             />
             {/* Ponto verde */}
             <div className="bt-dot" style={{ position: "absolute", bottom: 6, right: 6, width: 14, height: 14, borderRadius: "50%", background: "#4ade80", border: "2px solid #0a0a14" }} />
@@ -518,7 +524,7 @@ export function ConversationPractice() {
                 src={BATILA_PHOTO}
                 alt="Batila"
                 style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }}
-                onError={e => { (e.target as HTMLImageElement).src = "https://ui-avatars.com/api/?name=Batila&background=7c3aed&color=fff&size=256&bold=true"; }}
+                onError={e => { (e.target as HTMLImageElement).src = "https://api.dicebear.com/9.x/avataaars/png?seed=BatilaFallback&size=400&backgroundColor=b6e3f4"; }}
               />
 
               {/* Overlay quando a falar — barras de áudio */}

@@ -327,15 +327,17 @@ function CinemaLyricDisplay({ lines, activeLine, isPlaying, onNext, onPrev }: {
 /* ════════════════════════════════════════════════════════════════════
    LYRICS RISER — letras a subir com efeito karaoke
    ════════════════════════════════════════════════════════════════════ */
-const LINE_H   = 52;
-const SLOTS    = 5;
-const CENTER_S = 2;
+const LINE_H   = 72;
+const SLOTS    = 7;
+const CENTER_S = 3;
 
 function LyricsRiser({ lines, active, isPlaying, isLive, onNext, onPrev }: {
-  lines: string[]; active: number; isPlaying: boolean;
+  lines: { en: string; pt?: string }[]; active: number; isPlaying: boolean;
   isLive?: boolean;
   onNext?: () => void; onPrev?: () => void;
 }) {
+  const [transl, setTransl] = useState<string | null>(null);
+
   if (!lines.length) return null;
 
   const ty = -(active - CENTER_S) * LINE_H;
@@ -411,20 +413,23 @@ function LyricsRiser({ lines, active, isPlaying, isLive, onNext, onPrev }: {
           {lines.map((line, i) => {
             const dist    = Math.abs(i - active);
             const isAct   = i === active;
-            const opacity = dist===0 ? 1 : dist===1 ? 0.38 : dist===2 ? 0.18 : 0.07;
-            const scale   = dist===0 ? 1 : dist===1 ? 0.92 : 0.84;
+            const opacity = dist===0 ? 1 : dist===1 ? 0.42 : dist===2 ? 0.22 : dist===3 ? 0.1 : 0.05;
+            const scale   = dist===0 ? 1 : dist===1 ? 0.93 : 0.85;
+            const hasPt   = !!line.pt;
             return (
-              <div key={i} style={{
-                height:LINE_H,display:"flex",alignItems:"center",
-                justifyContent:"center",padding:"0 28px",
-                opacity,
-                transform:`scale(${scale})`,
-                transition:"opacity .5s ease, transform .5s ease",
-              }}>
+              <div key={i}
+                onClick={() => hasPt ? setTransl(transl === line.pt ? null : (line.pt ?? null)) : undefined}
+                style={{
+                  height:LINE_H, display:"flex", alignItems:"center",
+                  justifyContent:"center", padding:"0 28px",
+                  opacity, transform:`scale(${scale})`,
+                  transition:"opacity .5s ease, transform .5s ease",
+                  cursor: hasPt ? "pointer" : "default",
+                }}>
                 <p style={{
-                  textAlign:"center",lineHeight:1.3,margin:0,
-                  fontSize: isAct ? "clamp(1.05rem,2.8vw,1.4rem)" : "clamp(.78rem,2vw,.98rem)",
-                  fontWeight: isAct ? 800 : 400,
+                  textAlign:"center", lineHeight:1.3, margin:0,
+                  fontSize: isAct ? "clamp(1.25rem,3.2vw,1.75rem)" : "clamp(.85rem,2.2vw,1.08rem)",
+                  fontWeight: isAct ? 900 : 400,
                   fontStyle: dist>=2 ? "italic" : "normal",
                   ...(isAct ? {
                     background:"linear-gradient(90deg,#f0abfc,#c084fc,#818cf8,#c084fc,#f0abfc)",
@@ -433,10 +438,11 @@ function LyricsRiser({ lines, active, isPlaying, isLive, onNext, onPrev }: {
                     WebkitBackgroundClip:"text",
                     backgroundClip:"text",
                     color:"transparent",
+                    textShadow:"none",
                   } : {
                     color:"rgba(255,255,255,.55)",
                   }),
-                }}>{line || "♪"}</p>
+                }}>{line.en || "♪"}</p>
               </div>
             );
           })}
@@ -446,9 +452,40 @@ function LyricsRiser({ lines, active, isPlaying, isLive, onNext, onPrev }: {
       {/* Fade base */}
       <div style={{
         position:"absolute",bottom:0,left:0,right:0,zIndex:10,pointerEvents:"none",
-        height:LINE_H*1.8,
+        height:transl ? LINE_H*1.2 : LINE_H*1.8,
         background:"linear-gradient(to top,rgba(10,3,40,1) 0%,rgba(10,3,40,.7) 55%,transparent 100%)",
       }}/>
+
+      {/* Tradução PT — aparece ao clicar */}
+      {transl && (
+        <div style={{
+          position:"relative",zIndex:25,
+          background:"rgba(109,40,217,.92)",backdropFilter:"blur(8px)",
+          borderTop:"1px solid rgba(168,85,247,.4)",
+          padding:"10px 20px 12px",
+          display:"flex",alignItems:"center",gap:10,
+        }}>
+          <span style={{fontSize:16,flexShrink:0}}>🇵🇹</span>
+          <p style={{
+            flex:1,margin:0,fontSize:"clamp(.9rem,2.2vw,1.1rem)",
+            fontWeight:600,color:"#e9d5ff",fontStyle:"italic",lineHeight:1.4,
+          }}>{transl}</p>
+          <button onClick={()=>setTransl(null)} style={{
+            background:"rgba(255,255,255,.12)",border:"none",borderRadius:8,
+            width:26,height:26,color:"#c4b5fd",cursor:"pointer",
+            display:"flex",alignItems:"center",justifyContent:"center",
+            fontSize:14,fontWeight:700,flexShrink:0,
+          }}>✕</button>
+        </div>
+      )}
+
+      {/* Dica de clique (quando há PT e não está tradução visível) */}
+      {!transl && !isLive && lines.some(l => l.pt) && (
+        <p style={{
+          textAlign:"center",fontSize:10,color:"rgba(168,85,247,.3)",
+          position:"relative",zIndex:20,margin:0,paddingBottom:4,
+        }}>Clica numa linha para ver a tradução 🇵🇹</p>
+      )}
 
       {/* Navegação (só quando há letras manuais) */}
       {(onPrev || onNext) && (
@@ -1012,8 +1049,8 @@ export function MusicPlayer() {
           {/* ══ Coluna principal (desktop direita) ══ */}
           <div className="lg:col-span-2 flex flex-col lg:min-h-0 lg:overflow-hidden gap-2">
 
-            {/* Player — sempre visível, altura limitada para caber legenda */}
-            <div className={`flex-shrink-0 rounded-2xl overflow-hidden shadow-2xl aspect-video relative bg-black lg:max-h-[44vh] ${isPlaying?"player-glow":""}`}>
+            {/* Player — sticky no mobile, fixo no desktop */}
+            <div className={`flex-shrink-0 rounded-2xl overflow-hidden shadow-2xl aspect-video relative bg-black lg:max-h-[44vh] sticky top-[52px] lg:static z-10 ${isPlaying?"player-glow":""}`}>
               <div id="yt-player-root" className="w-full h-full"
                 style={{display: selected&&!vidError ? "block":"none"}} />
 
@@ -1052,7 +1089,7 @@ export function MusicPlayer() {
               {/* ── Legenda: letras prioritárias, CC como fallback ── */}
               {lines.length > 0 ? (
                 <LyricsRiser
-                  lines={lines.map(l => l.en)}
+                  lines={lines.map(l => ({ en: l.en, pt: l.pt || undefined }))}
                   active={activeLine}
                   isPlaying={isPlaying}
                   onNext={() => setActiveLine(p => Math.min(lines.length-1, p+1))}
@@ -1060,7 +1097,7 @@ export function MusicPlayer() {
                 />
               ) : transcript.length > 0 ? (
                 <LyricsRiser
-                  lines={transcriptLines}
+                  lines={transcriptLines.map(t => ({ en: t }))}
                   active={Math.max(0, liveSubIdx)}
                   isPlaying={isPlaying}
                   isLive

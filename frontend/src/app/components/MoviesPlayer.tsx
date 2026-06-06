@@ -438,9 +438,9 @@ function WordPopup({ word, pos, onClose }: {
 /* ════════════════════════════════════════════════════════════════════
    SUBTITLE RISER — legendas a subir, tema âmbar (filmes)
    ════════════════════════════════════════════════════════════════════ */
-const SL_H    = 52;
-const SL_SLOTS = 5;
-const SL_CTR   = 2;
+const SL_H    = 72;
+const SL_SLOTS = 7;
+const SL_CTR   = 3;
 
 function SubtitleRiser({ lines, active, isPlaying, onWordClick }: {
   lines: string[]; active: number; isPlaying: boolean;
@@ -535,7 +535,7 @@ function SubtitleRiser({ lines, active, isPlaying, onWordClick }: {
               }}>
                 <p style={{
                   textAlign:"center",lineHeight:1.3,margin:0,
-                  fontSize:isAct?"clamp(1.05rem,2.8vw,1.4rem)":"clamp(.78rem,2vw,.95rem)",
+                  fontSize:isAct?"clamp(1.25rem,3.2vw,1.75rem)":"clamp(.85rem,2.2vw,1.08rem)",
                   fontWeight:isAct?800:400,
                   fontStyle:dist>=2?"italic":"normal",
                   color:isAct?"#fff":"rgba(255,255,255,.5)",
@@ -1092,8 +1092,8 @@ export function MoviesPlayer() {
           {/* Coluna principal */}
           <div className="lg:col-span-2 flex flex-col lg:min-h-0 lg:overflow-hidden gap-2">
 
-            {/* Player — fixo no topo, altura limitada para caber legenda */}
-            <div className={`flex-shrink-0 rounded-2xl overflow-hidden shadow-2xl aspect-video bg-black relative lg:max-h-[44vh] ${isPlaying?"movie-glow":""}`}>
+            {/* Player — sticky no mobile, fixo no desktop */}
+            <div className={`flex-shrink-0 rounded-2xl overflow-hidden shadow-2xl aspect-video bg-black relative lg:max-h-[44vh] sticky top-[52px] lg:static z-10 ${isPlaying?"movie-glow":""}`}>
               <div id="mv-player-root" className="w-full h-full"
                 style={{display:selected&&!vidError?"block":"none"}} />
 

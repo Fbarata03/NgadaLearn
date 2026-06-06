@@ -996,18 +996,19 @@ export function MusicPlayer() {
         </div>
 
         {/* ── DESKTOP: grid lado a lado ── MOBILE: coluna única ── */}
-        <div className="flex-1 max-w-7xl mx-auto w-full px-3 py-2 lg:grid lg:grid-cols-3 lg:gap-3 lg:overflow-hidden lg:min-h-0">
+        <div className="flex-1 max-w-7xl mx-auto w-full px-3 pt-2
+          lg:grid lg:grid-cols-3 lg:gap-3 lg:overflow-hidden lg:min-h-0">
 
-          {/* ══ Lista (desktop esquerda, mobile via tab) ══ */}
-          <div className="hidden lg:flex lg:col-span-1 lg:flex-col lg:min-h-0 gap-2">
+          {/* ══ Lista (desktop esquerda — rola de forma independente) ══ */}
+          <div className="hidden lg:flex lg:col-span-1 lg:flex-col lg:min-h-0 lg:overflow-hidden gap-2 pb-2">
             <MusicList />
           </div>
 
-          {/* ══ Conteúdo principal ══ */}
-          <div className="lg:col-span-2 flex flex-col gap-2 lg:min-h-0 lg:overflow-y-auto">
+          {/* ══ Coluna principal (desktop direita) ══ */}
+          <div className="lg:col-span-2 flex flex-col lg:min-h-0 lg:overflow-hidden gap-2">
 
-            {/* Player */}
-            <div className={`rounded-2xl overflow-hidden shadow-2xl aspect-video relative bg-black flex-shrink-0 ${isPlaying?"player-glow":""}`}>
+            {/* Player — sempre visível (não rola no desktop) */}
+            <div className={`flex-shrink-0 rounded-2xl overflow-hidden shadow-2xl aspect-video relative bg-black ${isPlaying?"player-glow":""}`}>
               <div id="yt-player-root" className="w-full h-full"
                 style={{display: selected&&!vidError ? "block":"none"}} />
 
@@ -1035,40 +1036,45 @@ export function MusicPlayer() {
               )}
             </div>
 
-            {/* Now Playing */}
-            {selected && !vidError && (
-              <NowPlayingBar video={selected} isPlaying={isPlaying} activeLyric={activeLyricText()} />
-            )}
+            {/* Conteúdo abaixo do player — rola independentemente no desktop */}
+            <div className="flex-1 lg:overflow-y-auto overscroll-contain flex flex-col gap-2 pb-4">
 
-            {/* ── Legenda principal ── letras prioritárias, CC como fallback ── */}
-            {lines.length > 0 ? (
-              <LyricsRiser
-                lines={lines.map(l => l.en)}
-                active={activeLine}
-                isPlaying={isPlaying}
-                onNext={() => setActiveLine(p => Math.min(lines.length-1, p+1))}
-                onPrev={() => setActiveLine(p => Math.max(0, p-1))}
-              />
-            ) : transcript.length > 0 ? (
-              <LyricsRiser
-                lines={transcriptLines}
-                active={Math.max(0, liveSubIdx)}
-                isPlaying={isPlaying}
-                isLive
-              />
-            ) : transLoading && selected ? (
-              <div className="flex items-center gap-2 text-xs text-purple-400/50 justify-center py-3 flex-shrink-0">
-                <div className="w-3 h-3 border border-purple-400/40 border-t-purple-400 rounded-full animate-spin" />
-                A carregar legenda…
+              {/* Now Playing */}
+              {selected && !vidError && (
+                <NowPlayingBar video={selected} isPlaying={isPlaying} activeLyric={activeLyricText()} />
+              )}
+
+              {/* ── Legenda: letras prioritárias, CC como fallback ── */}
+              {lines.length > 0 ? (
+                <LyricsRiser
+                  lines={lines.map(l => l.en)}
+                  active={activeLine}
+                  isPlaying={isPlaying}
+                  onNext={() => setActiveLine(p => Math.min(lines.length-1, p+1))}
+                  onPrev={() => setActiveLine(p => Math.max(0, p-1))}
+                />
+              ) : transcript.length > 0 ? (
+                <LyricsRiser
+                  lines={transcriptLines}
+                  active={Math.max(0, liveSubIdx)}
+                  isPlaying={isPlaying}
+                  isLive
+                />
+              ) : transLoading && selected ? (
+                <div className="flex items-center gap-2 text-xs text-purple-400/50 justify-center py-3">
+                  <div className="w-3 h-3 border border-purple-400/40 border-t-purple-400 rounded-full animate-spin" />
+                  A carregar legenda…
+                </div>
+              ) : null}
+
+              {/* Lista de músicas — mobile inline */}
+              <div className="lg:hidden bg-white/8 backdrop-blur rounded-2xl border border-white/8 overflow-hidden p-3" style={{minHeight:220}}>
+                <MusicList />
               </div>
-            ) : null}
 
-            {/* Lista de músicas — mobile inline, desktop no painel esquerdo */}
-            <div className="lg:hidden bg-white/8 backdrop-blur rounded-2xl border border-white/8 overflow-hidden p-3" style={{minHeight:220}}>
-              <MusicList />
-            </div>
+            </div>{/* fim área rolável */}
 
-          </div>{/* fim conteúdo principal */}
+          </div>{/* fim coluna principal */}
         </div>{/* fim grid */}
       </div>{/* fim root */}
     </>

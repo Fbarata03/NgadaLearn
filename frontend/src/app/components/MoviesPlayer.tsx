@@ -1067,18 +1067,19 @@ export function MoviesPlayer() {
           </div>
         </div>
 
-        <div className="flex-1 max-w-7xl mx-auto w-full px-3 py-2 lg:grid lg:grid-cols-3 lg:gap-3 lg:overflow-hidden lg:min-h-0">
+        <div className="flex-1 max-w-7xl mx-auto w-full px-3 pt-2
+          lg:grid lg:grid-cols-3 lg:gap-3 lg:overflow-hidden lg:min-h-0">
 
-          {/* Lista — desktop esq, mobile via tab */}
-          <div className="hidden lg:flex lg:col-span-1 lg:flex-col lg:min-h-0 gap-2">
+          {/* Lista — desktop esq, rola de forma independente */}
+          <div className="hidden lg:flex lg:col-span-1 lg:flex-col lg:min-h-0 lg:overflow-hidden gap-2 pb-2">
             <MovieList />
           </div>
 
-          {/* Conteúdo principal */}
-          <div className="lg:col-span-2 flex flex-col gap-2 lg:min-h-0 lg:overflow-y-auto">
+          {/* Coluna principal */}
+          <div className="lg:col-span-2 flex flex-col lg:min-h-0 lg:overflow-hidden gap-2">
 
-            {/* Player */}
-            <div className={`rounded-2xl overflow-hidden shadow-2xl aspect-video bg-black relative flex-shrink-0 ${isPlaying?"movie-glow":""}`}>
+            {/* Player — fixo no topo */}
+            <div className={`flex-shrink-0 rounded-2xl overflow-hidden shadow-2xl aspect-video bg-black relative ${isPlaying?"movie-glow":""}`}>
               <div id="mv-player-root" className="w-full h-full"
                 style={{display:selected&&!vidError?"block":"none"}} />
 
@@ -1106,32 +1107,37 @@ export function MoviesPlayer() {
               )}
             </div>
 
-            {/* Now Playing */}
-            {selected&&!vidError&&(
-              <NowPlayingBar clip={selected} isPlaying={isPlaying} ccOn={true} />
-            )}
+            {/* Conteúdo abaixo do player — rola independentemente no desktop */}
+            <div className="flex-1 lg:overflow-y-auto overscroll-contain flex flex-col gap-2 pb-4">
 
-            {/* CC em tempo real — SubtitleRiser */}
-            {transcript.length>0 ? (
-              <SubtitleRiser
-                lines={transcriptLines}
-                active={Math.max(0,liveSubIdx)}
-                isPlaying={isPlaying}
-                onWordClick={(word,e)=>setWordPopup({word,x:e.clientX,y:e.clientY})}
-              />
-            ) : transLoading&&selected ? (
-              <div className="flex items-center gap-2 text-xs text-amber-400/50 justify-center py-3 flex-shrink-0">
-                <div className="w-3 h-3 border border-amber-400/40 border-t-amber-400 rounded-full animate-spin" />
-                A carregar legenda…
+              {/* Now Playing */}
+              {selected&&!vidError&&(
+                <NowPlayingBar clip={selected} isPlaying={isPlaying} ccOn={true} />
+              )}
+
+              {/* CC em tempo real — SubtitleRiser */}
+              {transcript.length>0 ? (
+                <SubtitleRiser
+                  lines={transcriptLines}
+                  active={Math.max(0,liveSubIdx)}
+                  isPlaying={isPlaying}
+                  onWordClick={(word,e)=>setWordPopup({word,x:e.clientX,y:e.clientY})}
+                />
+              ) : transLoading&&selected ? (
+                <div className="flex items-center gap-2 text-xs text-amber-400/50 justify-center py-3">
+                  <div className="w-3 h-3 border border-amber-400/40 border-t-amber-400 rounded-full animate-spin" />
+                  A carregar legenda…
+                </div>
+              ) : null}
+
+              {/* Lista de filmes — mobile inline */}
+              <div className="lg:hidden bg-white/8 backdrop-blur rounded-2xl border border-amber-500/10 overflow-hidden p-3" style={{minHeight:220}}>
+                <MovieList />
               </div>
-            ) : null}
 
-            {/* Lista de filmes — mobile inline, desktop no painel esquerdo */}
-            <div className="lg:hidden bg-white/8 backdrop-blur rounded-2xl border border-amber-500/10 overflow-hidden p-3" style={{minHeight:220}}>
-              <MovieList />
-            </div>
+            </div>{/* fim área rolável */}
 
-          </div>{/* fim conteúdo */}
+          </div>{/* fim coluna principal */}
         </div>{/* fim grid */}
       </div>{/* fim root */}
     </>

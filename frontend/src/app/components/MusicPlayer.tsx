@@ -327,9 +327,9 @@ function CinemaLyricDisplay({ lines, activeLine, isPlaying, onNext, onPrev }: {
 /* ════════════════════════════════════════════════════════════════════
    LYRICS RISER — letras a subir com efeito karaoke
    ════════════════════════════════════════════════════════════════════ */
-const LINE_H   = 58;
-const SLOTS    = 7;
-const CENTER_S = 3;
+const LINE_H   = 52;
+const SLOTS    = 5;
+const CENTER_S = 2;
 
 function LyricsRiser({ lines, active, isPlaying, isLive, onNext, onPrev }: {
   lines: string[]; active: number; isPlaying: boolean;
@@ -1007,8 +1007,8 @@ export function MusicPlayer() {
           {/* ══ Coluna principal (desktop direita) ══ */}
           <div className="lg:col-span-2 flex flex-col lg:min-h-0 lg:overflow-hidden gap-2">
 
-            {/* Player — sempre visível (não rola no desktop) */}
-            <div className={`flex-shrink-0 rounded-2xl overflow-hidden shadow-2xl aspect-video relative bg-black ${isPlaying?"player-glow":""}`}>
+            {/* Player — sempre visível, altura limitada para caber legenda */}
+            <div className={`flex-shrink-0 rounded-2xl overflow-hidden shadow-2xl aspect-video relative bg-black lg:max-h-[44vh] ${isPlaying?"player-glow":""}`}>
               <div id="yt-player-root" className="w-full h-full"
                 style={{display: selected&&!vidError ? "block":"none"}} />
 
@@ -1036,8 +1036,8 @@ export function MusicPlayer() {
               )}
             </div>
 
-            {/* Conteúdo abaixo do player — rola independentemente no desktop */}
-            <div className="flex-1 lg:overflow-y-auto overscroll-contain flex flex-col gap-2 pb-4">
+            {/* Conteúdo abaixo do player */}
+            <div className="flex-1 flex flex-col gap-1.5 pb-2 overflow-hidden">
 
               {/* Now Playing */}
               {selected && !vidError && (

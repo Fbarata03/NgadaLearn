@@ -428,6 +428,138 @@ function WordPopup({ word, pos, onClose }: {
 }
 
 /* ════════════════════════════════════════════════════════════════════
+   SUBTITLE RISER — legendas a subir, tema âmbar (filmes)
+   ════════════════════════════════════════════════════════════════════ */
+const SL_H    = 58;
+const SL_SLOTS = 7;
+const SL_CTR   = 3;
+
+function SubtitleRiser({ lines, active, isPlaying, onWordClick }: {
+  lines: string[]; active: number; isPlaying: boolean;
+  onWordClick?: (word: string, e: React.MouseEvent) => void;
+}) {
+  if (!lines.length) return null;
+  const ty = -(active - SL_CTR) * SL_H;
+
+  function renderWords(text: string) {
+    if (!onWordClick) return <>{text}</>;
+    return (
+      <>
+        {text.split(/(\s+)/).map((part, i) =>
+          /^\s+$/.test(part) ? <span key={i}> </span> : (
+            <button key={i} onClick={e => {
+              const clean = part.replace(/[^a-zA-Z'-]/g,"").toLowerCase();
+              if (clean.length > 1) onWordClick(clean, e);
+            }} style={{
+              background:"none",border:"none",cursor:"pointer",font:"inherit",
+              color:"inherit",padding:"0 1px",borderRadius:3,display:"inline",
+            }}
+            className="hover:text-amber-400 hover:underline underline-offset-2 transition-colors">
+              {part}
+            </button>
+          )
+        )}
+      </>
+    );
+  }
+
+  return (
+    <div style={{
+      position:"relative",
+      background:"linear-gradient(160deg,rgba(10,4,1,.98) 0%,rgba(45,18,2,.98) 50%,rgba(18,6,1,.98) 100%)",
+      border:"1px solid rgba(245,158,11,.28)",
+      borderRadius:22,overflow:"hidden",
+      boxShadow:"0 0 40px rgba(180,83,9,.10), inset 0 0 80px rgba(180,83,9,.03)",
+    }}>
+      {/* Progresso */}
+      <div style={{height:3,background:"rgba(245,158,11,.1)"}}>
+        <div style={{
+          height:"100%",
+          width:`${Math.max(0,Math.round(((active+1)/lines.length)*100))}%`,
+          background:"linear-gradient(90deg,#f59e0b,#d97706)",
+          transition:"width .25s ease",borderRadius:2,
+        }}/>
+      </div>
+
+      {/* Badge live */}
+      <div style={{position:"absolute",top:10,right:14,zIndex:20}}>
+        <span className="live-badge" style={{
+          fontSize:9,fontWeight:700,letterSpacing:".1em",
+          background:"rgba(34,197,94,.12)",color:"#4ade80",
+          border:"1px solid rgba(34,197,94,.3)",borderRadius:99,padding:"2px 8px",
+        }}>● CC AO VIVO</span>
+      </div>
+
+      {/* Orbs */}
+      <div style={{position:"absolute",inset:0,overflow:"hidden",pointerEvents:"none"}}>
+        <div style={{position:"absolute",top:"20%",left:"5%",width:100,height:100,borderRadius:"50%",
+          background:"rgba(245,158,11,.09)",filter:"blur(35px)",animation:"mglow 4.5s ease-in-out infinite"}}/>
+        <div style={{position:"absolute",bottom:"20%",right:"5%",width:75,height:75,borderRadius:"50%",
+          background:"rgba(234,88,12,.07)",filter:"blur(28px)",animation:"mglow 5.5s 1s ease-in-out infinite"}}/>
+      </div>
+
+      {/* Fade topo */}
+      <div style={{
+        position:"absolute",top:0,left:0,right:0,zIndex:10,pointerEvents:"none",
+        height:SL_H*2.2,
+        background:"linear-gradient(to bottom,rgba(10,4,1,1) 0%,rgba(10,4,1,.75) 55%,transparent 100%)",
+      }}/>
+
+      {/* Container deslizante */}
+      <div style={{height:SL_SLOTS*SL_H,overflow:"hidden",position:"relative"}}>
+        <div style={{
+          transform:`translateY(${ty}px)`,
+          transition:"transform .5s cubic-bezier(.4,0,.2,1)",
+          paddingTop:SL_CTR*SL_H,
+          paddingBottom:SL_CTR*SL_H,
+        }}>
+          {lines.map((line, i) => {
+            const dist  = Math.abs(i - active);
+            const isAct = i === active;
+            const opacity = dist===0?1:dist===1?.38:dist===2?.16:.06;
+            const scale   = dist===0?1:dist===1?.92:.84;
+            return (
+              <div key={i} style={{
+                height:SL_H,display:"flex",alignItems:"center",
+                justifyContent:"center",padding:"0 28px",
+                opacity,transform:`scale(${scale})`,
+                transition:"opacity .5s ease, transform .5s ease",
+              }}>
+                <p style={{
+                  textAlign:"center",lineHeight:1.3,margin:0,
+                  fontSize:isAct?"clamp(1.05rem,2.8vw,1.4rem)":"clamp(.78rem,2vw,.95rem)",
+                  fontWeight:isAct?800:400,
+                  fontStyle:dist>=2?"italic":"normal",
+                  color:isAct?"#fff":"rgba(255,255,255,.5)",
+                  textShadow:isAct?"0 2px 30px rgba(0,0,0,.9),0 0 50px rgba(245,158,11,.2)":"none",
+                }}>
+                  {isAct ? renderWords(line) : line || "♪"}
+                </p>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Fade base */}
+      <div style={{
+        position:"absolute",bottom:0,left:0,right:0,zIndex:10,pointerEvents:"none",
+        height:SL_H*1.8,
+        background:"linear-gradient(to top,rgba(10,4,1,1) 0%,rgba(10,4,1,.65) 55%,transparent 100%)",
+      }}/>
+
+      {/* Indicador de clique */}
+      {onWordClick && (
+        <p style={{
+          textAlign:"center",fontSize:9,color:"rgba(255,255,255,.18)",
+          paddingBottom:12,position:"relative",zIndex:20,margin:0,
+        }}>Clica numa palavra para ouvir</p>
+      )}
+    </div>
+  );
+}
+
+/* ════════════════════════════════════════════════════════════════════
    CINEMA SUBTITLE DISPLAY — Legenda de filme animada profissional
    Suporta palavras clicáveis e modo tempo-real (isLive)
    ════════════════════════════════════════════════════════════════════ */
@@ -979,19 +1111,18 @@ export function MoviesPlayer() {
               <NowPlayingBar clip={selected} isPlaying={isPlaying} ccOn={true} />
             )}
 
-            {/* CC em tempo real */}
+            {/* CC em tempo real — SubtitleRiser */}
             {transcript.length>0 ? (
-              <CinemaSubDisplay
+              <SubtitleRiser
                 lines={transcriptLines}
                 active={Math.max(0,liveSubIdx)}
                 isPlaying={isPlaying}
-                isLive
                 onWordClick={(word,e)=>setWordPopup({word,x:e.clientX,y:e.clientY})}
               />
             ) : transLoading&&selected ? (
-              <div className="flex items-center gap-2 text-xs text-amber-400/50 justify-center py-2 flex-shrink-0">
+              <div className="flex items-center gap-2 text-xs text-amber-400/50 justify-center py-3 flex-shrink-0">
                 <div className="w-3 h-3 border border-amber-400/40 border-t-amber-400 rounded-full animate-spin" />
-                A carregar legendas em tempo real…
+                A carregar legenda…
               </div>
             ) : null}
 

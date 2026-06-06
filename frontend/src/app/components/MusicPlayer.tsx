@@ -67,6 +67,9 @@ const ANIM_STYLE = `
 
 @keyframes livePulse{0%,100%{opacity:1}50%{opacity:.45}}
 .live-badge{animation:livePulse 1.4s ease-in-out infinite}
+
+@keyframes riserGlow{0%,100%{opacity:.6}50%{opacity:1}}
+.riser-active{animation:riserGlow 2s ease-in-out infinite}
 `;
 
 /* ── Tipos ────────────────────────────────────────────────────────── */
@@ -322,6 +325,160 @@ function CinemaLyricDisplay({ lines, activeLine, isPlaying, onNext, onPrev }: {
 }
 
 /* ════════════════════════════════════════════════════════════════════
+   LYRICS RISER — letras a subir com efeito karaoke
+   ════════════════════════════════════════════════════════════════════ */
+const LINE_H   = 58;
+const SLOTS    = 7;
+const CENTER_S = 3;
+
+function LyricsRiser({ lines, active, isPlaying, isLive, onNext, onPrev }: {
+  lines: string[]; active: number; isPlaying: boolean;
+  isLive?: boolean;
+  onNext?: () => void; onPrev?: () => void;
+}) {
+  if (!lines.length) return null;
+
+  const ty = -(active - CENTER_S) * LINE_H;
+
+  return (
+    <div style={{
+      position: "relative",
+      background: "linear-gradient(160deg,rgba(10,3,40,.98) 0%,rgba(40,10,80,.98) 50%,rgba(15,4,50,.98) 100%)",
+      border: "1px solid rgba(168,85,247,.3)",
+      borderRadius: 22,
+      overflow: "hidden",
+      boxShadow: "0 0 40px rgba(109,40,217,.12), inset 0 0 80px rgba(109,40,217,.04)",
+    }}>
+      {/* Barra de progresso topo */}
+      <div style={{height:3,background:"rgba(168,85,247,.1)"}}>
+        <div style={{
+          height:"100%",
+          width:`${Math.max(0,Math.round(((active+1)/lines.length)*100))}%`,
+          background:"linear-gradient(90deg,#a855f7,#7c3aed)",
+          transition:"width .25s ease",borderRadius:2,
+        }}/>
+      </div>
+
+      {/* Badge live / karaoke */}
+      <div style={{position:"absolute",top:10,right:14,zIndex:20}}>
+        {isLive ? (
+          <span className="live-badge" style={{
+            fontSize:9,fontWeight:700,letterSpacing:".1em",
+            background:"rgba(34,197,94,.12)",color:"#4ade80",
+            border:"1px solid rgba(34,197,94,.3)",borderRadius:99,padding:"2px 8px",
+          }}>● CC AO VIVO</span>
+        ) : (
+          <span style={{fontSize:9,color:"rgba(168,85,247,.35)",letterSpacing:".1em"}}>
+            {isPlaying ? "▶ AUTO" : "✦ KARAOKE"}
+          </span>
+        )}
+      </div>
+
+      {/* Orbs decorativos */}
+      <div style={{position:"absolute",inset:0,overflow:"hidden",pointerEvents:"none"}}>
+        <div style={{position:"absolute",top:"20%",left:"5%",width:100,height:100,borderRadius:"50%",
+          background:"rgba(139,92,246,.1)",filter:"blur(35px)",animation:"riserGlow 4s ease-in-out infinite"}}/>
+        <div style={{position:"absolute",bottom:"20%",right:"5%",width:80,height:80,borderRadius:"50%",
+          background:"rgba(99,102,241,.08)",filter:"blur(28px)",animation:"riserGlow 5s 1s ease-in-out infinite"}}/>
+      </div>
+
+      {/* Fade topo */}
+      <div style={{
+        position:"absolute",top:0,left:0,right:0,zIndex:10,pointerEvents:"none",
+        height:LINE_H*2.2,
+        background:"linear-gradient(to bottom,rgba(10,3,40,1) 0%,rgba(10,3,40,.8) 50%,transparent 100%)",
+      }}/>
+
+      {/* Linha activa — indicador lateral esquerdo */}
+      <div style={{
+        position:"absolute",left:0,zIndex:15,pointerEvents:"none",
+        top: LINE_H * 2.2 + CENTER_S * 0 + 3, // centrado
+        height:LINE_H, width:3,
+        marginTop: LINE_H * CENTER_S - 3,
+        background:"linear-gradient(to bottom,transparent,#a855f7,transparent)",
+        borderRadius:2,
+        transition:"none",
+      }}/>
+
+      {/* Container deslizante */}
+      <div style={{height:SLOTS*LINE_H,overflow:"hidden",position:"relative"}}>
+        <div style={{
+          transform:`translateY(${ty}px)`,
+          transition:"transform .55s cubic-bezier(.4,0,.2,1)",
+          paddingTop:CENTER_S*LINE_H,
+          paddingBottom:CENTER_S*LINE_H,
+        }}>
+          {lines.map((line, i) => {
+            const dist    = Math.abs(i - active);
+            const isAct   = i === active;
+            const opacity = dist===0 ? 1 : dist===1 ? 0.38 : dist===2 ? 0.18 : 0.07;
+            const scale   = dist===0 ? 1 : dist===1 ? 0.92 : 0.84;
+            return (
+              <div key={i} style={{
+                height:LINE_H,display:"flex",alignItems:"center",
+                justifyContent:"center",padding:"0 28px",
+                opacity,
+                transform:`scale(${scale})`,
+                transition:"opacity .5s ease, transform .5s ease",
+              }}>
+                <p style={{
+                  textAlign:"center",lineHeight:1.3,margin:0,
+                  fontSize: isAct ? "clamp(1.05rem,2.8vw,1.4rem)" : "clamp(.78rem,2vw,.98rem)",
+                  fontWeight: isAct ? 800 : 400,
+                  fontStyle: dist>=2 ? "italic" : "normal",
+                  ...(isAct ? {
+                    background:"linear-gradient(90deg,#f0abfc,#c084fc,#818cf8,#c084fc,#f0abfc)",
+                    backgroundSize:"300% 100%",
+                    animation: isPlaying ? "shimmerText 3s linear infinite" : "none",
+                    WebkitBackgroundClip:"text",
+                    backgroundClip:"text",
+                    color:"transparent",
+                  } : {
+                    color:"rgba(255,255,255,.55)",
+                  }),
+                }}>{line || "♪"}</p>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Fade base */}
+      <div style={{
+        position:"absolute",bottom:0,left:0,right:0,zIndex:10,pointerEvents:"none",
+        height:LINE_H*1.8,
+        background:"linear-gradient(to top,rgba(10,3,40,1) 0%,rgba(10,3,40,.7) 55%,transparent 100%)",
+      }}/>
+
+      {/* Navegação (só quando há letras manuais) */}
+      {(onPrev || onNext) && (
+        <div style={{
+          position:"relative",zIndex:20,
+          display:"flex",alignItems:"center",justifyContent:"space-between",
+          padding:"8px 18px 14px",
+        }}>
+          <button onClick={onPrev} disabled={active===0} style={{
+            background:"rgba(255,255,255,.07)",border:"1px solid rgba(168,85,247,.2)",
+            borderRadius:10,padding:"5px 16px",fontSize:12,fontWeight:700,touchAction:"manipulation",
+            color:active===0?"rgba(255,255,255,.18)":"rgba(196,181,253,.85)",
+            cursor:active===0?"not-allowed":"pointer",transition:"all .2s",
+          }}>← Ant.</button>
+          <span style={{fontSize:10,fontFamily:"monospace",color:"rgba(168,85,247,.3)"}}>
+            {active+1} / {lines.length}
+          </span>
+          <button onClick={onNext} disabled={active>=lines.length-1} style={{
+            background:"rgba(255,255,255,.07)",border:"1px solid rgba(168,85,247,.2)",
+            borderRadius:10,padding:"5px 16px",fontSize:12,fontWeight:700,touchAction:"manipulation",
+            color:active>=lines.length-1?"rgba(255,255,255,.18)":"rgba(196,181,253,.85)",
+            cursor:active>=lines.length-1?"not-allowed":"pointer",transition:"all .2s",
+          }}>Próx. →</button>
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ════════════════════════════════════════════════════════════════════
    CINEMA TRANSCRIPT — CC automático em tempo real (música)
    ════════════════════════════════════════════════════════════════════ */
 function CinemaTranscript({ lines, active, isPlaying }: {
@@ -434,6 +591,7 @@ export function MusicPlayer() {
   const [liveSubIdx,    setLiveSubIdx]    = useState(-1);
   const liveSubIdxRef  = useRef(-1);
   const liveTimerRef   = useRef<ReturnType<typeof setInterval> | null>(null);
+  const autoAdvRef     = useRef<ReturnType<typeof setInterval> | null>(null);
   const transcriptLines = useMemo(() => transcript.map(s => s.text), [transcript]);
 
   /* ── Sync selectedRef (sempre atual para callbacks do YT) ────── */
@@ -580,6 +738,16 @@ export function MusicPlayer() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selected?.id]);
 
+  /* ── Auto-avanço de letras quando o CC não está disponível ─────── */
+  useEffect(() => {
+    if (autoAdvRef.current) clearInterval(autoAdvRef.current);
+    if (!isPlaying || !lines.length || transcript.length > 0) return;
+    autoAdvRef.current = setInterval(() => {
+      setActiveLine(p => (p >= lines.length - 1 ? p : p + 1));
+    }, 4500);
+    return () => { if (autoAdvRef.current) clearInterval(autoAdvRef.current); };
+  }, [isPlaying, lines.length, transcript.length]);
+
   /* ── Unmount: limpar player, timeouts e polling ─────────────────── */
   useEffect(() => {
     return () => {
@@ -587,6 +755,7 @@ export function MusicPlayer() {
       if (errorTimeout.current)   clearTimeout(errorTimeout.current);
       if (skipTimeoutRef.current) clearTimeout(skipTimeoutRef.current);
       if (liveTimerRef.current)   clearInterval(liveTimerRef.current);
+      if (autoAdvRef.current)     clearInterval(autoAdvRef.current);
     };
   }, []);
 
@@ -871,27 +1040,28 @@ export function MusicPlayer() {
               <NowPlayingBar video={selected} isPlaying={isPlaying} activeLyric={activeLyricText()} />
             )}
 
-            {/* CC em tempo real */}
-            {transcript.length > 0 && (
-              <CinemaTranscript lines={transcriptLines} active={liveSubIdx} isPlaying={isPlaying} />
-            )}
-            {transLoading && selected && !transcript.length && (
-              <div className="flex items-center gap-2 text-xs text-purple-400/50 justify-center py-1 flex-shrink-0">
-                <div className="w-3 h-3 border border-purple-400/40 border-t-purple-400 rounded-full animate-spin" />
-                A carregar legendas em tempo real…
-              </div>
-            )}
-
-            {/* Legenda da letra manual */}
-            {lines.length > 0 && (
-              <CinemaLyricDisplay
-                lines={lines}
-                activeLine={activeLine}
+            {/* ── Legenda principal: CC em tempo real OU letras com auto-avanço ── */}
+            {transcript.length > 0 ? (
+              <LyricsRiser
+                lines={transcriptLines}
+                active={Math.max(0, liveSubIdx)}
                 isPlaying={isPlaying}
-                onNext={() => setActiveLine(p => Math.min(lines.length - 1, p + 1))}
-                onPrev={() => setActiveLine(p => Math.max(0, p - 1))}
+                isLive
               />
-            )}
+            ) : lines.length > 0 ? (
+              <LyricsRiser
+                lines={lines.map(l => l.en)}
+                active={activeLine}
+                isPlaying={isPlaying}
+                onNext={() => { setActiveLine(p => Math.min(lines.length-1, p+1)); if(autoAdvRef.current){clearInterval(autoAdvRef.current);autoAdvRef.current=null;} }}
+                onPrev={() => { setActiveLine(p => Math.max(0, p-1)); if(autoAdvRef.current){clearInterval(autoAdvRef.current);autoAdvRef.current=null;} }}
+              />
+            ) : transLoading && selected ? (
+              <div className="flex items-center gap-2 text-xs text-purple-400/50 justify-center py-3 flex-shrink-0">
+                <div className="w-3 h-3 border border-purple-400/40 border-t-purple-400 rounded-full animate-spin" />
+                A carregar legenda…
+              </div>
+            ) : null}
 
             {/* Lista de músicas — mobile inline, desktop no painel esquerdo */}
             <div className="lg:hidden bg-white/8 backdrop-blur rounded-2xl border border-white/8 overflow-hidden p-3" style={{minHeight:220}}>

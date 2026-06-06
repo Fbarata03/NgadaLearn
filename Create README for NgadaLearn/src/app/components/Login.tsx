@@ -4,7 +4,7 @@ import { useAuth, API_URL } from "../context/AuthContext";
 import {
   GraduationCap, Lock, Mail, Eye, EyeOff,
   AlertCircle, CheckCircle, ArrowLeft, Headphones,
-  Award, MessageCircle, Star,
+  Award, MessageCircle,
 } from "lucide-react";
 
 /* ─── Animações ─── */
@@ -193,24 +193,6 @@ export function Login() {
         </div>
       </div>
 
-      {/* Testemunho */}
-      <div className="lg-float2" style={{ position: "relative", zIndex: 1, background: "rgba(255,255,255,.06)", backdropFilter: "blur(16px)", border: "1px solid rgba(255,255,255,.1)", borderRadius: 18, padding: "16px 20px" }}>
-        <div style={{ display: "flex", gap: 2, marginBottom: 8 }}>
-          {[...Array(5)].map((_, i) => <Star key={i} size={12} fill="#f59e0b" color="#f59e0b" />)}
-        </div>
-        <p style={{ fontSize: 12, color: "rgba(255,255,255,.75)", lineHeight: 1.65, margin: "0 0 12px", fontStyle: "italic" }}>
-          "Consegui o meu primeiro emprego internacional em 3 meses com o NgadaLearn!"
-        </p>
-        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-          <img src="https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=48&h=48&fit=crop&crop=face" alt="Maria Silva"
-            style={{ width: 36, height: 36, borderRadius: "50%", objectFit: "cover", border: "2px solid rgba(167,139,250,.5)", flexShrink: 0 }}
-            onError={e => { (e.target as HTMLImageElement).src = "https://ui-avatars.com/api/?name=Maria+Silva&background=7c3aed&color=fff&size=48"; }} />
-          <div>
-            <div style={{ fontSize: 12, fontWeight: 700, color: "#fff" }}>Maria Silva</div>
-            <div style={{ fontSize: 11, color: "rgba(255,255,255,.4)" }}>São Paulo, BR · Designer</div>
-          </div>
-        </div>
-      </div>
     </div>
   );
 

@@ -386,10 +386,9 @@ function NowPlayingBar({clip,isPlaying,ccOn}:{clip:MovieClip;isPlaying:boolean;c
 /* ════════════════════════════════════════════════════════════════════
    WORD POPUP — clique numa palavra para ouvir e guardar no vocabulário
    ════════════════════════════════════════════════════════════════════ */
-function WordPopup({ word, pos, onSave, onClose }: {
+function WordPopup({ word, pos, onClose }: {
   word: string;
   pos: { x: number; y: number };
-  onSave: (w: string) => void;
   onClose: () => void;
 }) {
   const speak = () => {
@@ -404,11 +403,10 @@ function WordPopup({ word, pos, onSave, onClose }: {
     window.speechSynthesis.speak(u);
   };
 
-  // Pronúncia automática ao abrir
   useEffect(() => { speak(); }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const left = Math.min(pos.x - 68, (typeof window !== "undefined" ? window.innerWidth : 800) - 148);
-  const top  = Math.max(pos.y - 118, 8);
+  const top  = Math.max(pos.y - 90, 8);
 
   return (
     <div
@@ -418,20 +416,12 @@ function WordPopup({ word, pos, onSave, onClose }: {
     >
       <button onClick={onClose} className="absolute top-1 right-1.5 text-white/30 hover:text-white/80 text-xs transition-colors leading-none">✕</button>
       <p className="font-black text-amber-300 text-base text-center mb-2">{word}</p>
-      <div className="flex gap-1">
-        <button
-          onClick={speak}
-          className="flex-1 py-1.5 bg-blue-600/50 hover:bg-blue-600 rounded-lg text-xs font-bold text-white transition-colors"
-        >
-          🔊 Ouvir
-        </button>
-        <button
-          onClick={() => { onSave(word); onClose(); }}
-          className="flex-1 py-1.5 bg-amber-600/50 hover:bg-amber-600 rounded-lg text-xs font-bold text-white transition-colors"
-        >
-          + Vocab
-        </button>
-      </div>
+      <button
+        onClick={speak}
+        className="w-full py-1.5 bg-blue-600/50 hover:bg-blue-600 rounded-lg text-xs font-bold text-white transition-colors"
+      >
+        🔊 Ouvir
+      </button>
       <p className="text-[9px] text-white/25 text-center mt-1.5">Clica fora para fechar</p>
     </div>
   );
@@ -581,24 +571,11 @@ export function MoviesPlayer() {
   const [selected,  setSelected]  = useState<MovieClip|null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [vidError,  setVidError]  = useState(false);
-  const [speed,     setSpeed]     = useState<PlaybackRate>(1);
-  const [ccOn,      setCcOn]      = useState(true);
   const ytPlayer       = useRef<any>(null);
-  const speedRef       = useRef<PlaybackRate>(1);
   const resultsRef     = useRef<MovieClip[]>([]);
-  const selectedRef    = useRef<MovieClip|null>(null);   // sempre atual — evita stale closures
+  const selectedRef    = useRef<MovieClip|null>(null);
   const errorTimeout   = useRef<ReturnType<typeof setTimeout>|null>(null);
   const skipTimeoutRef = useRef<ReturnType<typeof setTimeout>|null>(null);
-
-  /* Vocabulário + Frases */
-  const [vocabWord,   setVocabWord]   = useState("");
-  const [vocabTrans,  setVocabTrans]  = useState("");
-  const [savedVocab,  setSavedVocab]  = useState<SavedPhrase[]>([]);
-  const [phraseEn,    setPhraseEn]    = useState("");
-  const [phrasePt,    setPhrasePt]    = useState("");
-  const [savedPhrases,setSavedPhrases] = useState<SavedPhrase[]>([]);
-  const [tab,         setTab]         = useState<"vocab"|"phrases"|"filmes">("vocab");
-  const nextId = useRef(0);
 
   /* Legendas temporizadas (tempo real) */
   const [transcript,   setTranscript]   = useState<TimedSub[]>([]);
@@ -664,30 +641,23 @@ export function MoviesPlayer() {
           modestbranding: 1,
           playsinline:    1,
           autoplay:       0,
-          cc_load_policy: ccOn ? 1 : 0,
+          cc_load_policy: 1,
           cc_lang_pref:   "en",
           hl:             "en",
           origin:         window.location.origin,
         },
         events: {
           onReady: (e:any) => {
-            e.target.setPlaybackRate(speedRef.current);
-
-            /* Timeout de segurança: se o vídeo não começar em 12s, avança */
+            void e;
             if (errorTimeout.current) clearTimeout(errorTimeout.current);
             errorTimeout.current = setTimeout(() => {
               const state = ytPlayer.current?.getPlayerState?.() ?? -1;
-              /* -1=unstarted  0=ended  2=paused  3=buffering  5=cued */
-              if (state === -1 || state === 5) {
-                skipToNextClip();
-              }
+              if (state === -1 || state === 5) skipToNextClip();
             }, 12000);
           },
           onStateChange: (e:any) => {
             setIsPlaying(e.data === 1);
             if (e.data === 1) {
-              e.target.setPlaybackRate(speedRef.current);
-              /* Limpar timeout: está a reproduzir com sucesso */
               if (errorTimeout.current) { clearTimeout(errorTimeout.current); errorTimeout.current = null; }
             }
             /* Estado -1 (unstarted) após breve carregamento = vídeo bloqueado */
@@ -764,11 +734,6 @@ export function MoviesPlayer() {
     if (skipTimeoutRef.current) clearTimeout(skipTimeoutRef.current);
   }, []);
 
-  /* ── Velocidade ──────────────────────────────────────────────── */
-  useEffect(() => {
-    speedRef.current = speed;
-    try { ytPlayer.current?.setPlaybackRate(speed); } catch(_) {}
-  }, [speed]);
 
   /* ── Pesquisa ────────────────────────────────────────────────── */
   const searchClips = useCallback(async (raw: string) => {
@@ -811,29 +776,6 @@ export function MoviesPlayer() {
 
   /* Pesquisa inicial */
   useEffect(() => { searchClips("official movie scene english"); }, [searchClips]);
-
-  /* ── Guardar vocabulário ─────────────────────────────────────── */
-  function saveVocab() {
-    if (!vocabWord.trim()) return;
-    setSavedVocab(p => [...p, { id: nextId.current++, en: vocabWord.trim(), pt: vocabTrans.trim() }]);
-    setVocabWord(""); setVocabTrans("");
-  }
-
-  /* ── Guardar frase ───────────────────────────────────────────── */
-  function savePhrase() {
-    if (!phraseEn.trim()) return;
-    setSavedPhrases(p => [...p, { id: nextId.current++, en: phraseEn.trim(), pt: phrasePt.trim() }]);
-    setPhraseEn(""); setPhrasePt("");
-  }
-
-  /* ── Exportar vocabulário ────────────────────────────────────── */
-  function exportVocab() {
-    const lines = savedVocab.map(v => `${v.en}${v.pt ? " → " + v.pt : ""}`).join("\n");
-    const a     = document.createElement("a");
-    a.href      = URL.createObjectURL(new Blob([lines], { type:"text/plain" }));
-    a.download  = `vocabulario-${(selected?.title||"filme").replace(/[^a-z0-9]/gi,"_").slice(0,25)}.txt`;
-    a.click();
-  }
 
   /* Filtra por género (curadas) */
   const filteredCurated = useMemo(() =>
@@ -966,7 +908,6 @@ export function MoviesPlayer() {
           <WordPopup
             word={wordPopup.word}
             pos={{x:wordPopup.x,y:wordPopup.y}}
-            onSave={w=>{setSavedVocab(p=>[...p,{id:nextId.current++,en:w,pt:""}]);setTab("vocab");}}
             onClose={()=>setWordPopup(null)}
           />
         </>
@@ -1035,7 +976,7 @@ export function MoviesPlayer() {
 
             {/* Now Playing */}
             {selected&&!vidError&&(
-              <NowPlayingBar clip={selected} isPlaying={isPlaying} ccOn={ccOn} />
+              <NowPlayingBar clip={selected} isPlaying={isPlaying} ccOn={true} />
             )}
 
             {/* CC em tempo real */}
@@ -1054,156 +995,9 @@ export function MoviesPlayer() {
               </div>
             ) : null}
 
-            {/* CC + Velocidade */}
-            <div className="flex-shrink-0 bg-white/8 backdrop-blur rounded-2xl px-4 py-3 border border-amber-500/10 flex items-center gap-3 flex-wrap">
-              <div className="flex items-center gap-2 flex-shrink-0">
-                <span className="text-[11px] font-bold text-amber-300 uppercase tracking-wider">CC</span>
-                <button
-                  onClick={()=>{const n=!ccOn;setCcOn(n);if(selected){const c=selected;setSelected(null);setTimeout(()=>setSelected(c),80);}}}
-                  style={{touchAction:'manipulation'}}
-                  className={`relative w-11 h-6 rounded-full transition-colors flex-shrink-0 ${ccOn?"bg-blue-600":"bg-white/20"}`}>
-                  <div className={`absolute top-1 w-4 h-4 bg-white rounded-full shadow transition-transform ${ccOn?"translate-x-6":"translate-x-1"}`} />
-                </button>
-                <span className={`text-xs font-semibold ${ccOn?"text-blue-300":"text-white/30"}`}>{ccOn?"On":"Off"}</span>
-              </div>
-              <div className="w-px h-5 bg-white/12 flex-shrink-0" />
-              <div className="flex items-center gap-2 flex-1">
-                <span className="text-[11px] font-bold text-amber-300 uppercase tracking-wider flex-shrink-0">Vel.</span>
-                <div className="flex gap-2 flex-1">
-                  {SPEED_OPT.map(({label,value,color})=>(
-                    <button key={value} onClick={()=>setSpeed(value)} style={{touchAction:'manipulation'}}
-                      className={`flex-1 py-2.5 min-h-[44px] rounded-xl text-sm font-black transition-all ${
-                        speed===value
-                          ? `${color} text-white shadow-lg scale-105`
-                          : "bg-white/10 hover:bg-white/15 text-white/60"
-                      }`}>
-                      {label}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            </div>
-
-            {/* Tabs */}
-            <div className="flex-shrink-0 flex rounded-2xl overflow-hidden border border-white/10">
-              {([
-                {id:"vocab",   icon:"📖", label:"Vocab"},
-                {id:"phrases", icon:"💬", label:"Frases"},
-                {id:"filmes",  icon:"🎬", label:"Filmes", mobileOnly:true},
-              ] as const).map((t,i)=>(
-                <button key={t.id} onClick={()=>setTab(t.id)} style={{touchAction:'manipulation'}}
-                  className={`flex-1 py-3 min-h-[44px] text-xs font-bold transition-colors
-                    ${t.id==="filmes" ? "lg:hidden" : ""}
-                    ${i>0 ? "border-l border-white/10" : ""}
-                    ${tab===t.id
-                      ? "bg-amber-700/60 text-white"
-                      : "bg-white/4 text-white/50 hover:text-white hover:bg-white/8"
-                    }`}>
-                  {t.icon} {t.label}
-                </button>
-              ))}
-            </div>
-
-            {/* Conteúdo tabs */}
-            <div className="flex flex-col bg-white/8 backdrop-blur rounded-2xl overflow-hidden border border-amber-500/10" style={{minHeight:260}}>
-              <div className="flex-1 overflow-y-auto overscroll-contain p-3 pb-5">
-
-                {/* Lista mobile */}
-                {tab==="filmes" && (
-                  <div className="h-full flex flex-col lg:hidden">
-                    <MovieList />
-                  </div>
-                )}
-
-                {/* Vocabulário */}
-                {tab==="vocab" && (
-                  <div className="space-y-3">
-                    <p className="text-xs text-white/45">Guarda palavras novas — clica numa palavra na legenda para adicionar.</p>
-                    <div className="grid grid-cols-2 gap-2">
-                      <div>
-                        <label className="text-[10px] font-bold text-amber-300 uppercase tracking-widest block mb-1.5">EN</label>
-                        <input value={vocabWord} onChange={e=>setVocabWord(e.target.value)}
-                          onKeyDown={e=>e.key==="Enter"&&saveVocab()}
-                          placeholder="Ex: tremendous"
-                          className="w-full bg-black/30 border border-white/10 rounded-xl px-3 py-2.5 text-sm text-white placeholder-white/25 focus:outline-none focus:border-amber-400 transition-colors" />
-                      </div>
-                      <div>
-                        <label className="text-[10px] font-bold text-amber-300 uppercase tracking-widest block mb-1.5">PT</label>
-                        <input value={vocabTrans} onChange={e=>setVocabTrans(e.target.value)}
-                          onKeyDown={e=>e.key==="Enter"&&saveVocab()}
-                          placeholder="Ex: tremendo"
-                          className="w-full bg-black/30 border border-white/10 rounded-xl px-3 py-2.5 text-sm text-white placeholder-white/25 focus:outline-none focus:border-amber-400 transition-colors" />
-                      </div>
-                    </div>
-                    <button onClick={saveVocab} disabled={!vocabWord.trim()} style={{touchAction:'manipulation'}}
-                      className="w-full py-3 min-h-[44px] bg-amber-600 hover:bg-amber-500 disabled:opacity-40 rounded-xl text-sm font-bold transition-colors">
-                      + Guardar Palavra
-                    </button>
-                    {savedVocab.length>0&&(
-                      <>
-                        <div className="space-y-1.5 max-h-48 overflow-y-auto overscroll-contain">
-                          {savedVocab.map(v=>(
-                            <div key={v.id} className="mslide flex items-center gap-2 bg-white/5 rounded-xl px-3 py-2.5">
-                              <span className="text-sm font-bold text-amber-300">{v.en}</span>
-                              {v.pt&&<><span className="text-white/25">→</span><span className="text-sm text-white/65">{v.pt}</span></>}
-                              <button onClick={()=>setSavedVocab(p=>p.filter(x=>x.id!==v.id))} style={{touchAction:'manipulation'}}
-                                className="ml-auto text-white/25 hover:text-red-400 text-xs transition-colors p-1">✕</button>
-                            </div>
-                          ))}
-                        </div>
-                        <div className="flex gap-2">
-                          <button onClick={exportVocab} style={{touchAction:'manipulation'}}
-                            className="flex-1 py-2 bg-white/10 hover:bg-white/15 rounded-xl text-xs font-semibold transition-colors">
-                            💾 Exportar .txt
-                          </button>
-                          <button onClick={()=>setSavedVocab([])} style={{touchAction:'manipulation'}}
-                            className="px-4 py-2 bg-red-500/15 hover:bg-red-500/25 text-red-300 rounded-xl text-xs font-semibold transition-colors">
-                            🗑️
-                          </button>
-                        </div>
-                      </>
-                    )}
-                  </div>
-                )}
-
-                {/* Frases */}
-                {tab==="phrases" && (
-                  <div className="space-y-3">
-                    <p className="text-xs text-white/45">Guarda falas icónicas da cena.</p>
-                    <div>
-                      <label className="text-[10px] font-bold text-amber-300 uppercase tracking-widest block mb-1.5">🇬🇧 Fala em inglês</label>
-                      <textarea value={phraseEn} onChange={e=>setPhraseEn(e.target.value)}
-                        placeholder='"Life is like a box of chocolates…"'
-                        rows={3}
-                        className="w-full bg-black/30 border border-white/10 rounded-xl p-3 text-sm text-white placeholder-white/25 resize-none focus:outline-none focus:border-amber-400 transition-colors font-mono" />
-                    </div>
-                    <div>
-                      <label className="text-[10px] font-bold text-amber-300 uppercase tracking-widest block mb-1.5">🇵🇹 Tradução (opcional)</label>
-                      <textarea value={phrasePt} onChange={e=>setPhrasePt(e.target.value)}
-                        placeholder='"A vida é como uma caixa de chocolates…"'
-                        rows={2}
-                        className="w-full bg-black/30 border border-white/10 rounded-xl p-3 text-sm text-white placeholder-white/25 resize-none focus:outline-none focus:border-amber-400 transition-colors font-mono" />
-                    </div>
-                    <button onClick={savePhrase} disabled={!phraseEn.trim()} style={{touchAction:'manipulation'}}
-                      className="w-full py-3 min-h-[44px] bg-amber-600 hover:bg-amber-500 disabled:opacity-40 rounded-xl text-sm font-bold transition-colors">
-                      💬 Guardar Frase
-                    </button>
-                    {savedPhrases.length>0&&(
-                      <div className="space-y-2 max-h-48 overflow-y-auto overscroll-contain">
-                        {savedPhrases.map(p=>(
-                          <div key={p.id} className="mslide bg-white/5 rounded-xl px-3 py-2.5 relative">
-                            <p className="text-sm font-semibold text-amber-200 italic pr-6">"{p.en}"</p>
-                            {p.pt&&<p className="text-xs text-white/45 mt-0.5 italic">"{p.pt}"</p>}
-                            <button onClick={()=>setSavedPhrases(prev=>prev.filter(x=>x.id!==p.id))} style={{touchAction:'manipulation'}}
-                              className="absolute top-2.5 right-2.5 text-white/20 hover:text-red-400 text-xs transition-colors">✕</button>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                )}
-
-              </div>
+            {/* Lista de filmes — mobile inline, desktop no painel esquerdo */}
+            <div className="lg:hidden bg-white/8 backdrop-blur rounded-2xl border border-amber-500/10 overflow-hidden p-3" style={{minHeight:220}}>
+              <MovieList />
             </div>
 
           </div>{/* fim conteúdo */}

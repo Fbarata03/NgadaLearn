@@ -167,130 +167,6 @@ function Equalizer({active, size=28}: {active:boolean; size?:number}) {
   );
 }
 
-/* ════════════════════════════════════════════════════════════════════
-   LEGENDA INTERACTIVA
-   ════════════════════════════════════════════════════════════════════ */
-function InteractiveLyrics({
-  lines, activeLine, onLineClick, onWordClick, onDifficultyChange,
-}: {
-  lines: LyricLine[];
-  activeLine: number;
-  onLineClick: (id: number) => void;
-  onWordClick: (lineId: number, wordIdx: number) => void;
-  onDifficultyChange: (lineId: number, diff: Difficulty) => void;
-}) {
-  const containerRef = useRef<HTMLDivElement>(null);
-  const activeRef    = useRef<HTMLDivElement>(null);
-
-  /* Scroll automático centrado DENTRO do painel (não rola a página) */
-  useEffect(() => {
-    const container = containerRef.current;
-    const el        = activeRef.current;
-    if (!container || !el) return;
-    const top = el.offsetTop - container.offsetTop - container.clientHeight / 2 + el.clientHeight / 2;
-    container.scrollTo({ top: Math.max(0, top), behavior: "smooth" });
-  }, [activeLine]);
-
-  if (!lines.length)
-    return (
-      <div className="flex flex-col items-center justify-center py-16 text-white/30 gap-3">
-        <span className="text-4xl">🎤</span>
-        <p className="text-sm">Cola a letra na aba "Editar" para activar a legenda interactiva</p>
-      </div>
-    );
-
-  return (
-    <div ref={containerRef} className="space-y-1 overflow-y-auto pr-1 py-1" style={{maxHeight:"clamp(220px, calc(100dvh - 480px), 580px)", minHeight:120}}>
-      {lines.map((line) => {
-        const isActive = line.id === activeLine;
-        const meta     = DIFF_META[line.difficulty];
-        const words    = line.en.split(" ");
-
-        return (
-          <div
-            key={line.id}
-            ref={isActive ? activeRef : undefined}
-            className={`slide-up rounded-xl border transition-all duration-300 cursor-pointer
-              ${isActive
-                ? "border-purple-400/80 shadow-lg shadow-purple-900/40 flash-border"
-                : "border-white/5 hover:border-white/20"
-              }
-              ${meta.color}
-            `}
-            onClick={() => onLineClick(line.id)}
-            style={isActive ? {background:"rgba(109,40,217,0.25)"} : {background:"rgba(255,255,255,0.04)"}}
-          >
-            {/* Linha número + dificuldade */}
-            <div className="flex items-center gap-2 px-3 pt-2 pb-1">
-              <span className="text-[10px] text-white/30 w-5 flex-shrink-0 font-mono">
-                {line.id + 1}
-              </span>
-              {isActive && (
-                <div className="flex items-end gap-0.5 flex-shrink-0" style={{height:14}}>
-                  {["eq1","eq3","eq5"].map((cls) => (
-                    <div key={cls} className={cls}
-                      style={{width:2,borderRadius:2,backgroundColor:"#c084fc",minHeight:2}} />
-                  ))}
-                </div>
-              )}
-              <div className="flex-1" />
-              {/* Botões de dificuldade */}
-              <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity"
-                style={{opacity: isActive ? 1 : undefined}}>
-                {(["hard","learned","normal"] as Difficulty[]).map(d => (
-                  <button
-                    key={d}
-                    onClick={(e) => { e.stopPropagation(); onDifficultyChange(line.id, d); }}
-                    title={DIFF_META[d].label}
-                    className={`text-[11px] px-1.5 py-0.5 rounded-full transition-all
-                      ${line.difficulty === d
-                        ? "bg-white/20 text-white scale-110"
-                        : "text-white/30 hover:text-white"
-                      }`}
-                  >
-                    {d === "hard" ? "⭐" : d === "learned" ? "✅" : "○"}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* Texto EN — palavra a palavra */}
-            <div className="px-3 pb-1 flex flex-wrap gap-1">
-              {words.map((word, wi) => {
-                const isHL = line.highlighted.includes(wi);
-                return (
-                  <button
-                    key={wi}
-                    onClick={(e) => { e.stopPropagation(); onWordClick(line.id, wi); }}
-                    className={`text-sm leading-relaxed rounded px-0.5 transition-all word-pop
-                      ${isActive ? "font-bold" : "font-medium"}
-                      ${isHL
-                        ? "bg-yellow-400/30 text-yellow-200 underline decoration-dotted"
-                        : isActive
-                          ? "text-white hover:bg-white/20"
-                          : "text-white/70 hover:text-white hover:bg-white/10"
-                      }`}
-                    title={isHL ? "Clica para remover destaque" : "Clica para destacar"}
-                  >
-                    {word}
-                  </button>
-                );
-              })}
-            </div>
-
-            {/* Tradução PT */}
-            {line.pt && (
-              <div className={`px-3 pb-2 text-xs leading-snug
-                ${isActive ? "text-purple-200" : "text-white/40"}`}>
-                {line.pt}
-              </div>
-            )}
-          </div>
-        );
-      })}
-    </div>
-  );
-}
 
 /* ── Decodifica entidades HTML (usada em componentes fora do MusicPlayer) */
 function htmlDecode(s: string) {
@@ -332,8 +208,9 @@ function NowPlayingBar({video, isPlaying, activeLyric}:
 /* ════════════════════════════════════════════════════════════════════
    CINEMA LYRIC DISPLAY — Legenda animada profissional
    ════════════════════════════════════════════════════════════════════ */
-function CinemaLyricDisplay({ lines, activeLine, isPlaying }: {
+function CinemaLyricDisplay({ lines, activeLine, isPlaying, onNext, onPrev }: {
   lines: LyricLine[]; activeLine: number; isPlaying: boolean;
+  onNext: () => void; onPrev: () => void;
 }) {
   if (!lines.length) return null;
   const prev = lines[activeLine - 1];
@@ -418,11 +295,28 @@ function CinemaLyricDisplay({ lines, activeLine, isPlaying }: {
 
       {/* Próxima linha — muito esbatida */}
       {next && (
-        <p style={{textAlign:"center",padding:"4px 24px 12px",fontSize:13,color:"rgba(255,255,255,.18)",
+        <p style={{textAlign:"center",padding:"4px 24px 4px",fontSize:13,color:"rgba(255,255,255,.18)",
           fontStyle:"italic",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",position:"relative",zIndex:10}}>
           {next.en}
         </p>
       )}
+
+      {/* Navegação ← → */}
+      <div style={{display:"flex",alignItems:"center",justifyContent:"center",gap:12,padding:"8px 20px 14px",position:"relative",zIndex:10}}>
+        <button onClick={onPrev} disabled={activeLine === 0}
+          style={{background:"rgba(255,255,255,.08)",border:"1px solid rgba(168,85,247,.2)",borderRadius:12,
+            padding:"6px 18px",fontSize:13,fontWeight:700,color:activeLine===0?"rgba(255,255,255,.2)":"rgba(196,181,253,.9)",
+            cursor:activeLine===0?"not-allowed":"pointer",transition:"all .2s",touchAction:"manipulation"}}
+        >← Ant.</button>
+        <span style={{fontSize:10,fontFamily:"monospace",color:"rgba(168,85,247,.35)"}}>
+          {activeLine + 1} / {lines.length}
+        </span>
+        <button onClick={onNext} disabled={activeLine >= lines.length - 1}
+          style={{background:"rgba(255,255,255,.08)",border:"1px solid rgba(168,85,247,.2)",borderRadius:12,
+            padding:"6px 18px",fontSize:13,fontWeight:700,color:activeLine>=lines.length-1?"rgba(255,255,255,.2)":"rgba(196,181,253,.9)",
+            cursor:activeLine>=lines.length-1?"not-allowed":"pointer",transition:"all .2s",touchAction:"manipulation"}}
+        >Próx. →</button>
+      </div>
     </div>
   );
 }
@@ -531,19 +425,8 @@ export function MusicPlayer() {
   const [rawPt, setRawPt] = useState("");
 
   /* Legenda interactiva */
-  const [lines,       setLines]       = useState<LyricLine[]>([]);
-  const [activeLine,  setActiveLine]  = useState(0);
-  const [lyricsMode,  setLyricsMode]  = useState<"edit"|"view">("edit");
-  const [autoMode,    setAutoMode]    = useState(false);
-  const [autoDelay,   setAutoDelay]   = useState(5);
-  const autoTimer = useRef<ReturnType<typeof setInterval>|null>(null);
-
-  /* Tab principal — "lyrics" (letras) | "list" (lista de músicas no mobile) */
-  const [tab, setTab] = useState<"lyrics"|"list">("lyrics");
-
-  /* Auto-busca de letra */
-  const [fetchingLyrics, setFetchingLyrics] = useState(false);
-  const [lyricsFetchMsg, setLyricsFetchMsg] = useState("");
+  const [lines,      setLines]      = useState<LyricLine[]>([]);
+  const [activeLine, setActiveLine] = useState(0);
 
   /* Transcript em tempo real (CC automático) */
   const [transcript,    setTranscript]    = useState<TimedSub[]>([]);
@@ -580,18 +463,6 @@ export function MusicPlayer() {
     }
   }, [rawEn, rawPt]);
 
-  /* ── Auto-avanço karaoke ────────────────────────────────────────── */
-  useEffect(() => {
-    if (autoTimer.current) clearInterval(autoTimer.current);
-    if (!autoMode || !lines.length) return;
-    autoTimer.current = setInterval(() => {
-      setActiveLine(p => {
-        if (p >= lines.length - 1) { setAutoMode(false); return p; }
-        return p + 1;
-      });
-    }, autoDelay * 1000);
-    return () => { if (autoTimer.current) clearInterval(autoTimer.current); };
-  }, [autoMode, autoDelay, lines.length]);
 
   /* ── Pesquisa YouTube ────────────────────────────────────────────── */
   const searchVideos = useCallback(async (raw: string) => {
@@ -809,80 +680,45 @@ export function MusicPlayer() {
 
   async function fetchAutoLyrics(vTitle: string, vChannel?: string) {
     const parsed = parseArtistTitle(vTitle, vChannel);
-    if (!parsed) {
-      setLyricsFetchMsg("❌ Artista não detectado. Cola manualmente ou renomeia no formato 'Artista - Música'.");
-      return;
-    }
-    setFetchingLyrics(true);
-    setLyricsFetchMsg("");
+    if (!parsed) return;
     const { artist, title } = parsed;
 
     try {
-      /* ── 1ª tentativa: backend Letras.mus.br (EN + tradução PT) ── */
-      try {
-        const r1 = await fetch(
-          `${BACKEND}/api/lyrics/search?artist=${encodeURIComponent(artist)}&title=${encodeURIComponent(title)}`
-        );
-        if (r1.ok) {
-          const d = await r1.json();
-          if (d.en) {
-            setRawEn(d.en);
-            if (d.pt) setRawPt(d.pt);
-            setLyricsFetchMsg(
-              `✅ "${title}" carregada do Letras.mus.br${d.pt ? " com tradução PT 🇵🇹" : ""}!`
-            );
-            setTimeout(() => { setLyricsMode("view"); setLyricsFetchMsg(""); }, 900);
-            return;
-          }
+      const r1 = await fetch(
+        `${BACKEND}/api/lyrics/search?artist=${encodeURIComponent(artist)}&title=${encodeURIComponent(title)}`
+      );
+      if (r1.ok) {
+        const d = await r1.json();
+        if (d.en) {
+          setRawEn(d.en);
+          if (d.pt) setRawPt(d.pt);
+          return;
         }
-      } catch { /* falha silenciosa — tenta fallback */ }
+      }
+    } catch { /* silencioso */ }
 
-      /* ── 2ª tentativa: lyrics.ovh (só inglês) ─────────────────── */
+    try {
       const r2   = await fetch(
         `https://api.lyrics.ovh/v1/${encodeURIComponent(artist)}/${encodeURIComponent(title)}`
       );
       const data = await r2.json();
       if (data.lyrics) {
         setRawEn(data.lyrics.replace(/\r\n/g, "\n").trim());
-        setLyricsFetchMsg(`✅ Letra de "${title}" carregada (sem tradução PT).`);
-        setTimeout(() => { setLyricsMode("view"); setLyricsFetchMsg(""); }, 800);
-      } else {
-        setLyricsFetchMsg("❌ Letra não encontrada. Tenta com o nome exacto ou cola manualmente.");
       }
-    } catch {
-      setLyricsFetchMsg("❌ Erro de ligação. Cola manualmente abaixo.");
-    } finally {
-      setFetchingLyrics(false);
-    }
+    } catch { /* silencioso */ }
   }
 
   /* ── Handlers ────────────────────────────────────────────────────── */
   function selectVideo(v: YTVideo) {
     setSelected(v); setIsPlaying(false); setVidError(false);
-    /* Não resetar velocidade — mantém a preferência do utilizador */
-  }
-  function handleWordClick(lineId: number, wordIdx: number) {
-    setLines(prev => prev.map(l => {
-      if (l.id !== lineId) return l;
-      const hl = l.highlighted.includes(wordIdx)
-        ? l.highlighted.filter(i => i !== wordIdx)
-        : [...l.highlighted, wordIdx];
-      return {...l, highlighted: hl};
-    }));
-  }
-  function handleDifficultyChange(lineId: number, diff: Difficulty) {
-    setLines(prev => prev.map(l => l.id===lineId ? {...l, difficulty:diff} : l));
+    setRawEn(""); setRawPt(""); setLines([]); setActiveLine(0);
+    fetchAutoLyrics(v.title, v.channel);
   }
   function activeLyricText() {
     const l = lines[activeLine];
     return l?.en || "";
   }
   function tryNextVideo() { skipToNextVideo(); }
-
-  const wordCount = useMemo(
-    () => lines.reduce((s,l) => s + l.highlighted.length, 0),
-    [lines]
-  );
 
   /* ══════════════════════════════════════════════════════════════════
      RENDER
@@ -1048,183 +884,18 @@ export function MusicPlayer() {
 
             {/* Legenda da letra manual */}
             {lines.length > 0 && (
-              <CinemaLyricDisplay lines={lines} activeLine={activeLine} isPlaying={isPlaying} />
+              <CinemaLyricDisplay
+                lines={lines}
+                activeLine={activeLine}
+                isPlaying={isPlaying}
+                onNext={() => setActiveLine(p => Math.min(lines.length - 1, p + 1))}
+                onPrev={() => setActiveLine(p => Math.max(0, p - 1))}
+              />
             )}
 
-            {/* Velocidade */}
-            <div className="flex-shrink-0 bg-white/8 backdrop-blur rounded-2xl px-4 py-3 flex items-center gap-3 border border-white/8">
-              <p className="text-[11px] font-bold text-purple-300 uppercase tracking-wider flex-shrink-0">Velocidade</p>
-              <div className="flex gap-2 flex-1">
-                {SPEED_OPTIONS.map(({label,value}) => (
-                  <button key={value} onClick={()=>setSpeed(value)} style={{touchAction:'manipulation'}}
-                    className={`flex-1 py-2.5 min-h-[44px] rounded-xl text-sm font-black transition-all ${
-                      speed===value
-                        ? value===0.5  ? "bg-red-600 text-white shadow-lg scale-105"
-                        : value===0.75 ? "bg-yellow-600 text-white shadow-lg scale-105"
-                        :                "bg-green-600 text-white shadow-lg scale-105"
-                        : "bg-white/10 hover:bg-white/15 text-white/60"
-                    }`}>
-                    {label}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* ── Tabs: 🎤 Letras | 🔍 Músicas (mobile only para lista) ── */}
-            <div className="flex-shrink-0 flex rounded-2xl overflow-hidden border border-white/10">
-              <button onClick={()=>setTab("lyrics")} style={{touchAction:'manipulation'}}
-                className={`flex-1 py-3 min-h-[44px] text-sm font-bold transition-colors ${
-                  tab==="lyrics"
-                    ? "bg-purple-700/70 text-white"
-                    : "bg-white/5 text-white/50 hover:text-white hover:bg-white/8"
-                }`}>
-                🎤 Letras
-              </button>
-              <div className="w-px bg-white/10" />
-              <button onClick={()=>setTab("list")} style={{touchAction:'manipulation'}}
-                className={`flex-1 py-3 min-h-[44px] text-sm font-bold transition-colors lg:hidden ${
-                  tab==="list"
-                    ? "bg-indigo-700/70 text-white"
-                    : "bg-white/5 text-white/50 hover:text-white hover:bg-white/8"
-                }`}>
-                🔍 Músicas
-              </button>
-            </div>
-
-            {/* ── Conteúdo das tabs ── */}
-            <div className="flex-1 bg-white/8 backdrop-blur rounded-2xl overflow-hidden border border-white/8 flex flex-col" style={{minHeight:280}}>
-
-              {/* Lista mobile */}
-              {tab==="list" && (
-                <div className="flex-1 p-3 overflow-hidden flex flex-col lg:hidden">
-                  <MusicList />
-                </div>
-              )}
-
-              {/* Letras */}
-              {tab==="lyrics" && (
-                <div className="flex flex-col flex-1 overflow-hidden">
-                  {/* Sub-tabs */}
-                  <div className="flex-shrink-0 flex gap-2 px-4 pt-3 pb-2 border-b border-white/8">
-                    <button onClick={()=>setLyricsMode("edit")} style={{touchAction:'manipulation'}}
-                      className={`px-4 py-2 min-h-[40px] rounded-xl text-xs font-bold transition-all ${
-                        lyricsMode==="edit" ? "bg-purple-600 text-white" : "bg-white/10 text-white/55 hover:text-white"
-                      }`}>
-                      ✏️ Editar Letra
-                    </button>
-                    <button onClick={()=>setLyricsMode("view")} disabled={!lines.length} style={{touchAction:'manipulation'}}
-                      className={`px-4 py-2 min-h-[40px] rounded-xl text-xs font-bold transition-all disabled:opacity-35 ${
-                        lyricsMode==="view" ? "bg-violet-600 text-white" : "bg-white/10 text-white/55 hover:text-white"
-                      }`}>
-                      🎤 Interactiva {lines.length>0 && `(${lines.length})`}
-                    </button>
-                    {wordCount > 0 && (
-                      <span className="ml-auto text-xs text-yellow-300 bg-yellow-500/10 px-2.5 py-2 rounded-xl self-center">
-                        🟡 {wordCount}
-                      </span>
-                    )}
-                  </div>
-
-                  <div className="flex-1 overflow-y-auto overscroll-contain pb-4">
-
-                    {/* EDIÇÃO */}
-                    {lyricsMode==="edit" && (
-                      <div className="p-4 space-y-3">
-                        {selected && (
-                          <div className="flex flex-wrap items-center gap-2 p-3 bg-purple-900/30 border border-purple-500/20 rounded-xl">
-                            <button
-                              onClick={()=>{setLyricsFetchMsg("");fetchAutoLyrics(selected.title,selected.channel);}}
-                              disabled={fetchingLyrics} style={{touchAction:'manipulation'}}
-                              className="bg-gradient-to-r from-purple-600 to-violet-600 hover:from-purple-500 hover:to-violet-500 disabled:opacity-50 px-4 py-2.5 rounded-xl text-xs font-black transition-all flex items-center gap-2 shadow-lg min-h-[44px]">
-                              {fetchingLyrics ? "⏳ A buscar…" : "✨ Buscar Letra + Tradução PT"}
-                            </button>
-                            {lyricsFetchMsg && (
-                              <span className={`text-xs font-semibold ${lyricsFetchMsg.startsWith("✅")?"text-green-300":"text-red-300"}`}>
-                                {lyricsFetchMsg}
-                              </span>
-                            )}
-                          </div>
-                        )}
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                          <div>
-                            <label className="text-[11px] font-bold text-purple-300 uppercase tracking-widest block mb-2">🇬🇧 Inglês</label>
-                            <textarea value={rawEn} onChange={e=>setRawEn(e.target.value)}
-                              placeholder={"Cole a letra em inglês,\numa linha por verso…"}
-                              rows={8}
-                              className="w-full bg-black/30 border border-white/10 rounded-xl p-3 text-sm text-white placeholder-white/25 resize-none focus:outline-none focus:border-purple-400 font-mono leading-6 transition-colors" />
-                          </div>
-                          <div>
-                            <label className="text-[11px] font-bold text-purple-300 uppercase tracking-widest block mb-2">🇵🇹 Tradução (opcional)</label>
-                            <textarea value={rawPt} onChange={e=>setRawPt(e.target.value)}
-                              placeholder={"Traduz cada verso\n(uma linha por verso)…"}
-                              rows={8}
-                              className="w-full bg-black/30 border border-white/10 rounded-xl p-3 text-sm text-white placeholder-white/25 resize-none focus:outline-none focus:border-purple-400 font-mono leading-6 transition-colors" />
-                          </div>
-                        </div>
-                        {rawEn && (
-                          <button onClick={()=>setLyricsMode("view")} style={{touchAction:'manipulation'}}
-                            className="w-full py-3 min-h-[44px] bg-violet-600 hover:bg-violet-500 rounded-xl text-sm font-bold transition-colors">
-                            ▶ Ver Legenda Interactiva →
-                          </button>
-                        )}
-                      </div>
-                    )}
-
-                    {/* MODO INTERACTIVO */}
-                    {lyricsMode==="view" && (
-                      <div className="p-3">
-                        {/* Controlos karaoke */}
-                        <div className="flex flex-wrap items-center gap-2 mb-3 pb-3 border-b border-white/8">
-                          <button onClick={()=>setActiveLine(p=>Math.max(0,p-1))} disabled={activeLine===0}
-                            style={{touchAction:'manipulation'}}
-                            className="bg-white/10 hover:bg-white/20 disabled:opacity-30 px-4 py-2.5 min-h-[44px] rounded-xl text-xs font-bold transition-colors">
-                            ← Ant.
-                          </button>
-                          <button onClick={()=>setActiveLine(p=>Math.min(lines.length-1,p+1))} disabled={activeLine>=lines.length-1}
-                            style={{touchAction:'manipulation'}}
-                            className="bg-white/10 hover:bg-white/20 disabled:opacity-30 px-4 py-2.5 min-h-[44px] rounded-xl text-xs font-bold transition-colors">
-                            Próx. →
-                          </button>
-                          <button onClick={()=>setAutoMode(p=>!p)} style={{touchAction:'manipulation'}}
-                            className={`px-4 py-2.5 min-h-[44px] rounded-xl text-xs font-bold transition-all ${
-                              autoMode ? "bg-green-600 text-white shadow-lg" : "bg-white/10 text-white/60 hover:text-white"
-                            }`}>
-                            {autoMode ? "⏸ Parar" : "▶ Auto"}
-                          </button>
-                          <div className="flex gap-1">
-                            {AUTO_DELAYS.map(d=>(
-                              <button key={d.value} onClick={()=>setAutoDelay(d.value)} style={{touchAction:'manipulation'}}
-                                className={`px-2.5 py-2 min-h-[36px] rounded-lg text-[11px] font-bold transition-colors ${
-                                  autoDelay===d.value ? "bg-purple-600 text-white" : "bg-white/10 text-white/45 hover:text-white"
-                                }`}>
-                                {d.label}
-                              </button>
-                            ))}
-                          </div>
-                          <span className="ml-auto text-xs text-white/35 font-mono">{activeLine+1}/{lines.length}</span>
-                          <button onClick={()=>{setActiveLine(0);setAutoMode(false);}} style={{touchAction:'manipulation'}}
-                            className="text-xs text-white/35 hover:text-white transition-colors px-2 py-1">
-                            ↺
-                          </button>
-                        </div>
-                        <InteractiveLyrics
-                          lines={lines}
-                          activeLine={activeLine}
-                          onLineClick={setActiveLine}
-                          onWordClick={handleWordClick}
-                          onDifficultyChange={handleDifficultyChange}
-                        />
-                        <div className="flex flex-wrap gap-3 mt-3 pt-3 border-t border-white/8 text-[10px] text-white/35">
-                          <span>🟡 Marcar palavra</span>
-                          <span>⭐ Difícil</span>
-                          <span>✅ Aprendi</span>
-                          <span>○ Normal</span>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              )}
+            {/* Lista de músicas — mobile inline, desktop no painel esquerdo */}
+            <div className="lg:hidden bg-white/8 backdrop-blur rounded-2xl border border-white/8 overflow-hidden p-3" style={{minHeight:220}}>
+              <MusicList />
             </div>
 
           </div>{/* fim conteúdo principal */}

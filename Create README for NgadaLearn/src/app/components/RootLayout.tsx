@@ -1,5 +1,6 @@
 ﻿import { useState, useEffect } from "react";
 import { Outlet, Link, useLocation, useNavigate } from "react-router";
+import { AnimatePresence, motion } from "framer-motion";
 import { Button } from "./ui/button";
 import {
   GraduationCap,
@@ -299,7 +300,17 @@ export function RootLayout() {
       )}
 
       <main className="flex-1">
-        <Outlet />
+        <AnimatePresence mode="wait" initial={false}>
+          <motion.div
+            key={location.pathname}
+            initial={{ opacity: 0, x: 60 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: -60 }}
+            transition={{ duration: 0.28, ease: [0.4, 0, 0.2, 1] }}
+          >
+            <Outlet />
+          </motion.div>
+        </AnimatePresence>
       </main>
 
       {/* ── FOOTER — oculto em páginas full-screen e quando o user está autenticado ── */}

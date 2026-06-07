@@ -74,7 +74,6 @@ const SUGGESTED = [
   "Adele",
   "Taylor Swift",
   "Coldplay",
-  "The Beatles",
 ];
 
 /* ── Utilitários ──────────────────────────────────────────────────── */

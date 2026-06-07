@@ -26,8 +26,31 @@ const PORT = process.env.PORT || 3001;
 // ── Segurança — cabeçalhos HTTP ───────────────────────────────────
 app.use(helmet({
   crossOriginResourcePolicy: { policy: "cross-origin" },
-  contentSecurityPolicy:     false,
+  contentSecurityPolicy: {
+    directives: {
+      defaultSrc:  ["'self'"],
+      scriptSrc:   ["'self'"],
+      styleSrc:    ["'self'", "'unsafe-inline'"],
+      imgSrc:      ["'self'", "data:", "https:"],
+      connectSrc:  ["'self'"],
+      frameSrc:    ["'none'"],
+      objectSrc:   ["'none'"],
+      upgradeInsecureRequests: [],
+    },
+  },
+  hsts: {
+    maxAge:            31536000,   // 1 ano
+    includeSubDomains: true,
+    preload:           true,
+  },
+  referrerPolicy:      { policy: "strict-origin-when-cross-origin" },
+  noSniff:             true,
+  xssFilter:           true,
+  frameguard:          { action: "deny" },
 }));
+
+// ── Impedir fugas de informação de versão ──────────────────────────
+app.disable("x-powered-by");
 
 // ── CORS ──────────────────────────────────────────────────────────
 const ALLOWED_ORIGINS = [
@@ -54,10 +77,21 @@ app.use(express.json({ limit: "10kb" }));
 app.use(express.urlencoded({ extended: true, limit: "10kb" }));
 
 // ── Rate Limiting ─────────────────────────────────────────────────
+// Login/register: 10 tentativas por 15 min por IP
 const authLimiter = rateLimit({
   windowMs:        15 * 60 * 1000,
-  max:             20,
+  max:             10,
   message:         { error: "Demasiadas tentativas. Tente novamente em 15 minutos." },
+  standardHeaders: true,
+  legacyHeaders:   false,
+  skipSuccessfulRequests: false,
+});
+
+// Forgot/reset password: apenas 5 tentativas por hora (previne enumeração de emails)
+const passwordResetLimiter = rateLimit({
+  windowMs:        60 * 60 * 1000,
+  max:             5,
+  message:         { error: "Demasiados pedidos de reset. Tente novamente em 1 hora." },
   standardHeaders: true,
   legacyHeaders:   false,
 });
@@ -70,6 +104,16 @@ const paymentLimiter = rateLimit({
   legacyHeaders:   false,
 });
 
+// Rate limiter global: 200 req/min por IP (proteção geral contra DoS)
+const globalLimiter = rateLimit({
+  windowMs:        60 * 1000,
+  max:             200,
+  message:         { error: "Demasiados pedidos. Abranda um pouco." },
+  standardHeaders: true,
+  legacyHeaders:   false,
+});
+app.use(globalLimiter);
+
 // ── Log de pedidos (só em desenvolvimento) ────────────────────────
 if (process.env.NODE_ENV !== "production") {
   app.use((req, _res, next) => {
@@ -79,6 +123,8 @@ if (process.env.NODE_ENV !== "production") {
 }
 
 // ── Rotas da API ──────────────────────────────────────────────────
+app.use("/api/auth/forgot-password", passwordResetLimiter);
+app.use("/api/auth/reset-password",  passwordResetLimiter);
 app.use("/api/auth",     authLimiter,    authRoutes);
 app.use("/api/users",    userRoutes);
 app.use("/api/payments", paymentLimiter, paymentRoutes);

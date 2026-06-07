@@ -51,8 +51,17 @@ router.post("/register", async (req, res) => {
     if (!name || !email || !password) {
       return res.status(400).json({ error: "Nome, email e password são obrigatórios." });
     }
-    if (password.length < 6) {
-      return res.status(400).json({ error: "A password deve ter pelo menos 6 caracteres." });
+    /* Validar formato de email */
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      return res.status(400).json({ error: "Formato de email inválido." });
+    }
+    /* Limitar tamanho dos campos para prevenir ataques de overflow */
+    if (name.length > 100)     return res.status(400).json({ error: "Nome demasiado longo (máx. 100 chars)." });
+    if (email.length > 254)    return res.status(400).json({ error: "Email demasiado longo." });
+    if (password.length > 128) return res.status(400).json({ error: "Password demasiado longa." });
+    if (password.length < 8) {
+      return res.status(400).json({ error: "A password deve ter pelo menos 8 caracteres." });
     }
 
     const existing = await findUserByEmail(email);
@@ -167,7 +176,8 @@ router.post("/forgot-password", async (req, res) => {
     const { email } = req.body;
     const MSG = "Se este email estiver registado, receberá as instruções em breve.";
 
-    if (!email || !email.includes("@")) {
+    const emailRegexFP = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!email || !emailRegexFP.test(email)) {
       return res.status(400).json({ error: "Informe um email válido." });
     }
 
@@ -183,23 +193,14 @@ router.post("/forgot-password", async (req, res) => {
     const resetUrl = `${base}/reset-password?token=${token}`;
 
     /* Tentar enviar email */
-    let emailSent = false;
     try {
-      emailSent = await sendPasswordReset({ to: user.email, name: user.name, resetUrl });
+      await sendPasswordReset({ to: user.email, name: user.name, resetUrl });
     } catch (emailErr) {
-      console.warn("Erro ao enviar email de reset:", emailErr.message);
+      /* Nunca expor o token/URL na resposta — apenas logar internamente sem o token */
+      console.warn(`[reset] Falha ao enviar email para utilizador (sem token nos logs)`);
     }
 
-    console.log(`[reset] URL para ${email}: ${resetUrl}`);
-
-    /* Se o email não foi enviado, devolve o link directamente na resposta */
-    if (!emailSent) {
-      return res.json({
-        message: "Não foi possível enviar o email. Use o link abaixo para redefinir a sua senha:",
-        resetUrl,
-      });
-    }
-
+    /* Resposta sempre igual — não vazar se o email existe ou não, nem o token */
     res.json({ message: MSG });
   } catch (err) {
     console.error("Erro em forgot-password:", err);

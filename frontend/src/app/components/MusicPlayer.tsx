@@ -759,8 +759,7 @@ export function MusicPlayer() {
               attempts++;
               if (attempts > 20) { clearInterval(poll); clearTimeout(safetyTimer); setTransLoading(false); return; }
 
-              try { e.target.setOption("captions", "track", {}); } catch { /* */ }
-
+              /* LER primeiro, desactivar CC depois — ordem importa */
               const resp = e.target.getPlayerResponse?.();
               const tracks: any[] = resp?.captions?.playerCaptionsTracklistRenderer?.captionTracks || [];
               const track = tracks.find((t:any) => t.languageCode === "en") ||
@@ -768,6 +767,8 @@ export function MusicPlayer() {
                             tracks[0];
               if (!track?.baseUrl) return;
 
+              /* Só agora esconder CC nativo do YouTube */
+              try { e.target.setOption("captions", "track", {}); } catch { /* */ }
               clearInterval(poll); clearTimeout(safetyTimer);
 
               try {

@@ -43,10 +43,64 @@ type Difficulty = "normal"|"hard"|"learned";
 interface LyricLine { id:number; en:string; pt:string; difficulty:Difficulty; }
 type LearnMode = "karaoke"|"quiz";
 
+interface LevelConfig {
+  id:number; name:string; cefr:string; description:string;
+  emoji:string; accent:string; bg:string;
+  query:string; suggested:string[]; tips:string[];
+}
+
 /* ── Constantes ───────────────────────────────────────────────────── */
 const BACKEND   = import.meta.env.VITE_API_URL || "https://ngadalearn-api.onrender.com";
 const EQ_CLS    = ["eq1","eq2","eq3","eq4","eq5"];
-const SUGGESTED = ["Ed Sheeran","Adele","Taylor Swift","Coldplay"];
+
+/* ── Níveis de aprendizagem ──────────────────────────────────────── */
+const LEVELS: LevelConfig[] = [
+  {
+    id:1, name:"Iniciante", cefr:"A1",
+    description:"Palavras do dia-a-dia, ritmo lento, melodia simples",
+    emoji:"🌱", accent:"#4ade80",
+    bg:"linear-gradient(135deg,rgba(5,46,22,.95),rgba(20,83,45,.95))",
+    query:"Ed Sheeran Perfect official",
+    suggested:["Ed Sheeran","Passenger","The Beatles"],
+    tips:["Repete cada linha em voz alta","Foca nas palavras que reconheces","Usa o modo Karaoke"],
+  },
+  {
+    id:2, name:"Elementar", cefr:"A2",
+    description:"Frases curtas, temas emocionais, vocabulário comum",
+    emoji:"📖", accent:"#60a5fa",
+    bg:"linear-gradient(135deg,rgba(12,74,110,.95),rgba(3,105,161,.95))",
+    query:"Adele Someone Like You official",
+    suggested:["Adele","Taylor Swift","Dua Lipa"],
+    tips:["Identifica expressões do quotidiano","Tenta cantar sem ver a letra","Usa o modo Quiz para testar"],
+  },
+  {
+    id:3, name:"Intermédio", cefr:"B1",
+    description:"Vocabulário variado, metáforas, expressões idiomáticas",
+    emoji:"🎯", accent:"#a78bfa",
+    bg:"linear-gradient(135deg,rgba(76,29,149,.95),rgba(109,40,217,.95))",
+    query:"Coldplay Fix You official",
+    suggested:["Coldplay","John Mayer","OneRepublic"],
+    tips:["Analisa o significado das metáforas","Escreve as letras que ouviste","Pratica o ritmo da fala"],
+  },
+  {
+    id:4, name:"Avançado", cefr:"B2",
+    description:"Linguagem rica, coloquialismos, ritmo mais rápido",
+    emoji:"⚡", accent:"#fb923c",
+    bg:"linear-gradient(135deg,rgba(124,45,18,.95),rgba(194,65,12,.95))",
+    query:"Linkin Park In The End official",
+    suggested:["Linkin Park","Queen","Imagine Dragons"],
+    tips:["Estuda o contexto cultural das expressões","Entende sem pausar o vídeo","Canta no tempo real da música"],
+  },
+  {
+    id:5, name:"Fluente", cefr:"C1+",
+    description:"Slang, pronúncia nativa, velocidade real, rap e jazz",
+    emoji:"🏆", accent:"#fbbf24",
+    bg:"linear-gradient(135deg,rgba(133,77,14,.95),rgba(202,138,4,.95))",
+    query:"Eminem Lose Yourself official",
+    suggested:["Eminem","Kendrick Lamar","Frank Sinatra"],
+    tips:["Tenta entender sem legendas","Canta na velocidade original","Explica o significado em inglês"],
+  },
+];
 const SKIP_WORDS = new Set(["the","a","an","in","on","at","to","for","of","and","or","but","is","are","was","were","i","you","he","she","it","we","they","my","your","his","her","our","their","this","that","with","from","not","have","has","had","be","been","will","would","can","could","do","does","did","get","got","just","like","im","its","so","as","up","out","no","me","him","us","them","when","what","how","if","oh","yeah","dont","cant","wont","ill"]);
 
 /* ── Utilitários ──────────────────────────────────────────────────── */
@@ -252,6 +306,89 @@ function LyricsRiser({lines,active,isPlaying,onNext,onPrev}:{
 }
 
 /* ════════════════════════════════════════════════════════════════════
+   LEVEL SELECT — ecrã de seleção de nível
+   ════════════════════════════════════════════════════════════════════ */
+function LevelSelect({onSelect}:{onSelect:(l:LevelConfig)=>void}) {
+  const [hov, setHov] = useState<number|null>(null);
+  return (
+    <div style={{flex:1,overflow:"auto",padding:"0 16px 24px",
+      display:"flex",flexDirection:"column",gap:0}}>
+
+      {/* Título */}
+      <div style={{textAlign:"center",padding:"28px 0 20px"}}>
+        <div style={{fontSize:40,marginBottom:8}}>🎵</div>
+        <h2 style={{margin:0,fontSize:"clamp(1.2rem,3vw,1.7rem)",fontWeight:900,
+          letterSpacing:"-.5px"}}>
+          Aprende Inglês com Música
+        </h2>
+        <p style={{margin:"8px 0 0",fontSize:13,color:"rgba(255,255,255,.45)"}}>
+          Escolhe o teu nível para começar
+        </p>
+      </div>
+
+      {/* Cards de nível */}
+      <div style={{display:"flex",flexDirection:"column",gap:10}}>
+        {LEVELS.map(lv=>(
+          <button key={lv.id} onClick={()=>onSelect(lv)}
+            onMouseEnter={()=>setHov(lv.id)} onMouseLeave={()=>setHov(null)}
+            style={{
+              background:hov===lv.id?lv.bg.replace(".95","1"):lv.bg,
+              border:`1.5px solid ${lv.accent}30`,
+              borderRadius:20,padding:"14px 18px",cursor:"pointer",
+              textAlign:"left",color:"#fff",fontFamily:"inherit",
+              display:"flex",alignItems:"center",gap:14,
+              boxShadow:hov===lv.id
+                ?`0 8px 32px ${lv.accent}30, 0 0 0 1px ${lv.accent}50`
+                :"0 4px 16px rgba(0,0,0,.3)",
+              transform:hov===lv.id?"translateY(-2px) scale(1.01)":"none",
+              transition:"all .22s cubic-bezier(.34,1.56,.64,1)",
+            }}>
+            {/* Emoji + CEFR */}
+            <div style={{flexShrink:0,display:"flex",flexDirection:"column",
+              alignItems:"center",gap:2,width:48}}>
+              <span style={{fontSize:28}}>{lv.emoji}</span>
+              <span style={{fontSize:9,fontWeight:900,letterSpacing:".1em",
+                color:lv.accent,background:`${lv.accent}20`,
+                borderRadius:50,padding:"1px 6px"}}>{lv.cefr}</span>
+            </div>
+
+            {/* Info */}
+            <div style={{flex:1,minWidth:0}}>
+              <p style={{margin:0,fontSize:16,fontWeight:900,letterSpacing:"-.2px"}}>
+                {lv.name}
+              </p>
+              <p style={{margin:"3px 0 0",fontSize:11,color:"rgba(255,255,255,.55)",
+                lineHeight:1.4}}>{lv.description}</p>
+              {/* Tips preview */}
+              <div style={{display:"flex",gap:5,marginTop:7,flexWrap:"wrap"}}>
+                {lv.tips.slice(0,2).map((t,i)=>(
+                  <span key={i} style={{fontSize:9,fontWeight:600,
+                    color:lv.accent,background:`${lv.accent}18`,
+                    borderRadius:50,padding:"2px 8px"}}>
+                    {t}
+                  </span>
+                ))}
+              </div>
+            </div>
+
+            {/* Seta */}
+            <svg width={18} height={18} fill="none" viewBox="0 0 24 24"
+              stroke={lv.accent} strokeWidth={2.5} style={{flexShrink:0,opacity:.7}}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7"/>
+            </svg>
+          </button>
+        ))}
+      </div>
+
+      <p style={{textAlign:"center",fontSize:11,color:"rgba(255,255,255,.2)",
+        marginTop:16,lineHeight:1.5}}>
+        Podes mudar de nível a qualquer momento
+      </p>
+    </div>
+  );
+}
+
+/* ════════════════════════════════════════════════════════════════════
    TRACK LIST — fora do MusicPlayer (evita re-mount ao digitar)
    ════════════════════════════════════════════════════════════════════ */
 interface TrackListProps {
@@ -259,8 +396,9 @@ interface TrackListProps {
   results:Track[]; selected:Track|null; isPlaying:boolean;
   searchTracks:(q:string)=>void; selectTrack:(t:Track)=>void;
   autoSelectRef:React.MutableRefObject<boolean>;
+  suggested?:string[];
 }
-function TrackList({query,setQuery,loading,error,results,selected,isPlaying,searchTracks,selectTrack,autoSelectRef}:TrackListProps) {
+function TrackList({query,setQuery,loading,error,results,selected,isPlaying,searchTracks,selectTrack,autoSelectRef,suggested=["Ed Sheeran","Adele","Taylor Swift","Coldplay"]}:TrackListProps) {
   return (
     <div style={{display:"flex",flexDirection:"column",height:"100%"}}>
       {/* Pesquisa */}
@@ -288,7 +426,7 @@ function TrackList({query,setQuery,loading,error,results,selected,isPlaying,sear
           </button>
         </form>
         <div style={{display:"flex",flexWrap:"wrap",gap:5}}>
-          {SUGGESTED.map(s=>(
+          {suggested.map(s=>(
             <button key={s} onClick={()=>{setQuery(s);autoSelectRef.current=true;searchTracks(s);}}
               style={{background:"rgba(255,255,255,.06)",border:"1px solid rgba(255,255,255,.08)",
                 borderRadius:20,padding:"4px 11px",fontSize:11,color:"rgba(255,255,255,.65)",
@@ -375,6 +513,7 @@ export function MusicPlayer() {
   const [score,  setScore]  = useState(0);
   const [misses, setMisses] = useState(0);
 
+  const [selectedLevel, setSelectedLevel] = useState<LevelConfig|null>(null);
   const [mobileTab, setMobileTab] = useState<"list"|"player">("player");
   const [isMobile,  setIsMobile]  = useState(()=>window.innerWidth<1024);
   useEffect(()=>{
@@ -543,7 +682,10 @@ export function MusicPlayer() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   },[]);
 
-  useEffect(()=>{searchTracks("Ed Sheeran official");},[searchTracks]);
+  useEffect(()=>{
+    if (selectedLevel) searchTracks(selectedLevel.query);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  },[selectedLevel]);
 
   async function fetchLyrics(title:string,artist:string){
     setLyricsLoading(true); setRawEn(""); setRawPt("");
@@ -637,19 +779,62 @@ export function MusicPlayer() {
         {/* ── Layout ── */}
         <div style={{flex:1,overflow:"hidden",display:"flex",maxWidth:1400,margin:"0 auto",width:"100%"}}>
 
-          {/* Sidebar */}
+          {/* Sidebar — Level Select OU Track List */}
           <div className={mobileTab==="list"?"flex":"hidden lg:flex"}
-            style={{width:272,minWidth:272,flexDirection:"column",
+            style={{width:selectedLevel?272:"min(100%,420px)",minWidth:selectedLevel?272:280,
+              flexDirection:"column",
               background:"rgba(0,0,0,.4)",backdropFilter:"blur(12px)",
               borderRight:"1px solid rgba(255,255,255,.05)",overflow:"hidden",
-              boxShadow:"2px 0 20px rgba(0,0,0,.3)"}}>
-            <TrackList query={query} setQuery={setQuery} loading={loading} error={error}
-              results={results} selected={selected} isPlaying={isPlaying}
-              searchTracks={searchTracks} selectTrack={selectTrack} autoSelectRef={autoSelectRef}/>
+              boxShadow:"2px 0 20px rgba(0,0,0,.3)",
+              ...((!selectedLevel&&!isMobile)?{margin:"0 auto"}:{})}}>
+
+            {selectedLevel ? (
+              /* ── Track List com cabeçalho de nível ── */
+              <div style={{display:"flex",flexDirection:"column",height:"100%"}}>
+                {/* Cabeçalho do nível */}
+                <div style={{flexShrink:0,padding:"10px 12px 6px",
+                  background:selectedLevel.bg,
+                  borderBottom:"1px solid rgba(255,255,255,.06)"}}>
+                  <div style={{display:"flex",alignItems:"center",gap:10}}>
+                    <span style={{fontSize:22}}>{selectedLevel.emoji}</span>
+                    <div style={{flex:1,minWidth:0}}>
+                      <p style={{margin:0,fontSize:13,fontWeight:900}}>
+                        {selectedLevel.name}
+                        <span style={{marginLeft:6,fontSize:10,fontWeight:700,
+                          color:selectedLevel.accent,background:`${selectedLevel.accent}20`,
+                          borderRadius:50,padding:"1px 7px"}}>{selectedLevel.cefr}</span>
+                      </p>
+                      <p style={{margin:"1px 0 0",fontSize:10,color:"rgba(255,255,255,.5)",
+                        overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>
+                        {selectedLevel.description}
+                      </p>
+                    </div>
+                    <button onClick={()=>{setSelectedLevel(null);setResults([]);setSelected(null);}}
+                      style={{background:"rgba(255,255,255,.1)",border:"1px solid rgba(255,255,255,.15)",
+                        borderRadius:50,padding:"4px 10px",fontSize:10,fontWeight:700,
+                        color:"rgba(255,255,255,.7)",cursor:"pointer",fontFamily:"inherit",
+                        flexShrink:0,whiteSpace:"nowrap"}}>
+                      ← Níveis
+                    </button>
+                  </div>
+                </div>
+                <TrackList query={query} setQuery={setQuery} loading={loading} error={error}
+                  results={results} selected={selected} isPlaying={isPlaying}
+                  searchTracks={searchTracks} selectTrack={selectTrack} autoSelectRef={autoSelectRef}
+                  suggested={selectedLevel.suggested}/>
+              </div>
+            ) : (
+              /* ── Level Select ── */
+              <LevelSelect onSelect={lv=>{
+                setSelectedLevel(lv);
+                autoSelectRef.current=true;
+                setMobileTab("list");
+              }}/>
+            )}
           </div>
 
-          {/* Área principal */}
-          <div className={mobileTab==="player"?"flex":"hidden lg:flex"}
+          {/* Área principal — só mostra se tiver nível selecionado */}
+          <div className={selectedLevel&&mobileTab==="player"?"flex":selectedLevel?"hidden lg:flex":"hidden lg:flex"}
             style={{flex:1,flexDirection:"column",overflow:"hidden",minWidth:0}}>
 
             {selected ? (

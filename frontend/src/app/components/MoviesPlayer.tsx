@@ -1,1329 +1,774 @@
 /* ════════════════════════════════════════════════════════════════════
-   NgadaLearn — Movies Player
-   Cenas de filmes reais · YT IFrame API · CC automático
-   Filtro contra reacções/paródias · Velocidade · Vocabulário
+   NgadaLearn — Movies & Series Player
+   MegaEmbed API (nhdapi.com) · TMDB IDs · Catálogo curado por nível
+   Interação: vocabulário, notas, quiz de frase
    ════════════════════════════════════════════════════════════════════ */
 
-import { useState, useEffect, useRef, useCallback, useMemo } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { Link } from "react-router";
+import {
+  ChevronLeft, ChevronRight, Film, Tv, BookOpen, Pencil,
+  Volume2, Star, Play, Layers, Zap, Trophy, BookMarked, Sprout,
+  Check, X, RotateCcw, ExternalLink, Lightbulb, ListChecks,
+} from "lucide-react";
 
-/* ── Declaração do namespace YT ──────────────────────────────────── */
-declare global {
-  interface Window { YT: any; onYouTubeIframeAPIReady?: () => void; }
-}
-
-/* ── CSS animações ───────────────────────────────────────────────── */
+/* ── CSS ─────────────────────────────────────────────────────────── */
 const ANIM = `
-@keyframes meq1{0%,100%{height:4px}  50%{height:20px}}
-@keyframes meq2{0%,100%{height:12px} 50%{height:4px}}
-@keyframes meq3{0%,100%{height:6px}  50%{height:24px}}
-@keyframes meq4{0%,100%{height:16px} 50%{height:3px}}
-@keyframes meq5{0%,100%{height:4px}  50%{height:18px}}
-.meq1{animation:meq1 .9s ease-in-out infinite}
-.meq2{animation:meq2 .6s ease-in-out infinite}
-.meq3{animation:meq3 .75s ease-in-out infinite}
-.meq4{animation:meq4 .85s ease-in-out infinite}
-.meq5{animation:meq5 .5s ease-in-out infinite}
-
-@keyframes mmarquee{0%{transform:translateX(0)}100%{transform:translateX(-50%)}}
-.mmarquee-wrap{overflow:hidden;white-space:nowrap}
-.mmarquee-text{display:inline-block;animation:mmarquee 18s linear infinite}
-
-@keyframes mglow{0%,100%{box-shadow:0 0 0 #f59e0b}50%{box-shadow:0 0 22px #f59e0b,0 0 44px #b45309}}
-.movie-glow{animation:mglow 2.8s ease-in-out infinite}
-
-@keyframes mslide{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
-.mslide{animation:mslide .35s ease forwards}
-
-@keyframes shimmer{0%{background-position:-200% 0}100%{background-position:200% 0}}
-.shimmer{
-  background:linear-gradient(90deg,rgba(255,255,255,.04) 25%,rgba(255,255,255,.10) 50%,rgba(255,255,255,.04) 75%);
-  background-size:200% 100%;
-  animation:shimmer 2s infinite;
-}
-
-@keyframes subIn{
-  0%{opacity:0;transform:translateY(22px) scale(.94);filter:blur(6px)}
-  60%{opacity:1;filter:blur(0)}
-  100%{transform:translateY(0) scale(1)}
-}
-@keyframes subShimmer{0%{background-position:0% 50%}100%{background-position:300% 50%}}
-.sub-in{animation:subIn .48s cubic-bezier(.34,1.56,.64,1) both}
-
-@keyframes livePulse{0%,100%{opacity:1}50%{opacity:.45}}
-.live-badge{animation:livePulse 1.4s ease-in-out infinite}
+@keyframes fadeUp{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
+@keyframes spin{to{transform:rotate(360deg)}}
+@keyframes shimCard{0%,100%{opacity:1}50%{opacity:.7}}
+.fade-up{animation:fadeUp .3s ease forwards}
+.card-hover:hover{transform:translateY(-4px) scale(1.02);transition:all .22s cubic-bezier(.34,1.56,.64,1)!important}
 `;
 
-/* ── Tipos ───────────────────────────────────────────────────────── */
-interface MovieClip {
-  id: string;
-  title: string;
-  channel: string;
-  thumbnail: string;
-  isOfficial: boolean;
+/* ── Tipos ────────────────────────────────────────────────────────── */
+type ContentType = "movie" | "series";
+type LevelNum    = 1 | 2 | 3 | 4 | 5;
+
+interface Content {
+  tmdbId:    number;
+  title:     string;
+  year:      number;
+  type:      ContentType;
+  level:     LevelNum;
+  genre:     string;
+  why:       string;
+  poster:    string;  // path relativo ao tmdb
+  words:     {word:string; meaning:string}[];
+  challenge: {phrase:string; blank:string; answer:string};
+  season?:   number;
+  episode?:  number;
 }
 
-interface SavedPhrase {
-  id: number;
-  en: string;
-  pt: string;
+interface LevelCfg {
+  id:LevelNum; name:string; cefr:string; description:string;
+  accent:string; bg:string; Icon: React.ElementType;
 }
 
-interface TimedSub {
-  start: number;
-  dur:   number;
-  text:  string;
-}
-
-type PlaybackRate = 0.5 | 0.75 | 1;
-type Difficulty   = "Iniciante" | "Intermediário" | "Avançado";
-
-/* ── Palavras-chave a excluir (client-side) ──────────────────────── */
-const BAD_WORDS = [
-  "reaction","react","reacts","reacting",
-  "parody","spoof","meme","funny version",
-  "explained","explanation","analysis","analyzed",
-  "review","ranked","every time","ruined",
-  "but it's","but with","trailer","teaser",
-  "behind the scenes","making of","bloopers","fails",
-  "fan made","animation vs","versus","commentary",
+/* ── Configuração de Níveis ──────────────────────────────────────── */
+const LEVEL_CFG: LevelCfg[] = [
+  {id:1,name:"Iniciante",   cefr:"A1",  Icon:Sprout,    accent:"#4ade80",
+   bg:"linear-gradient(135deg,rgba(5,46,22,.95),rgba(20,83,45,.95))",
+   description:"Inglês simples, ritmo lento, vocabulário básico"},
+  {id:2,name:"Elementar",   cefr:"A2",  Icon:BookMarked, accent:"#60a5fa",
+   bg:"linear-gradient(135deg,rgba(12,74,110,.95),rgba(3,105,161,.95))",
+   description:"Frases curtas, temas do quotidiano, pronúncia clara"},
+  {id:3,name:"Intermédio",  cefr:"B1",  Icon:Layers,    accent:"#a78bfa",
+   bg:"linear-gradient(135deg,rgba(76,29,149,.95),rgba(109,40,217,.95))",
+   description:"Vocabulário variado, expressões idiomáticas"},
+  {id:4,name:"Avançado",    cefr:"B2",  Icon:Zap,        accent:"#fb923c",
+   bg:"linear-gradient(135deg,rgba(124,45,18,.95),rgba(194,65,12,.95))",
+   description:"Ritmo rápido, gírias, linguagem técnica"},
+  {id:5,name:"Fluente",     cefr:"C1+", Icon:Trophy,     accent:"#fbbf24",
+   bg:"linear-gradient(135deg,rgba(133,77,14,.95),rgba(202,138,4,.95))",
+   description:"Inglês nativo, complexidade total"},
 ];
 
-/* ── Canais/termos oficiais (reforço positivo) ───────────────────── */
-const OFFICIAL_SIGNALS = [
-  "official","movies","pictures","studios","entertainment",
-  "disney","marvel","warner","universal","sony","paramount",
-  "mgm","lionsgate","hbo","netflix","amazon","apple",
-  "20th century","dreamworks","pixar","columbia",
-  "miramax","criterion","a24",
+/* ── Catálogo curado de filmes e séries ──────────────────────────── */
+const CATALOG: Content[] = [
+  /* ── A1 ── */
+  {
+    tmdbId:12, title:"Finding Nemo", year:2003, type:"movie", level:1,
+    genre:"Animação", poster:"/eHuGQ10FUzK1mdOY69wF5pGgEf5.jpg",
+    why:"Vocabulário oceânico simples, fala clara e devagar",
+    words:[
+      {word:"clownfish",   meaning:"peixe-palhaço"},
+      {word:"current",     meaning:"corrente (de água)"},
+      {word:"beyond",      meaning:"para além de"},
+      {word:"afraid",      meaning:"com medo"},
+      {word:"adventure",   meaning:"aventura"},
+    ],
+    challenge:{phrase:"Just keep ___, just keep swimming",blank:"swimming",answer:"swimming"},
+  },
+  {
+    tmdbId:862, title:"Toy Story", year:1995, type:"movie", level:1,
+    genre:"Animação", poster:"/uXDfjJbdP4ijW5hWSBrPrlKpxab.jpg",
+    why:"Inglês americano claro, frases curtas e repetitivas",
+    words:[
+      {word:"infinity",    meaning:"infinito"},
+      {word:"jealous",     meaning:"com ciúmes"},
+      {word:"pretend",     meaning:"fingir"},
+      {word:"mission",     meaning:"missão"},
+      {word:"rescue",      meaning:"resgatar"},
+    ],
+    challenge:{phrase:"To infinity and ___",blank:"beyond",answer:"beyond"},
+  },
+  {
+    tmdbId:8587, title:"The Lion King", year:1994, type:"movie", level:1,
+    genre:"Animação", poster:"/sIGtuAIuIIBqOdQyLKGj9F6Q7gg.jpg",
+    why:"Diálogo musical, vocabulário de natureza e família",
+    words:[
+      {word:"kingdom",     meaning:"reino"},
+      {word:"pride",       meaning:"orgulho / manada"},
+      {word:"destiny",     meaning:"destino"},
+      {word:"remember",    meaning:"lembrar"},
+      {word:"worthy",      meaning:"digno"},
+    ],
+    challenge:{phrase:"Hakuna ___, it means no worries",blank:"Matata",answer:"Matata"},
+  },
+  /* ── A2 ── */
+  {
+    tmdbId:13, title:"Forrest Gump", year:1994, type:"movie", level:2,
+    genre:"Drama", poster:"/arw2vcBveWOVZr6pxd9XTd1TdQa.jpg",
+    why:"Narração americana simples, ritmo calmo e vocabulário acessível",
+    words:[
+      {word:"stupid",       meaning:"estúpido / tolo"},
+      {word:"shrimp",       meaning:"camarão"},
+      {word:"lieutenant",   meaning:"tenente"},
+      {word:"grateful",     meaning:"grato"},
+      {word:"destiny",      meaning:"destino"},
+    ],
+    challenge:{phrase:"Life is like a box of ___",blank:"chocolates",answer:"chocolates"},
+  },
+  {
+    tmdbId:1402, title:"The Pursuit of Happyness", year:2006, type:"movie", level:2,
+    genre:"Drama", poster:"/2a3QvH7sMBWRnzqRRPGkRpvNpY5.jpg",
+    why:"Inglês emocional e motivacional, muito acessível",
+    words:[
+      {word:"happiness",    meaning:"felicidade"},
+      {word:"internship",   meaning:"estágio"},
+      {word:"struggle",     meaning:"luta / dificuldade"},
+      {word:"determined",   meaning:"determinado"},
+      {word:"opportunity",  meaning:"oportunidade"},
+    ],
+    challenge:{phrase:"Don't ever let somebody tell you you can't do ___",blank:"something",answer:"something"},
+  },
+  {
+    tmdbId:1668, title:"Friends", year:1994, type:"series", level:2,
+    genre:"Comédia", poster:"/f496cm9enuEsZkSPzCwnTESEK5s.jpg",
+    why:"Inglês americano do dia-a-dia, expressões coloquiais fundamentais",
+    words:[
+      {word:"apartment",    meaning:"apartamento"},
+      {word:"sarcastic",    meaning:"sarcástico"},
+      {word:"awkward",      meaning:"constrangedor"},
+      {word:"dating",       meaning:"namorar / sair com"},
+      {word:"break up",     meaning:"separar"},
+    ],
+    challenge:{phrase:"We were on a ___",blank:"break",answer:"break"},
+    season:1, episode:1,
+  },
+  /* ── B1 ── */
+  {
+    tmdbId:207, title:"Dead Poets Society", year:1989, type:"movie", level:3,
+    genre:"Drama", poster:"/ztVe0LZROA9SNX7jGMiJMZBWHFj.jpg",
+    why:"Vocabulário literário, discursos motivacionais em inglês clássico",
+    words:[
+      {word:"seize",        meaning:"aproveitar / agarrar"},
+      {word:"carpe diem",   meaning:"aproveita o dia"},
+      {word:"conformity",   meaning:"conformidade"},
+      {word:"passion",      meaning:"paixão"},
+      {word:"verse",        meaning:"verso (poesia)"},
+    ],
+    challenge:{phrase:"___ the day, make your lives extraordinary",blank:"Seize",answer:"Seize"},
+  },
+  {
+    tmdbId:155, title:"The Dark Knight", year:2008, type:"movie", level:3,
+    genre:"Acção", poster:"/qJ2tW6WMUDux911r6m7haRef0WH.jpg",
+    why:"Inglês urbano e intenso, vocabulário de crime e caos",
+    words:[
+      {word:"chaos",        meaning:"caos"},
+      {word:"scheme",       meaning:"plano / esquema"},
+      {word:"anarchist",    meaning:"anarquista"},
+      {word:"terrify",      meaning:"aterrorizar"},
+      {word:"corrupt",      meaning:"corrompido"},
+    ],
+    challenge:{phrase:"Why so ___?",blank:"serious",answer:"serious"},
+  },
+  {
+    tmdbId:2316, title:"The Office", year:2005, type:"series", level:3,
+    genre:"Comédia", poster:"/7DJKHzAi83BmQrWLrYYOqcoKfhR.jpg",
+    why:"Humor de escritório americano, expressões do trabalho",
+    words:[
+      {word:"conference",   meaning:"conferência / reunião"},
+      {word:"awkward",      meaning:"constrangedor"},
+      {word:"prank",        meaning:"partida / brincadeira"},
+      {word:"redundant",    meaning:"redundante / dispensável"},
+      {word:"acknowledge",  meaning:"reconhecer"},
+    ],
+    challenge:{phrase:"That's what ___ said",blank:"she",answer:"she"},
+    season:1, episode:1,
+  },
+  /* ── B2 ── */
+  {
+    tmdbId:37799, title:"The Social Network", year:2010, type:"movie", level:4,
+    genre:"Drama", poster:"/n0ybibhJtQ5icDqTp8eRytcIHso.jpg",
+    why:"Inglês rápido e técnico, diálogos de negócios e tecnologia",
+    words:[
+      {word:"algorithm",    meaning:"algoritmo"},
+      {word:"exclusive",    meaning:"exclusivo"},
+      {word:"deposition",   meaning:"depoimento legal"},
+      {word:"billion",      meaning:"mil milhões"},
+      {word:"venture",      meaning:"empreendimento / risco"},
+    ],
+    challenge:{phrase:"A million dollars isn't cool. You know what's cool? A ___ dollars",blank:"billion",answer:"billion"},
+  },
+  {
+    tmdbId:489, title:"Good Will Hunting", year:1997, type:"movie", level:4,
+    genre:"Drama", poster:"/bABCql57wKWTKiO5PCFdZGm0CYJ.jpg",
+    why:"Inglês de Boston, diálogos emocionais profundos e inteligentes",
+    words:[
+      {word:"therapist",    meaning:"terapeuta"},
+      {word:"prodigy",      meaning:"prodígio"},
+      {word:"obligation",   meaning:"obrigação"},
+      {word:"brilliant",    meaning:"brilhante"},
+      {word:"potential",    meaning:"potencial"},
+    ],
+    challenge:{phrase:"It's not your ___",blank:"fault",answer:"fault"},
+  },
+  {
+    tmdbId:1396, title:"Breaking Bad", year:2008, type:"series", level:4,
+    genre:"Drama", poster:"/ggFHVNu6YYI5L9pCfOacjizRGt.jpg",
+    why:"Inglês americano complexo, personagens com vocabulário variado",
+    words:[
+      {word:"meth",         meaning:"metanfetamina"},
+      {word:"territory",    meaning:"território"},
+      {word:"chemistry",    meaning:"química"},
+      {word:"empire",       meaning:"império"},
+      {word:"consequence",  meaning:"consequência"},
+    ],
+    challenge:{phrase:"I am the one who ___",blank:"knocks",answer:"knocks"},
+    season:1, episode:1,
+  },
+  /* ── C1+ ── */
+  {
+    tmdbId:27205, title:"Inception", year:2010, type:"movie", level:5,
+    genre:"Sci-Fi", poster:"/oYuLEt3zVCKq57qu2F8dT7NIa6f.jpg",
+    why:"Vocabulário filosófico denso, conceitos complexos em inglês",
+    words:[
+      {word:"subconscious",  meaning:"subconsciente"},
+      {word:"inception",     meaning:"implantação de ideia"},
+      {word:"limbo",         meaning:"limbo / estado indefinido"},
+      {word:"perception",    meaning:"percepção"},
+      {word:"paradox",       meaning:"paradoxo"},
+    ],
+    challenge:{phrase:"You're waiting for a ___",blank:"train",answer:"train"},
+  },
+  {
+    tmdbId:157336, title:"Interstellar", year:2014, type:"movie", level:5,
+    genre:"Sci-Fi", poster:"/gEU2QniE6E77NI6lCU6MxlNBvIx.jpg",
+    why:"Inglês científico e emocional de alto nível",
+    words:[
+      {word:"relativity",   meaning:"relatividade"},
+      {word:"wormhole",     meaning:"buraco de minhoca"},
+      {word:"gravitational",meaning:"gravitacional"},
+      {word:"dimension",    meaning:"dimensão"},
+      {word:"tesseract",    meaning:"hipercubo 4D"},
+    ],
+    challenge:{phrase:"Do not go gentle into that good ___",blank:"night",answer:"night"},
+  },
 ];
 
-/* ── Sugestões curadas de filmes ─────────────────────────────────── */
-const CURATED: {
-  icon:string; label:string; query:string;
-  genre:string; diff:Difficulty; tip:string;
-}[] = [
-  { icon:"🍫", label:"Forrest Gump",             query:"Forrest Gump official movie clip",          genre:"Drama",    diff:"Iniciante",     tip:"Inglês americano simples e claro" },
-  { icon:"🌟", label:"The Pursuit of Happyness",  query:"Pursuit of Happyness official clip scene",  genre:"Drama",    diff:"Iniciante",     tip:"Diálogo emocional muito acessível" },
-  { icon:"🦁", label:"The Lion King",             query:"Lion King official clip Disney",            genre:"Animação", diff:"Iniciante",     tip:"Perfeito para vocabulário base" },
-  { icon:"📚", label:"Dead Poets Society",        query:"Dead Poets Society official clip",          genre:"Drama",    diff:"Intermediário", tip:"Vocabulário literário e eloquente" },
-  { icon:"🦇", label:"The Dark Knight",           query:"Dark Knight official movie clip scene",     genre:"Acção",    diff:"Intermediário", tip:"Inglês urbano e tenso" },
-  { icon:"💊", label:"The Matrix",                query:"Matrix official movie clip scene",          genre:"Sci-Fi",   diff:"Intermediário", tip:"Diálogos filosóficos marcantes" },
-  { icon:"🧮", label:"Good Will Hunting",         query:"Good Will Hunting official clip scene",     genre:"Drama",    diff:"Avançado",      tip:"Inglês de Boston, rápido e inteligente" },
-  { icon:"💻", label:"The Social Network",        query:"Social Network official movie clip",        genre:"Drama",    diff:"Avançado",      tip:"Inglês rápido e técnico" },
-  { icon:"🌀", label:"Inception",                 query:"Inception official clip scene",             genre:"Sci-Fi",   diff:"Avançado",      tip:"Vocabulário complexo e denso" },
-  { icon:"🚀", label:"Interstellar",              query:"Interstellar official clip scene",          genre:"Sci-Fi",   diff:"Avançado",      tip:"Linguagem científica e emocional" },
-  { icon:"⚖️", label:"Erin Brockovich",           query:"Erin Brockovich official clip scene",       genre:"Drama",    diff:"Intermediário", tip:"Inglês legal americano do dia a dia" },
-  { icon:"🏆", label:"A Few Good Men",            query:"A Few Good Men official clip scene",        genre:"Drama",    diff:"Avançado",      tip:"Discurso jurídico poderoso" },
-];
-
-const GENRES = ["Todos","Drama","Acção","Sci-Fi","Animação"];
-
-/* ── (legendas estáticas removidas — usar CC automático em tempo real) ── */
-const _UNUSED = {
-  "Forrest Gump": [
-    "My mama always said life was like a box of chocolates.",
-    "You never know what you're gonna get.",
-    "Stupid is as stupid does.",
-    "I'm not a smart man, but I know what love is.",
-    "Run, Forrest, run!",
-    "I just felt like running.",
-    "Mama always had a way of explaining things so I could understand them.",
-    "Lieutenant Dan, ice cream!",
-    "Have you accepted Jesus Christ as your personal savior?",
-    "Life is like a box of chocolates, Forrest.",
-    "Now you wouldn't believe me if I told you, but I could run like the wind blows.",
-    "From that day on, if I was going somewhere, I was running!",
-  ].join("\n"),
-
-  "The Pursuit of Happyness": [
-    "Don't ever let somebody tell you you can't do something.",
-    "Not even me. You got a dream, you gotta protect it.",
-    "People can't do something themselves, they wanna tell you you can't do it.",
-    "You want something, go get it. Period.",
-    "This part of my life, this little part, is called happiness.",
-    "The world is your oyster. It's up to you to find the pearls.",
-    "You got a dream... You gotta protect it.",
-    "I am the man who will catch the 49ers' game.",
-    "It was right then that I started thinking about Thomas Jefferson.",
-    "The pursuit of happyness.",
-    "Hey, I'm a self-made man. I had to work for everything I got.",
-    "I'm happy. Don't mess up my happiness.",
-  ].join("\n"),
-
-  "The Lion King": [
-    "Remember who you are.",
-    "You are my son, and the one true king.",
-    "Everything the light touches is our kingdom.",
-    "A king's time as ruler rises and falls like the sun.",
-    "One day, Simba, the sun will set on my time here.",
-    "And will rise with you as the new king.",
-    "I'm only brave when I have to be.",
-    "Oh yes, the past can hurt.",
-    "But the way I see it, you can either run from it or learn from it.",
-    "Hakuna Matata! It means no worries for the rest of your days.",
-    "Oh yes, the past can hurt. But the way I see it...",
-    "You can either run from it or... learn from it.",
-  ].join("\n"),
-
-  "Dead Poets Society": [
-    "O Captain! My Captain!",
-    "Carpe diem. Seize the day, boys.",
-    "Make your lives extraordinary.",
-    "We are food for worms, lads.",
-    "Believe it or not, each and every one of us in this room is one day going to stop breathing.",
-    "No matter what anybody tells you, words and ideas can change the world.",
-    "That you are here — that life exists and identity,",
-    "That the powerful play goes on, and you may contribute a verse.",
-    "What will your verse be?",
-    "Now, I didn't hear a word Keating said, but I certainly was moved.",
-    "Boys, you must strive to find your own voice.",
-    "Because the longer you wait to begin, the less likely you are to find it at all.",
-  ].join("\n"),
-
-  "The Dark Knight": [
-    "Why so serious?",
-    "Some men just want to watch the world burn.",
-    "You either die a hero or you live long enough to see yourself become the villain.",
-    "Why so serious? Let's put a smile on that face!",
-    "I'm an agent of chaos.",
-    "Madness, as you know, is like gravity. All it takes is a little push.",
-    "Because he's not the hero Gotham deserves, but the one it needs right now.",
-    "He's the Dark Knight.",
-    "You see, I'm a man of simple tastes.",
-    "I enjoy dynamite, and gunpowder, and gasoline!",
-    "Do you want to know why I use a knife?",
-    "Guns are too quick. You can't savor all the little emotions.",
-  ].join("\n"),
-
-  "The Matrix": [
-    "What is the Matrix?",
-    "You take the blue pill, the story ends.",
-    "You wake up in your bed and believe whatever you want to believe.",
-    "You take the red pill, you stay in Wonderland,",
-    "And I show you how deep the rabbit hole goes.",
-    "I know kung fu.",
-    "There is no spoon.",
-    "The Matrix is everywhere. It is all around us.",
-    "It is the world that has been pulled over your eyes to blind you from the truth.",
-    "You've been living in a dream world, Neo.",
-    "This is the world as it exists today.",
-    "Welcome to the desert of the real.",
-  ].join("\n"),
-
-  "Good Will Hunting": [
-    "It's not your fault.",
-    "It's not your fault, Will.",
-    "It's not your fault.",
-    "You're not perfect, and let me save you the suspense: this girl you've met isn't perfect either.",
-    "But the question is whether or not you're perfect for each other.",
-    "You're an orphan right? Do you think I know what it's like?",
-    "Personally, I don't know what it's like to have a father who's an alcoholic.",
-    "I don't know what that's like.",
-    "You're a genius, Will. No one denies that.",
-    "But you're just a kid and you don't have the faintest idea what you're talking about.",
-    "Real loss is only possible when you love something more than you love yourself.",
-    "I think you know how to write it down. Write it down.",
-  ].join("\n"),
-
-  "The Social Network": [
-    "A million dollars isn't cool. You know what's cool?",
-    "A billion dollars.",
-    "You're not an asshole, Mark. You're just trying so hard to be.",
-    "I'm CEO, bitch.",
-    "Drop the 'The'. Just 'Facebook'. It's cleaner.",
-    "We lived on farms, then we lived in cities,",
-    "And now we're gonna live on the internet.",
-    "We don't know what it can be, we don't know what it will be.",
-    "We know that it's cool.",
-    "If you guys were the inventors of Facebook, you'd have invented Facebook.",
-    "You better lawyer up, asshole.",
-    "Because I'm not coming back for 30%, I'm coming back for everything.",
-  ].join("\n"),
-
-  "Inception": [
-    "You mustn't be afraid to dream a little bigger, darling.",
-    "We need to go deeper.",
-    "Your mind is the scene of the crime.",
-    "What is the most resilient parasite?",
-    "A bacteria? A virus?",
-    "An idea. A single idea from the human mind can build cities.",
-    "An idea can transform the world and rewrite all the rules.",
-    "Which is why I have to steal it.",
-    "Dreams feel real while we're in them.",
-    "It's only when we wake up that we realize something was actually strange.",
-    "I can't imagine you with kids.",
-    "Do you want to take a leap of faith?",
-  ].join("\n"),
-
-  "Interstellar": [
-    "We've always defined ourselves by the ability to overcome the impossible.",
-    "Do not go gentle into that good night.",
-    "Old age should burn and rave at close of day.",
-    "Rage, rage against the dying of the light.",
-    "Love is the one thing that transcends time and space.",
-    "Maybe it means something more — some evidence, some artifact.",
-    "Love is the one thing we're capable of perceiving that transcends time and space.",
-    "We're not meant to save the world. We're meant to leave it.",
-    "Murph! You have to tell me what I did!",
-    "It's not possible.",
-    "No. It's necessary.",
-    "Once you're a parent, you're the ghost of your children's future.",
-  ].join("\n"),
-
-  "Erin Brockovich": [
-    "That's the thing about the truth. It's never what it is, it's what it represents.",
-    "I don't need pity, I need a paycheck.",
-    "You think you're the first person to try this?",
-    "Those people don't dream about being on boats.",
-    "Not only do I have a letter that says you knew,",
-    "But I have documentation that proves it.",
-    "I don't need a lawyer to make me feel smart.",
-    "I've got $700 and a beat-up Hyundai.",
-    "You know, this might mean nothing to you.",
-    "But to those 634 plaintiffs...",
-    "You are their only hope.",
-    "$333 million, split between 634 plaintiffs.",
-  ].join("\n"),
-
-  "A Few Good Men": [
-    "You can't handle the truth!",
-    "Son, we live in a world that has walls,",
-    "And those walls have to be guarded by men with guns.",
-    "Who's gonna do it? You? You, Lieutenant Weinberg?",
-    "I have a greater responsibility than you could possibly fathom.",
-    "You weep for Santiago and curse the Marines.",
-    "You have that luxury.",
-    "You don't want the truth because deep down in places",
-    "You don't talk about at parties,",
-    "You want me on that wall. You need me on that wall.",
-    "We use words like honor, code, loyalty.",
-    "You ordered the Code Red!",
-  ].join("\n"),
-};
-
-const SPEED_OPT: {label:string;value:PlaybackRate;color:string;tip:string}[] = [
-  { label:"0.5×", value:0.5,  color:"bg-red-600",    tip:"Muito lento — cada sílaba clara" },
-  { label:"0.75×",value:0.75, color:"bg-yellow-600", tip:"Lento — bom equilíbrio" },
-  { label:"1×",   value:1,    color:"bg-green-600",  tip:"Velocidade original" },
-];
-
-const DIFF_COLOR: Record<Difficulty,string> = {
-  "Iniciante":     "bg-green-500/20 text-green-300 border-green-500/30",
-  "Intermediário": "bg-yellow-500/20 text-yellow-300 border-yellow-500/30",
-  "Avançado":      "bg-red-500/20 text-red-300 border-red-500/30",
-};
-
-const BACKEND = import.meta.env.VITE_API_URL || "https://ngadalearn-api.onrender.com";
-const EQ_CLS  = ["meq1","meq2","meq3","meq4","meq5"];
-const EQ_COL  = ["#fbbf24","#f59e0b","#d97706","#fcd34d","#fef08a"];
-
-/* ── Utilitários ─────────────────────────────────────────────────── */
-function htmlDecode(str: string): string {
-  return str
-    .replace(/&#39;/g, "'").replace(/&quot;/g, '"')
-    .replace(/&amp;/g, "&").replace(/&lt;/g, "<").replace(/&gt;/g, ">");
-}
-
-function isBadTitle(title: string): boolean {
-  const t = title.toLowerCase();
-  return BAD_WORDS.some(w => t.includes(w));
-}
-function isOfficialChannel(ch: string): boolean {
-  const c = ch.toLowerCase();
-  return OFFICIAL_SIGNALS.some(s => c.includes(s));
-}
-async function checkEmbeddable(ids: string[]): Promise<Set<string>> {
-  if (!ids.length) return new Set();
-  try {
-    const res  = await fetch(`${BACKEND}/api/youtube/videos?ids=${ids.join(",")}`);
-    const data = await res.json();
-    return new Set<string>(
-      (data.items || []).filter((i: any) => i.status?.embeddable !== false).map((i: any) => i.id)
-    );
-  } catch { return new Set(ids); }
-}
-
-/* ── Mini equalizador ────────────────────────────────────────────── */
-function MovieEQ({active}:{active:boolean}) {
-  if (!active) return <span className="text-xl">🎬</span>;
-  return (
-    <div className="flex items-end gap-0.5" style={{height:26}}>
-      {EQ_CLS.map((cls,i) => (
-        <div key={cls} className={cls} style={{width:3,borderRadius:2,backgroundColor:EQ_COL[i],minHeight:3}} />
-      ))}
-    </div>
-  );
-}
-
-/* ── Barra Now Playing ───────────────────────────────────────────── */
-function NowPlayingBar({clip,isPlaying,ccOn}:{clip:MovieClip;isPlaying:boolean;ccOn:boolean}) {
-  const safeTitle = htmlDecode(clip.title);
-  const safeChan  = htmlDecode(clip.channel);
-  const text = `${safeTitle} — ${safeChan}   •   ${safeTitle} — ${safeChan}   •   `;
-  return (
-    <div className="mslide flex items-center gap-3 bg-black/60 backdrop-blur border border-amber-500/30 rounded-xl px-4 py-3">
-      <MovieEQ active={isPlaying} />
-      <div className="flex-1 overflow-hidden">
-        <div className="flex items-center gap-2 mb-0.5">
-          <p className="text-[10px] font-bold uppercase tracking-widest text-amber-400">
-            {isPlaying ? "▶ A reproduzir" : "⏸ Parado"}
-          </p>
-          {ccOn && (
-            <span className="text-[10px] bg-blue-500/30 text-blue-300 border border-blue-400/30 px-1.5 py-0.5 rounded font-bold">
-              CC ON
-            </span>
-          )}
-          {clip.isOfficial && (
-            <span className="text-[10px] bg-amber-500/20 text-amber-300 px-1.5 py-0.5 rounded font-bold">
-              ✓ Oficial
-            </span>
-          )}
-        </div>
-        <div className="mmarquee-wrap">
-          <span className="mmarquee-text text-sm font-semibold text-white">{text}</span>
-        </div>
-      </div>
-      <div className={`w-8 h-8 rounded-full bg-amber-600/30 flex items-center justify-center text-base flex-shrink-0 ${isPlaying ? "movie-glow" : ""}`}>
-        🎞️
-      </div>
-    </div>
-  );
-}
-
-/* ════════════════════════════════════════════════════════════════════
-   WORD POPUP — clique numa palavra para ouvir e guardar no vocabulário
-   ════════════════════════════════════════════════════════════════════ */
-function WordPopup({ word, pos, onClose }: {
-  word: string;
-  pos: { x: number; y: number };
-  onClose: () => void;
-}) {
-  const speak = () => {
-    if (!window.speechSynthesis) return;
-    window.speechSynthesis.cancel();
-    const u = new SpeechSynthesisUtterance(word);
-    u.lang = "en-US"; u.rate = 0.8;
-    const pref = window.speechSynthesis.getVoices().find(
-      v => v.lang.startsWith("en") && (v.name.includes("Google") || v.name.includes("Samantha"))
-    );
-    if (pref) u.voice = pref;
-    window.speechSynthesis.speak(u);
-  };
-
-  useEffect(() => { speak(); }, []); // eslint-disable-line react-hooks/exhaustive-deps
-
-  const left = Math.min(pos.x - 68, (typeof window !== "undefined" ? window.innerWidth : 800) - 148);
-  const top  = Math.max(pos.y - 90, 8);
-
-  return (
-    <div
-      style={{ position: "fixed", left, top, zIndex: 9999 }}
-      className="bg-gray-950 border border-amber-500/60 rounded-xl p-3 shadow-2xl w-36"
-      onClick={e => e.stopPropagation()}
-    >
-      <button onClick={onClose} className="absolute top-1 right-1.5 text-white/30 hover:text-white/80 text-xs transition-colors leading-none">✕</button>
-      <p className="font-black text-amber-300 text-base text-center mb-2">{word}</p>
-      <button
-        onClick={speak}
-        className="w-full py-1.5 bg-blue-600/50 hover:bg-blue-600 rounded-lg text-xs font-bold text-white transition-colors"
-      >
-        🔊 Ouvir
-      </button>
-      <p className="text-[9px] text-white/25 text-center mt-1.5">Clica fora para fechar</p>
-    </div>
-  );
-}
-
-/* ════════════════════════════════════════════════════════════════════
-   SUBTITLE RISER — legendas a subir, tema âmbar (filmes)
-   ════════════════════════════════════════════════════════════════════ */
-const SL_H    = 60;
-const SL_SLOTS = 7;
-const SL_CTR   = 3;
-
-function SubtitleRiser({ lines, active, isPlaying, onWordClick }: {
-  lines: string[]; active: number; isPlaying: boolean;
-  onWordClick?: (word: string, e: React.MouseEvent) => void;
-}) {
-  const wrapRef = useRef<HTMLDivElement>(null);
-  const [wrapH, setWrapH] = useState(320);
-
-  useEffect(() => {
-    const el = wrapRef.current;
-    if (!el) return;
-    const ro = new ResizeObserver(es => setWrapH(es[0].contentRect.height));
-    ro.observe(el);
-    return () => ro.disconnect();
-  }, []);
-
-  if (!lines.length) return null;
-
-  const PROG  = 3;
-  const BADGE = 28;
-  const HINT  = onWordClick ? 20 : 0;
-  const clipH = Math.max(SL_H * 3, wrapH - PROG - BADGE - HINT);
-  const padV  = Math.max(0, (clipH - SL_H) / 2);
-  const ty    = -active * SL_H;
-
-  function renderWords(text: string) {
-    if (!onWordClick) return <>{text}</>;
-    return (
-      <>
-        {text.split(/(\s+)/).map((part, i) =>
-          /^\s+$/.test(part) ? <span key={i}> </span> : (
-            <button key={i} onClick={e => {
-              const clean = part.replace(/[^a-zA-Z'-]/g,"").toLowerCase();
-              if (clean.length > 1) onWordClick(clean, e);
-            }} style={{
-              background:"none",border:"none",cursor:"pointer",font:"inherit",
-              color:"inherit",padding:"0 1px",borderRadius:3,display:"inline",
-            }}
-            className="hover:text-amber-400 hover:underline underline-offset-2 transition-colors">
-              {part}
-            </button>
-          )
-        )}
-      </>
-    );
-  }
-
-  return (
-    <div ref={wrapRef} style={{
-      height:"100%",position:"relative",
-      background:"linear-gradient(160deg,rgba(8,3,0,.99) 0%,rgba(38,15,2,.99) 50%,rgba(15,5,0,.99) 100%)",
-      border:"1px solid rgba(245,158,11,.22)",borderRadius:20,overflow:"hidden",
-      display:"flex",flexDirection:"column",
-    }}>
-      {/* Progresso */}
-      <div style={{height:PROG,background:"rgba(245,158,11,.1)",flexShrink:0}}>
-        <div style={{height:"100%",width:`${Math.max(0,Math.round(((active+1)/lines.length)*100))}%`,
-          background:"linear-gradient(90deg,#f59e0b,#d97706)",transition:"width .25s ease",borderRadius:2}}/>
-      </div>
-
-      {/* Badge */}
-      <div style={{height:BADGE,display:"flex",alignItems:"center",padding:"0 16px",flexShrink:0}}>
-        <span className="live-badge" style={{fontSize:9,fontWeight:700,letterSpacing:".1em",
-          background:"rgba(34,197,94,.12)",color:"#4ade80",border:"1px solid rgba(34,197,94,.3)",borderRadius:99,padding:"2px 8px"}}>● CC AO VIVO</span>
-        <div style={{flex:1}}/>
-        <span style={{fontSize:10,fontFamily:"monospace",color:"rgba(245,158,11,.3)"}}>{active+1}/{lines.length}</span>
-      </div>
-
-      {/* Clip window */}
-      <div style={{height:clipH,overflow:"hidden",position:"relative",flexShrink:0}}>
-        <div style={{position:"absolute",top:0,left:0,right:0,zIndex:10,pointerEvents:"none",
-          height:clipH*0.32,background:"linear-gradient(to bottom,rgba(8,3,0,1) 0%,rgba(8,3,0,.7) 60%,transparent 100%)"}}/>
-        <div style={{
-          transform:`translateY(${ty}px)`,transition:"transform .5s cubic-bezier(.4,0,.2,1)",
-          paddingTop:padV,paddingBottom:padV,
-        }}>
-          {lines.map((line, i) => {
-            const dist  = Math.abs(i - active);
-            const isAct = i === active;
-            const opacity = dist===0?1:dist===1?.42:dist===2?.2:.06;
-            const scale   = dist===0?1:dist===1?.93:.85;
-            return (
-              <div key={i} style={{height:SL_H,display:"flex",alignItems:"center",
-                justifyContent:"center",padding:"0 28px",
-                opacity,transform:`scale(${scale})`,transition:"opacity .45s ease, transform .45s ease"}}>
-                <p style={{textAlign:"center",lineHeight:1.3,margin:0,
-                  fontSize:isAct?"clamp(1.25rem,3.2vw,1.7rem)":"clamp(.82rem,2vw,1.05rem)",
-                  fontWeight:isAct?900:400,fontStyle:dist>=2?"italic":"normal",
-                  ...(isAct ? {
-                    background:"linear-gradient(90deg,#fef3c7,#f59e0b,#fcd34d,#f59e0b,#fef3c7)",
-                    backgroundSize:"300% 100%",
-                    animation:isPlaying?"subShimmer 3s linear infinite":"none",
-                    WebkitBackgroundClip:"text",
-                    backgroundClip:"text",
-                    color:"transparent",
-                    textShadow:"none",
-                  } : {
-                    color:"rgba(255,255,255,.48)",
-                  })}}>
-                  {isAct ? renderWords(line) : line || "·"}
-                </p>
-              </div>
-            );
-          })}
-        </div>
-        <div style={{position:"absolute",bottom:0,left:0,right:0,zIndex:10,pointerEvents:"none",
-          height:clipH*0.28,background:"linear-gradient(to top,rgba(8,3,0,1) 0%,rgba(8,3,0,.65) 60%,transparent 100%)"}}/>
-      </div>
-
-      {/* Dica de clique */}
-      {HINT>0&&(
-        <p style={{flexShrink:0,height:HINT,display:"flex",alignItems:"center",justifyContent:"center",
-          fontSize:10,color:"rgba(245,158,11,.25)",margin:0}}>Clica numa palavra para ouvir 🔊</p>
-      )}
-    </div>
-  );
-}
-
-/* ════════════════════════════════════════════════════════════════════
-   CINEMA SUBTITLE DISPLAY — Legenda de filme animada profissional
-   Suporta palavras clicáveis e modo tempo-real (isLive)
-   ════════════════════════════════════════════════════════════════════ */
-function CinemaSubDisplay({ lines, active, isPlaying, onWordClick, isLive }: {
-  lines: string[]; active: number; isPlaying: boolean;
-  onWordClick?: (word: string, e: React.MouseEvent) => void;
-  isLive?: boolean;
-}) {
-  if (!lines.length) return null;
-  const prev = lines[active - 1];
-  const curr = lines[active];
-  const next = lines[active + 1];
-  if (!curr) return null;
-
-  function renderWords(text: string, interactive = false) {
-    if (!interactive || !onWordClick) return <>{text}</>;
-    return (
-      <>
-        {text.split(/(\s+)/).map((part, i) =>
-          /^\s+$/.test(part) ? <span key={i}> </span> : (
-            <button
-              key={i}
-              onClick={e => {
-                const clean = part.replace(/[^a-zA-Z'-]/g, "").toLowerCase();
-                if (clean.length > 1) onWordClick(clean, e);
-              }}
-              style={{ background:"none", border:"none", cursor:"pointer", font:"inherit",
-                       color:"inherit", padding:"0 1px", borderRadius:3, display:"inline" }}
-              className="hover:text-amber-400 hover:underline underline-offset-2 transition-colors"
-            >
-              {part}
-            </button>
-          )
-        )}
-      </>
-    );
-  }
-
-  return (
-    <div className="relative overflow-hidden rounded-2xl shadow-2xl" style={{
-      background: "linear-gradient(135deg,rgba(12,5,2,.97) 0%,rgba(50,20,2,.97) 50%,rgba(20,8,2,.97) 100%)",
-      border: "1px solid rgba(245,158,11,.35)",
-      boxShadow: "0 0 40px rgba(180,83,9,.15), inset 0 0 60px rgba(180,83,9,.04)",
-    }}>
-      {/* Barra de progresso */}
-      <div style={{height:3,background:"rgba(245,158,11,.1)",borderRadius:"2px 2px 0 0"}}>
-        <div style={{
-          height:"100%",
-          width:`${Math.round(((active+1)/lines.length)*100)}%`,
-          background:"linear-gradient(90deg,#f59e0b,#d97706)",
-          borderRadius:2,
-          transition:"width 0.2s ease",
-        }} />
-      </div>
-      {/* Orb de fundo */}
-      <div style={{position:"absolute",inset:0,overflow:"hidden",pointerEvents:"none"}}>
-        <div style={{position:"absolute",top:"15%",left:"10%",width:110,height:110,borderRadius:"50%",
-          background:"rgba(245,158,11,.12)",filter:"blur(38px)",animation:"mglow 4.5s ease-in-out infinite"}} />
-        <div style={{position:"absolute",bottom:"15%",right:"10%",width:80,height:80,borderRadius:"50%",
-          background:"rgba(234,88,12,.09)",filter:"blur(30px)",animation:"mglow 5.5s 1s ease-in-out infinite"}} />
-      </div>
-
-      {/* Barra de topo */}
-      <div className="flex items-center gap-3 px-5 pt-3 pb-1 relative z-10">
-        {isPlaying ? (
-          <div className="flex items-end gap-0.5" style={{height:14}}>
-            {["meq1","meq3","meq5"].map(cls=>(
-              <div key={cls} className={cls} style={{width:2,borderRadius:2,backgroundColor:"#fbbf24",minHeight:2}} />
-            ))}
-          </div>
-        ) : <span style={{fontSize:13}}>📺</span>}
-        <span style={{fontSize:10,letterSpacing:"0.12em",fontFamily:"monospace",color:"rgba(245,158,11,.5)"}}>
-          {active+1} / {lines.length}
-        </span>
-        <div style={{flex:1,height:1,background:"linear-gradient(90deg,transparent,rgba(245,158,11,.25),transparent)"}} />
-        {isLive ? (
-          <span className="live-badge" style={{
-            fontSize:9, fontWeight:700, letterSpacing:"0.1em",
-            background:"rgba(34,197,94,.15)", color:"#4ade80",
-            border:"1px solid rgba(34,197,94,.4)", borderRadius:99,
-            padding:"2px 8px",
-          }}>
-            ● AO VIVO
-          </span>
-        ) : (
-          <span style={{fontSize:10,color:"rgba(245,158,11,.4)",letterSpacing:"0.08em"}}>✦ CC</span>
-        )}
-      </div>
-
-      {/* Linha anterior */}
-      {prev && (
-        <p style={{textAlign:"center",padding:"0 24px 4px",fontSize:12,color:"rgba(255,255,255,.2)",
-          fontStyle:"italic",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",position:"relative",zIndex:10}}>
-          {prev}
-        </p>
-      )}
-
-      {/* Linha activa — palavras clicáveis */}
-      <div key={`ms-${active}`} className="sub-in"
-        style={{textAlign:"center",padding:`${prev?"4px":"14px"} 20px ${next?"2px":"14px"}`,position:"relative",zIndex:10}}>
-        <p style={{
-          fontSize:"clamp(1.05rem,2.8vw,1.55rem)",
-          fontWeight:800,
-          color:"#fff",
-          lineHeight:1.35,
-          letterSpacing:"0.02em",
-          textShadow:"0 2px 30px rgba(0,0,0,.9), 0 0 50px rgba(245,158,11,.25)",
-        }}>
-          {renderWords(curr, true)}
-        </p>
-        {onWordClick && (
-          <p style={{fontSize:9,color:"rgba(255,255,255,.2)",marginTop:4}}>
-            Clica numa palavra para ouvir e guardar
-          </p>
-        )}
-      </div>
-
-      {/* Próxima linha */}
-      {next && (
-        <p style={{textAlign:"center",padding:"4px 24px 12px",fontSize:12,color:"rgba(255,255,255,.2)",
-          fontStyle:"italic",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",position:"relative",zIndex:10}}>
-          {next}
-        </p>
-      )}
-    </div>
-  );
-}
+const TMDB_IMG = "https://image.tmdb.org/t/p/w342";
+const EMBED_MOVIE  = (id:number) => `https://nhdapi.com/embed/movie/${id}`;
+const EMBED_SERIES = (id:number, s:number, e:number) => `https://nhdapi.com/embed/tv/${id}/${s}/${e}`;
 
 /* ════════════════════════════════════════════════════════════════════
    COMPONENTE PRINCIPAL
    ════════════════════════════════════════════════════════════════════ */
 export function MoviesPlayer() {
-  /* Pesquisa */
-  const [query,     setQuery]     = useState("");
-  const [results,   setResults]   = useState<MovieClip[]>([]);
-  const [loading,   setLoading]   = useState(false);
-  const [searchErr, setSearchErr] = useState("");
-  const [genreFilter, setGenreFilter] = useState("Todos");
+  const [selectedLevel,   setSelectedLevel]   = useState<LevelCfg|null>(null);
+  const [selectedContent, setSelectedContent] = useState<Content|null>(null);
+  const [tab,             setTab]             = useState<"movie"|"series">("movie");
+  const [isMobile,        setIsMobile]        = useState(()=>window.innerWidth<1024);
+  const [panelTab,        setPanelTab]        = useState<"words"|"notes"|"quiz">("words");
+  const [note,            setNote]            = useState("");
+  const [quizInput,       setQuizInput]       = useState("");
+  const [quizStatus,      setQuizStatus]      = useState<"idle"|"correct"|"wrong">("idle");
+  const [knownWords,      setKnownWords]      = useState<Set<string>>(new Set());
+  const [posterErrors,    setPosterErrors]    = useState<Set<number>>(new Set());
 
-  /* Player */
-  const [selected,  setSelected]  = useState<MovieClip|null>(null);
-  const [isPlaying, setIsPlaying] = useState(false);
-  const [vidError,  setVidError]  = useState(false);
-  const ytPlayer       = useRef<any>(null);
-  const resultsRef     = useRef<MovieClip[]>([]);
-  const selectedRef    = useRef<MovieClip|null>(null);
-  const errorTimeout   = useRef<ReturnType<typeof setTimeout>|null>(null);
-  const skipTimeoutRef = useRef<ReturnType<typeof setTimeout>|null>(null);
+  useEffect(()=>{
+    const h=()=>setIsMobile(window.innerWidth<1024);
+    window.addEventListener("resize",h); return ()=>window.removeEventListener("resize",h);
+  },[]);
 
-  /* Legendas temporizadas (tempo real) */
-  const [transcript,   setTranscript]   = useState<TimedSub[]>([]);
-  const [transLoading, setTransLoading] = useState(false);
-  const [liveSubIdx,   setLiveSubIdx]   = useState(-1);
-  const liveSubIdxRef  = useRef(-1);
-  const liveTimerRef       = useRef<ReturnType<typeof setInterval> | null>(null);
-  const transcriptLoadedRef = useRef(false); // evita sobrescrever depois de carregado
-
-  /* Linhas do transcript memoizadas — evita recriar o array em cada render */
-  const transcriptLines = useMemo(() => transcript.map(s => s.text), [transcript]);
-
-  const autoSelectRef = useRef(true); // auto-seleciona o primeiro resultado ao carregar
-
-  /* Popup de palavra clicada */
-  const [wordPopup, setWordPopup] = useState<{ word: string; x: number; y: number } | null>(null);
-
-  /* ── Sync selectedRef (sempre atual para callbacks do YT) ───── */
-  useEffect(() => { selectedRef.current = selected; }, [selected]);
-
-  /* ── Helper: avançar para o próximo clip ou mostrar erro ─────── */
-  const skipToNextClip = useCallback(() => {
-    if (errorTimeout.current)   { clearTimeout(errorTimeout.current);   errorTimeout.current   = null; }
-    if (skipTimeoutRef.current) { clearTimeout(skipTimeoutRef.current); skipTimeoutRef.current = null; }
-    const curId = selectedRef.current?.id;
-    if (!curId) return;
-    const list = resultsRef.current;
-    const idx  = list.findIndex(v => v.id === curId);
-    const nxt  = list[idx + 1];
-    if (nxt) { setSelected(nxt); setIsPlaying(false); setVidError(false); }
-    else     { setVidError(true); setIsPlaying(false); }
-  }, []);
-
-  /* ── Remove clip sem legenda e avança automaticamente ─────────── */
-  const skipNoCaptionRef = useRef(false);
-  const skipNoCaption = useCallback(() => {
-    if (skipNoCaptionRef.current) return; // evitar chamadas duplas
-    skipNoCaptionRef.current = true;
-    const curId = selectedRef.current?.id;
-    if (!curId) return;
-    /* Remove da lista e avança */
-    setResults(prev => {
-      const filtered = prev.filter(v => v.id !== curId);
-      resultsRef.current = filtered;
-      const next = filtered[0];
-      if (next) { setSelected(next); setIsPlaying(false); setVidError(false); }
-      return filtered;
-    });
-  }, []);
-
-  /* ── Carregar YT API ─────────────────────────────────────────── */
-  useEffect(() => {
-    if (document.getElementById("yt-api-script-mv")) return;
-    const s = document.createElement("script");
-    s.id  = "yt-api-script-mv";
-    s.src = "https://www.youtube.com/iframe_api";
-    s.async = true;
-    document.head.appendChild(s);
-  }, []);
-
-  /* ── Criar player quando o vídeo muda ───────────────────────── */
-  useEffect(() => {
-    if (!selected) return;
-
-    function buildPlayer() {
-      if (ytPlayer.current) {
-        try { ytPlayer.current.destroy(); } catch(_) {}
-        ytPlayer.current = null;
-      }
-      const root = document.getElementById("mv-player-root");
-      if (!root) return;
-      root.innerHTML = "";
-      const div = document.createElement("div");
-      div.id = "mv-player-div";
-      root.appendChild(div);
-
-      ytPlayer.current = new window.YT.Player("mv-player-div", {
-        videoId:    selected!.id,
-        width:      "100%",
-        height:     "100%",
-        playerVars: {
-          rel:            0,
-          modestbranding: 1,
-          playsinline:    1,
-          autoplay:       0,
-          cc_load_policy: 1,   // força o YT a carregar as captions
-          cc_lang_pref:   "en",
-          origin:         window.location.origin,
-        },
-        events: {
-          onReady: (e:any) => {
-            if (errorTimeout.current) clearTimeout(errorTimeout.current);
-            errorTimeout.current = setTimeout(() => {
-              const state = ytPlayer.current?.getPlayerState?.() ?? -1;
-              if (state === -1 || state === 5) skipToNextClip();
-            }, 12000);
-
-            const vid = selectedRef.current?.id ?? "";
-
-            function parseEv(events: any[]): TimedSub[] {
-              return (events || [])
-                .filter((ev:any) => ev.segs?.length)
-                .map((ev:any) => ({
-                  start: (ev.tStartMs || 0) / 1000,
-                  dur:   Math.max((ev.dDurationMs || 2000) / 1000, 0.3),
-                  text:  ev.segs.map((s:any) => (s.utf8||"").replace(/\n/g," "))
-                           .join("").replace(/\s+/g," ").trim(),
-                }))
-                .filter((s:any) => s.text);
-            }
-
-            const done = (segs: TimedSub[]) => {
-              transcriptLoadedRef.current = true;
-              setTranscript(segs); setTransLoading(false);
-            };
-
-            /* Estratégia 1: timedtext directamente do browser (IP do utilizador, não bloqueado) */
-            (async () => {
-              if (transcriptLoadedRef.current || !vid) return;
-              for (const lang of ["en", "en&kind=asr", "en-US"]) {
-                try {
-                  const r = await fetch(
-                    `https://www.youtube.com/api/timedtext?v=${vid}&lang=${lang}&fmt=json3`
-                  );
-                  if (!r.ok) continue;
-                  const d = await r.json();
-                  const segs = parseEv(d.events);
-                  if (segs.length >= 3) { done(segs); return; }
-                } catch { /* CORS ou falha — próxima */ }
-              }
-            })();
-
-            /* Estratégia 2: getPlayerResponse + directo/proxy (polling) */
-            const safetyTimer = setTimeout(() => {
-              if (!transcriptLoadedRef.current) skipNoCaption();
-            }, 10000);
-
-            let attempts = 0;
-            const poll = setInterval(async () => {
-              if (transcriptLoadedRef.current) { clearInterval(poll); clearTimeout(safetyTimer); return; }
-              attempts++;
-              if (attempts > 20) { clearInterval(poll); clearTimeout(safetyTimer); skipNoCaption(); return; }
-
-              /* LER primeiro, desactivar CC depois — ordem importa */
-              const resp = e.target.getPlayerResponse?.();
-              const tracks: any[] = resp?.captions?.playerCaptionsTracklistRenderer?.captionTracks || [];
-              const track = tracks.find((t:any) => t.languageCode === "en") ||
-                            tracks.find((t:any) => t.languageCode?.startsWith("en")) ||
-                            tracks[0];
-              if (!track?.baseUrl) return;
-
-              /* Só agora esconder CC nativo do YouTube */
-              try { e.target.setOption("captions", "track", {}); } catch { /* */ }
-              clearInterval(poll); clearTimeout(safetyTimer);
-
-              /* 2a: fetch directo da URL assinada */
-              try {
-                const r = await fetch(decodeURIComponent(track.baseUrl) + "&fmt=json3");
-                if (r.ok) {
-                  const d = await r.json();
-                  const segs = parseEv(d.events);
-                  if (segs.length >= 3) { done(segs); return; }
-                }
-              } catch { /* CORS */ }
-
-              /* 2b: proxy backend */
-              try {
-                const r = await fetch(`${BACKEND}/api/youtube/caption-proxy?url=${encodeURIComponent(track.baseUrl)}`);
-                if (r.ok) {
-                  const d = await r.json();
-                  const segs = parseEv(d.events);
-                  if (segs.length >= 3) { done(segs); return; }
-                }
-              } catch { /* */ }
-
-              /* Todas as estratégias falharam — sem legenda, remover e avançar */
-              skipNoCaption();
-            }, 500);
-          },
-          onStateChange: (e:any) => {
-            setIsPlaying(e.data === 1);
-            if (e.data === 1) {
-              if (errorTimeout.current) { clearTimeout(errorTimeout.current); errorTimeout.current = null; }
-            }
-            /* Estado -1 (unstarted) após breve carregamento = vídeo bloqueado */
-            if (e.data === -1) {
-              if (skipTimeoutRef.current) clearTimeout(skipTimeoutRef.current);
-              skipTimeoutRef.current = setTimeout(() => {
-                const st = ytPlayer.current?.getPlayerState?.() ?? -1;
-                if (st === -1) skipToNextClip();
-              }, 4000);
-            } else {
-              if (skipTimeoutRef.current) { clearTimeout(skipTimeoutRef.current); skipTimeoutRef.current = null; }
-            }
-          },
-          onError: () => {
-            /* Qualquer erro do YT API → avançar silenciosamente */
-            skipToNextClip();
-          },
-        },
-      });
-    }
-
-    if (window.YT?.Player) {
-      buildPlayer();
-    } else {
-      const prev = window.onYouTubeIframeAPIReady;
-      window.onYouTubeIframeAPIReady = () => { prev?.(); buildPlayer(); };
-    }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selected?.id]);
-
-  /* ── Sync resultsRef (para onError não fechar sobre estado stale) */
-  useEffect(() => { resultsRef.current = results; }, [results]);
-
-  /* ── Buscar legendas temporizadas quando o vídeo muda ───────────── */
-  useEffect(() => {
-    if (!selected) {
-      setTranscript([]); setLiveSubIdx(-1);
-      liveSubIdxRef.current = -1; transcriptLoadedRef.current = false;
-      skipNoCaptionRef.current = false; return;
-    }
-    setTranscript([]); setLiveSubIdx(-1);
-    liveSubIdxRef.current = -1; transcriptLoadedRef.current = false;
-    skipNoCaptionRef.current = false;
-    setTransLoading(true);
-    fetch(`${BACKEND}/api/youtube/transcript/${selected.id}`)
-      .then(r => r.json())
-      .then(d => {
-        const segs = d.segments || [];
-        if (segs.length) {
-          transcriptLoadedRef.current = true;
-          setTranscript(segs); setTransLoading(false);
-        }
-        /* se vazio: o poll do player trata — o safetyTimer garante que pára */
-      })
-      .catch(() => setTransLoading(false));
-  }, [selected?.id]);
-
-  /* ── Polling de tempo: sync legendas em tempo real ──────────────── */
-  useEffect(() => {
-    if (liveTimerRef.current) clearInterval(liveTimerRef.current);
-    if (!isPlaying || !transcript.length) return;
-
-    liveTimerRef.current = setInterval(() => {
-      try {
-        const t = ytPlayer.current?.getCurrentTime?.() ?? 0;
-        // Pesquisa binária: último segmento com start <= t
-        let lo = 0, hi = transcript.length - 1, found = -1;
-        while (lo <= hi) {
-          const mid = (lo + hi) >> 1;
-          if (transcript[mid].start <= t) { found = mid; lo = mid + 1; }
-          else hi = mid - 1;
-        }
-        if (found !== liveSubIdxRef.current) {
-          liveSubIdxRef.current = found;
-          setLiveSubIdx(found);
-        }
-      } catch { /* player ainda não pronto */ }
-    }, 100);
-
-    return () => { if (liveTimerRef.current) clearInterval(liveTimerRef.current); };
-  }, [isPlaying, transcript]);
-
-  /* ── Cleanup ─────────────────────────────────────────────────── */
-  useEffect(() => () => {
-    try { ytPlayer.current?.destroy(); } catch(_) {}
-    if (errorTimeout.current)   clearTimeout(errorTimeout.current);
-    if (skipTimeoutRef.current) clearTimeout(skipTimeoutRef.current);
-  }, []);
-
-
-  /* ── Pesquisa ────────────────────────────────────────────────── */
-  const searchClips = useCallback(async (raw: string) => {
-    if (!raw.trim()) return;
-    setLoading(true); setSearchErr(""); setResults([]);
-
-    try {
-      const params = new URLSearchParams({ q: raw, type: "movies", max: "25" });
-      const res  = await fetch(`${BACKEND}/api/youtube/search?${params}`);
-      const data = await res.json();
-
-      if (data.quotaExceeded) {
-        setSearchErr("Quota do YouTube temporariamente esgotada. Tente novamente mais tarde.");
-        return;
-      }
-
-      const raw2: MovieClip[] = (data.videos || []).map((v: any) => ({
-        id:         v.id,
-        title:      v.title,
-        channel:    v.channel,
-        thumbnail:  v.thumbnail,
-        isOfficial: isOfficialChannel(v.channel),
-      }));
-
-      const filtered  = raw2.filter(v => !isBadTitle(v.title));
-      const ok        = await checkEmbeddable(filtered.map(v => v.id));
-      const embeddable = filtered.filter(v => ok.has(v.id));
-
-      const sorted = [
-        ...embeddable.filter(v => v.isOfficial),
-        ...embeddable.filter(v => !v.isOfficial),
-      ];
-
-      const top = sorted.slice(0, 12);
-      setResults(top);
-      if (!top.length) setSearchErr("Nenhuma cena encontrada. Tenta outro título.");
-      else if (autoSelectRef.current && top[0]) {
-        setSelected(top[0]); setVidError(false); autoSelectRef.current = false;
-      }
-    } catch (e: unknown) {
-      setSearchErr(e instanceof Error ? e.message : "Erro na pesquisa.");
-    } finally { setLoading(false); }
-  }, []);
-
-  /* Pesquisa inicial */
-  useEffect(() => { searchClips("official movie scene english"); }, [searchClips]);
-
-  /* Filtra por género (curadas) */
-  const filteredCurated = useMemo(() =>
-    genreFilter === "Todos"
-      ? CURATED
-      : CURATED.filter(m => m.genre === genreFilter),
-  [genreFilter]);
-
-  function tryNext() { skipToNextClip(); }
-  const [mobileListOpen, setMobileListOpen] = useState(false);
-
-  /* ════════════════════════════════════════════════════════════════
-     RENDER
-  ════════════════════════════════════════════════════════════════ */
-
-  /* Lista de filmes — reutilizada desktop+mobile */
-  const MovieList = () => (
-    <div className="flex flex-col gap-2 h-full">
-      <form onSubmit={e=>{e.preventDefault();searchClips(query);}}
-        className="flex-shrink-0 bg-white/8 backdrop-blur rounded-2xl p-3 space-y-2.5 border border-amber-500/10">
-        <label className="block text-[11px] font-bold text-amber-300 uppercase tracking-widest">🔍 Pesquisar</label>
-        <div className="flex gap-2">
-          <input value={query} onChange={e=>setQuery(e.target.value)}
-            placeholder="Forrest Gump, Matrix…"
-            className="flex-1 bg-white/10 border border-white/15 rounded-xl px-3 py-2.5 text-sm placeholder-white/35 focus:outline-none focus:border-amber-400 transition-colors" />
-          <button type="submit" disabled={loading} style={{touchAction:'manipulation'}}
-            className="bg-amber-600 hover:bg-amber-500 disabled:opacity-50 px-4 min-h-[44px] rounded-xl text-sm font-bold transition-colors">
-            {loading?"…":"Ir"}
-          </button>
-        </div>
-        <p className="text-[10px] text-amber-400/60">✅ Filtra reacções, paródias e análises automaticamente</p>
-      </form>
-
-      {/* Filmes recomendados */}
-      <div className="flex-shrink-0 bg-white/8 backdrop-blur rounded-2xl p-3 border border-amber-500/10">
-        <div className="flex items-center justify-between mb-2">
-          <p className="text-[11px] font-bold text-amber-300 uppercase tracking-widest">🎞️ Recomendados</p>
-          <div className="flex gap-1 overflow-x-auto overscroll-x-contain">
-            {GENRES.map(g=>(
-              <button key={g} onClick={()=>setGenreFilter(g)} style={{touchAction:'manipulation'}}
-                className={`text-[10px] px-2.5 py-1 min-h-[30px] rounded-full transition-colors font-semibold flex-shrink-0 ${
-                  genreFilter===g?"bg-amber-600 text-white":"bg-white/10 text-white/55 hover:text-white"
-                }`}>{g}</button>
-            ))}
-          </div>
-        </div>
-        <div className="space-y-1 max-h-40 overflow-y-auto overscroll-contain pr-1">
-          {filteredCurated.map(m=>(
-            <button key={m.label}
-              onClick={()=>{setQuery(m.label);autoSelectRef.current=true;searchClips(m.query);}}
-              style={{touchAction:'manipulation'}}
-              className="w-full text-left flex items-center gap-2 p-2 rounded-xl bg-white/4 hover:bg-amber-600/20 border border-transparent hover:border-amber-500/25 transition-all">
-              <span className="text-base flex-shrink-0">{m.icon}</span>
-              <div className="flex-1 min-w-0">
-                <p className="text-xs font-bold truncate">{m.label}</p>
-                <p className="text-[10px] text-white/40 truncate">{m.tip}</p>
-              </div>
-              <span className={`text-[9px] px-1.5 py-0.5 rounded border flex-shrink-0 ${DIFF_COLOR[m.diff]}`}>
-                {m.diff==="Iniciante"?"A1":m.diff==="Intermediário"?"B1":"C1"}
-              </span>
-            </button>
-          ))}
-        </div>
-      </div>
-
-      {searchErr && (
-        <div className="flex-shrink-0 bg-red-500/15 border border-red-400/30 rounded-xl p-2 text-xs text-red-300">⚠️ {searchErr}</div>
-      )}
-
-      <div className="flex-1 overflow-y-auto overscroll-contain space-y-1.5 pr-1">
-        {loading && (
-          <div className="flex flex-col items-center py-8 gap-3">
-            <div className="flex items-end gap-1">
-              {EQ_CLS.map((cls,i)=>(
-                <div key={i} className={cls} style={{width:6,backgroundColor:EQ_COL[i],borderRadius:3,minHeight:3}} />
-              ))}
-            </div>
-            <p className="text-xs text-amber-300">A filtrar…</p>
-          </div>
-        )}
-        {!loading && results.map((clip, idx)=>{
-          const active=selected?.id===clip.id;
-          const lvl = idx < 4 ? "Iniciante" : idx < 8 ? "Intermédio" : "Avançado";
-          const lvlStyle = lvl === "Iniciante"
-            ? {background:"rgba(34,197,94,.18)",color:"#4ade80",border:"1px solid rgba(34,197,94,.3)"}
-            : lvl === "Intermédio"
-            ? {background:"rgba(234,179,8,.18)",color:"#facc15",border:"1px solid rgba(234,179,8,.3)"}
-            : {background:"rgba(239,68,68,.18)",color:"#f87171",border:"1px solid rgba(239,68,68,.3)"};
-          return (
-            <button key={clip.id}
-              onClick={()=>{setSelected(clip);setIsPlaying(false);setVidError(false);}}
-              style={{touchAction:'manipulation'}}
-              className={`w-full text-left flex gap-3 p-3 rounded-xl transition-all border ${
-                active
-                  ? "bg-amber-600/35 border-amber-400/60 shadow-lg shadow-amber-900/30"
-                  : "bg-white/4 hover:bg-white/8 border-transparent hover:border-amber-500/20"
-              }`}>
-              <div className="relative flex-shrink-0">
-                <img src={clip.thumbnail} alt=""
-                  className="w-16 h-11 object-cover rounded-lg" loading="lazy" />
-                {active&&isPlaying&&(
-                  <div className="absolute inset-0 bg-black/55 rounded-lg flex items-center justify-center">
-                    <div className="flex items-end gap-0.5" style={{height:12}}>
-                      {["meq1","meq3","meq5"].map(cls=>(
-                        <div key={cls} className={cls} style={{width:2,backgroundColor:"#fbbf24",borderRadius:2,minHeight:2}} />
-                      ))}
-                    </div>
-                  </div>
-                )}
-              </div>
-              <div className="overflow-hidden flex-1">
-                <p className="text-xs font-semibold line-clamp-2 leading-snug text-white">
-                  {clip.title.replace(/&#39;/g,"'").replace(/&amp;/g,"&").replace(/&quot;/g,'"')}
-                </p>
-                <p className="text-[11px] text-amber-300/70 mt-1 truncate">
-                  {clip.channel.replace(/&#39;/g,"'").replace(/&amp;/g,"&")}
-                </p>
-                <div className="flex items-center gap-1.5 mt-0.5">
-                  {clip.isOfficial&&(
-                    <span className="text-[9px] bg-amber-500/20 text-amber-300 px-1.5 py-0.5 rounded-full inline-block">✓ Oficial</span>
-                  )}
-                  <span style={{...lvlStyle, fontSize:9, fontWeight:700, borderRadius:99, padding:"1px 7px", display:"inline-block"}}>{lvl}</span>
-                </div>
-              </div>
-            </button>
-          );
-        })}
-      </div>
-    </div>
+  const filtered = CATALOG.filter(c=>
+    selectedLevel ? c.level===selectedLevel.id && c.type===tab : false
   );
 
+  const embedSrc = selectedContent
+    ? selectedContent.type==="movie"
+      ? EMBED_MOVIE(selectedContent.tmdbId)
+      : EMBED_SERIES(selectedContent.tmdbId, selectedContent.season??1, selectedContent.episode??1)
+    : "";
+
+  function submitQuiz(){
+    if (!selectedContent||quizStatus!=="idle"||!quizInput.trim()) return;
+    const ok = quizInput.trim().toLowerCase()===selectedContent.challenge.answer.toLowerCase();
+    setQuizStatus(ok?"correct":"wrong");
+    setTimeout(()=>{setQuizStatus("idle");if(ok)setQuizInput("");},1500);
+  }
+
+  const levelColor = selectedLevel?.accent || "#a855f7";
+
+  /* ══════════════════════════════════════════════════════════════
+     RENDER
+  ══════════════════════════════════════════════════════════════ */
   return (
     <>
       <style>{ANIM}</style>
+      <div style={{display:"flex",flexDirection:"column",height:"100dvh",
+        background:"linear-gradient(160deg,#070614 0%,#130825 45%,#0a0415 100%)",
+        color:"#fff",fontFamily:"-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif",
+        paddingBottom:"env(safe-area-inset-bottom)"}}>
 
-      {/* Popup de palavra */}
-      {wordPopup && (
-        <>
-          <div className="fixed inset-0 z-[9998]" onClick={()=>setWordPopup(null)} />
-          <WordPopup
-            word={wordPopup.word}
-            pos={{x:wordPopup.x,y:wordPopup.y}}
-            onClose={()=>setWordPopup(null)}
-          />
-        </>
-      )}
-
-      {/* Drawer mobile — lista de filmes */}
-      {mobileListOpen && (
-        <div style={{position:"fixed",inset:0,zIndex:100,background:"rgba(0,0,0,.75)",backdropFilter:"blur(6px)"}}
-          onClick={()=>setMobileListOpen(false)}>
-          <div style={{position:"absolute",bottom:0,left:0,right:0,
-            background:"linear-gradient(160deg,#1a0800,#2d1200)",
-            borderRadius:"20px 20px 0 0",
-            padding:"16px 16px calc(16px + env(safe-area-inset-bottom))",
-            maxHeight:"78dvh",display:"flex",flexDirection:"column",gap:12}}
-            onClick={e=>e.stopPropagation()}>
-            <div style={{display:"flex",alignItems:"center",justifyContent:"space-between"}}>
-              <p style={{fontWeight:800,color:"#fff",fontSize:16,margin:0}}>🎬 Filmes</p>
-              <button onClick={()=>setMobileListOpen(false)}
-                style={{background:"rgba(245,158,11,.2)",border:"1px solid rgba(245,158,11,.3)",borderRadius:10,
-                  padding:"6px 14px",color:"#fcd34d",cursor:"pointer",fontSize:13,fontWeight:700}}>
-                ✕ Fechar
-              </button>
-            </div>
-            <div style={{flex:1,overflow:"hidden"}}>
-              <MovieList />
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Root — sem scroll */}
-      <div className="flex flex-col text-white"
-        style={{height:"100dvh",overflow:"hidden",
-          background:"linear-gradient(160deg,#0a0500 0%,#1c0a00 45%,#080300 100%)",
-          paddingBottom:"env(safe-area-inset-bottom)"}}>
-
-        {/* Header */}
-        <div style={{flexShrink:0,height:52,paddingTop:"env(safe-area-inset-top)",
-          background:"rgba(0,0,0,.4)",backdropFilter:"blur(20px)",
-          borderBottom:"1px solid rgba(245,158,11,.15)"}}>
-          <div style={{maxWidth:1400,margin:"0 auto",height:"100%",position:"relative",
-            display:"flex",alignItems:"center",justifyContent:"center",padding:"0 16px"}}>
-            <Link to="/lessons" style={{position:"absolute",left:16,display:"flex",alignItems:"center",
-              gap:6,color:"rgba(253,230,138,.7)",textDecoration:"none",fontSize:14,fontWeight:600}}
-              className="hover:text-white transition-colors">
-              <svg xmlns="http://www.w3.org/2000/svg" width={18} height={18} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7"/>
-              </svg>
-              <span className="hidden sm:inline">Voltar</span>
+        {/* ── Header ── */}
+        <div style={{flexShrink:0,paddingTop:"env(safe-area-inset-top)",
+          background:"rgba(0,0,0,.8)",backdropFilter:"blur(24px)",
+          borderBottom:"1px solid rgba(255,255,255,.06)"}}>
+          <div style={{height:52,display:"flex",alignItems:"center",padding:"0 12px",gap:10}}>
+            <Link to="/lessons" style={{display:"flex",alignItems:"center",justifyContent:"center",
+              width:38,height:38,borderRadius:"50%",flexShrink:0,
+              color:"rgba(255,255,255,.8)",textDecoration:"none",
+              background:"rgba(255,255,255,.09)",border:"1px solid rgba(255,255,255,.12)",
+              boxShadow:"0 2px 10px rgba(0,0,0,.4)"}}>
+              <ChevronLeft size={18} strokeWidth={2.5}/>
             </Link>
-            <div style={{display:"flex",alignItems:"center",gap:8}}>
-              <span style={{fontSize:18}}>🎬</span>
-              <h1 style={{fontSize:15,fontWeight:900,margin:0,letterSpacing:"-.3px"}}>Filmes · Inglês</h1>
+
+            <div style={{flex:1,display:"flex",alignItems:"center",gap:8}}>
+              <div style={{width:28,height:28,borderRadius:8,
+                background:"linear-gradient(135deg,#a855f7,#7c3aed)",
+                display:"flex",alignItems:"center",justifyContent:"center",
+                boxShadow:"0 2px 10px rgba(168,85,247,.4)",flexShrink:0}}>
+                <Film size={14} color="#fff" strokeWidth={2.5}/>
+              </div>
+              <span style={{fontSize:isMobile?13:14,fontWeight:900,letterSpacing:"-.3px"}}>
+                Filmes · Inglês
+              </span>
+              {selectedLevel&&(
+                <span style={{fontSize:10,fontWeight:700,padding:"2px 8px",borderRadius:50,
+                  background:`${selectedLevel.accent}20`,color:selectedLevel.accent,
+                  border:`1px solid ${selectedLevel.accent}40`}}>
+                  {selectedLevel.cefr}
+                </span>
+              )}
             </div>
-            <button className="lg:hidden" onClick={()=>setMobileListOpen(true)}
-              style={{position:"absolute",right:12,background:"rgba(245,158,11,.2)",
-                border:"1px solid rgba(245,158,11,.3)",borderRadius:10,
-                padding:"6px 12px",color:"#fcd34d",fontSize:12,fontWeight:700,cursor:"pointer"}}>
-              🎬 Lista
-            </button>
+
+            {selectedLevel&&selectedContent&&(
+              <button onClick={()=>setSelectedContent(null)}
+                style={{background:"rgba(255,255,255,.07)",border:"1px solid rgba(255,255,255,.12)",
+                  borderRadius:50,padding:"5px 12px",fontSize:11,fontWeight:700,
+                  color:"rgba(255,255,255,.7)",cursor:"pointer",fontFamily:"inherit",flexShrink:0}}>
+                ← Catálogo
+              </button>
+            )}
+            {selectedLevel&&!selectedContent&&(
+              <button onClick={()=>setSelectedLevel(null)}
+                style={{background:"rgba(255,255,255,.07)",border:"1px solid rgba(255,255,255,.12)",
+                  borderRadius:50,padding:"5px 12px",fontSize:11,fontWeight:700,
+                  color:"rgba(255,255,255,.7)",cursor:"pointer",fontFamily:"inherit",flexShrink:0}}>
+                ← Níveis
+              </button>
+            )}
           </div>
         </div>
 
-        {/* Main grid */}
-        <div style={{flex:1,overflow:"hidden",maxWidth:1400,margin:"0 auto",width:"100%",padding:"10px 12px 8px"}}>
-          <style>{`@media(min-width:1024px){.movie-grid{grid-template-columns:320px 1fr!important;}}`}</style>
-          <div className="movie-grid" style={{display:"grid",gridTemplateColumns:"1fr",gap:12,height:"100%",overflow:"hidden"}}>
+        {/* ── Conteúdo ── */}
+        <div style={{flex:1,overflow:"auto"}}>
 
-            {/* Lista (desktop esquerda) */}
-            <div className="hidden lg:flex flex-col" style={{overflow:"hidden",gap:8}}>
-              <MovieList />
+          {/* ── Selecção de Nível ── */}
+          {!selectedLevel && (
+            <div style={{maxWidth:600,margin:"0 auto",padding:"20px 16px 32px"}}>
+              <div style={{textAlign:"center",marginBottom:24}}>
+                <div style={{fontSize:48,marginBottom:10}}>🎬</div>
+                <h2 style={{margin:0,fontSize:"clamp(1.2rem,3vw,1.6rem)",fontWeight:900}}>
+                  Aprende Inglês com Filmes
+                </h2>
+                <p style={{margin:"8px 0 0",fontSize:13,color:"rgba(255,255,255,.4)"}}>
+                  Filmes e séries reais com legendas em inglês
+                </p>
+              </div>
+              <div style={{display:"flex",flexDirection:"column",gap:10}}>
+                {LEVEL_CFG.map(lv=>{
+                  const count = CATALOG.filter(c=>c.level===lv.id).length;
+                  return (
+                    <button key={lv.id} className="card-hover"
+                      onClick={()=>{setSelectedLevel(lv);setSelectedContent(null);}}
+                      style={{background:lv.bg,border:`1.5px solid ${lv.accent}35`,
+                        borderRadius:20,padding:"14px 18px",cursor:"pointer",textAlign:"left",
+                        color:"#fff",fontFamily:"inherit",display:"flex",alignItems:"center",gap:14,
+                        boxShadow:"0 4px 16px rgba(0,0,0,.35)",transition:"all .22s"}}>
+                      <div style={{width:44,height:44,borderRadius:12,
+                        background:`${lv.accent}20`,border:`1.5px solid ${lv.accent}40`,
+                        display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,
+                        boxShadow:`0 2px 12px ${lv.accent}25`}}>
+                        <lv.Icon size={20} color={lv.accent} strokeWidth={2}/>
+                      </div>
+                      <div style={{flex:1,minWidth:0}}>
+                        <p style={{margin:0,fontSize:15,fontWeight:900}}>
+                          {lv.name}
+                          <span style={{marginLeft:8,fontSize:10,fontWeight:700,
+                            color:lv.accent,background:`${lv.accent}18`,
+                            borderRadius:50,padding:"1px 7px"}}>{lv.cefr}</span>
+                        </p>
+                        <p style={{margin:"3px 0 0",fontSize:11,color:"rgba(255,255,255,.5)"}}>{lv.description}</p>
+                        <p style={{margin:"4px 0 0",fontSize:10,color:lv.accent}}>
+                          {count} títulos disponíveis
+                        </p>
+                      </div>
+                      <ChevronRight size={18} color={lv.accent} strokeWidth={2.5} style={{flexShrink:0,opacity:.6}}/>
+                    </button>
+                  );
+                })}
+              </div>
             </div>
+          )}
 
-            {/* Coluna principal */}
-            <div style={{display:"flex",flexDirection:"column",gap:10,overflow:"hidden",minWidth:0}}>
+          {/* ── Catálogo do nível ── */}
+          {selectedLevel && !selectedContent && (
+            <div style={{maxWidth:900,margin:"0 auto",padding:"16px"}}>
 
-              {/* Player */}
-              <div className={`flex-shrink-0 rounded-2xl overflow-hidden shadow-2xl bg-black relative ${isPlaying?"movie-glow":""}`}
-                style={{aspectRatio:"16/9",maxHeight:"min(42vh,480px)"}}>
-                <div id="mv-player-root" className="w-full h-full"
-                  style={{display:selected&&!vidError?"block":"none"}}/>
-
-                {selected&&vidError&&(
-                  <div style={{position:"absolute",inset:0,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:16,background:"#100500"}}>
-                    <span style={{fontSize:48}}>😔</span>
-                    <p style={{color:"rgba(255,255,255,.6)",fontSize:14,fontWeight:600,margin:0}}>Vídeo não disponível.</p>
-                    <button onClick={tryNext} style={{touchAction:"manipulation",background:"#d97706",border:"none",borderRadius:14,padding:"12px 24px",color:"#fff",fontWeight:700,fontSize:14,cursor:"pointer"}}>▶ Próxima cena</button>
-                  </div>
-                )}
-
-                {!selected&&(
-                  <div style={{position:"absolute",inset:0,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:12,color:"rgba(255,255,255,.2)"}}>
-                    <div style={{display:"flex",alignItems:"flex-end",gap:3,opacity:.35}}>
-                      {EQ_CLS.map((cls,i)=><div key={i} className={cls} style={{width:7,backgroundColor:EQ_COL[i],borderRadius:3,minHeight:3}}/>)}
-                    </div>
-                    <p style={{fontSize:15,fontWeight:600,margin:0}}>Escolhe uma cena</p>
-                  </div>
-                )}
+              {/* Tabs Filmes / Séries */}
+              <div style={{display:"flex",gap:4,marginBottom:16,
+                background:"rgba(255,255,255,.06)",borderRadius:50,padding:4,
+                width:"fit-content",border:"1px solid rgba(255,255,255,.1)"}}>
+                {([
+                  {t:"movie"  as const, Icon:Film,  label:"Filmes"},
+                  {t:"series" as const, Icon:Tv,    label:"Séries"},
+                ]).map(({t,Icon,label})=>(
+                  <button key={t} onClick={()=>setTab(t)}
+                    style={{background:tab===t?`linear-gradient(135deg,${levelColor}cc,${levelColor}88)`:"transparent",
+                      border:"none",borderRadius:50,padding:"7px 18px",
+                      display:"flex",alignItems:"center",gap:6,
+                      fontSize:12,fontWeight:700,color:tab===t?"#fff":"rgba(255,255,255,.45)",
+                      cursor:"pointer",fontFamily:"inherit",
+                      boxShadow:tab===t?"0 2px 10px rgba(0,0,0,.3)":"none",transition:"all .2s"}}>
+                    <Icon size={13} strokeWidth={2.5}/>{label}
+                  </button>
+                ))}
               </div>
 
-              {/* Now Playing */}
-              {selected&&!vidError&&(
-                <div style={{flexShrink:0}}>
-                  <NowPlayingBar clip={selected} isPlaying={isPlaying} ccOn={true}/>
+              {filtered.length===0 ? (
+                <div style={{textAlign:"center",padding:"48px 0",color:"rgba(255,255,255,.25)"}}>
+                  <Tv size={48} style={{marginBottom:12,opacity:.4}}/>
+                  <p style={{margin:0,fontSize:14}}>
+                    Sem {tab==="movie"?"filmes":"séries"} para este nível ainda.
+                  </p>
+                </div>
+              ) : (
+                <div style={{display:"grid",
+                  gridTemplateColumns:"repeat(auto-fill,minmax(150px,1fr))",
+                  gap:14}}>
+                  {filtered.map(c=>(
+                    <button key={c.tmdbId} className="card-hover"
+                      onClick={()=>setSelectedContent(c)}
+                      style={{background:"rgba(255,255,255,.04)",border:"1px solid rgba(255,255,255,.08)",
+                        borderRadius:16,overflow:"hidden",cursor:"pointer",
+                        textAlign:"left",color:"#fff",fontFamily:"inherit",padding:0,
+                        boxShadow:"0 4px 16px rgba(0,0,0,.3)",transition:"all .22s"}}>
+                      {/* Poster */}
+                      <div style={{position:"relative",paddingTop:"150%",background:"#1a0a30"}}>
+                        {!posterErrors.has(c.tmdbId) ? (
+                          <img src={`${TMDB_IMG}${c.poster}`} alt={c.title}
+                            onError={()=>setPosterErrors(s=>new Set([...s,c.tmdbId]))}
+                            style={{position:"absolute",inset:0,width:"100%",height:"100%",
+                              objectFit:"cover",display:"block"}}/>
+                        ) : (
+                          <div style={{position:"absolute",inset:0,display:"flex",
+                            flexDirection:"column",alignItems:"center",justifyContent:"center",
+                            gap:8,opacity:.4}}>
+                            <Film size={32} color={levelColor}/>
+                            <span style={{fontSize:11,color:levelColor,textAlign:"center",
+                              padding:"0 8px"}}>{c.title}</span>
+                          </div>
+                        )}
+                        {/* Badge tipo */}
+                        <div style={{position:"absolute",top:6,left:6,
+                          background:"rgba(0,0,0,.75)",borderRadius:50,
+                          padding:"2px 8px",fontSize:9,fontWeight:700,
+                          display:"flex",alignItems:"center",gap:3,backdropFilter:"blur(6px)"}}>
+                          {c.type==="series"?<Tv size={9}/>:<Film size={9}/>}
+                          {c.type==="series"?"Série":"Filme"}
+                        </div>
+                        {/* Overlay play */}
+                        <div style={{position:"absolute",inset:0,
+                          background:"linear-gradient(to top,rgba(0,0,0,.9) 0%,transparent 60%)",
+                          display:"flex",alignItems:"flex-end",padding:8}}>
+                          <div style={{width:32,height:32,borderRadius:"50%",
+                            background:levelColor,display:"flex",alignItems:"center",
+                            justifyContent:"center",boxShadow:`0 2px 10px ${levelColor}60`}}>
+                            <Play size={14} color="#000" strokeWidth={3} fill="#000"/>
+                          </div>
+                        </div>
+                      </div>
+                      {/* Info */}
+                      <div style={{padding:"10px 10px 12px"}}>
+                        <p style={{margin:0,fontSize:12,fontWeight:800,
+                          overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>
+                          {c.title}
+                        </p>
+                        <p style={{margin:"3px 0 0",fontSize:10,color:"rgba(255,255,255,.4)"}}>
+                          {c.year} · {c.genre}
+                        </p>
+                        <p style={{margin:"5px 0 0",fontSize:9,color:levelColor,
+                          lineHeight:1.4,overflow:"hidden",
+                          display:"-webkit-box",WebkitLineClamp:2,
+                          WebkitBoxOrient:"vertical" as any}}>
+                          {c.why}
+                        </p>
+                      </div>
+                    </button>
+                  ))}
                 </div>
               )}
+            </div>
+          )}
 
-              {/* SubtitleRiser — preenche todo o espaço restante */}
-              <div style={{flex:1,minHeight:0,overflow:"hidden"}}>
-                {transcript.length>0 ? (
-                  <SubtitleRiser
-                    lines={transcriptLines}
-                    active={liveSubIdx >= 0 ? liveSubIdx : 0}
-                    isPlaying={isPlaying}
-                    onWordClick={(word,e)=>setWordPopup({word,x:e.clientX,y:e.clientY})}
+          {/* ── Player ── */}
+          {selectedLevel && selectedContent && (
+            <div style={{display:"flex",flexDirection:isMobile?"column":"row",
+              height:isMobile?"auto":"calc(100dvh - 52px - env(safe-area-inset-top))",
+              overflow:isMobile?"auto":"hidden"}}>
+
+              {/* Coluna do player */}
+              <div style={{flex:isMobile?undefined:1,display:"flex",flexDirection:"column",
+                minWidth:0,overflow:"hidden"}}>
+
+                {/* Embed iframe */}
+                <div style={{flexShrink:0,aspectRatio:"16/9",background:"#000",
+                  maxHeight:isMobile?"56vw":"60vh"}}>
+                  <iframe key={selectedContent.tmdbId}
+                    src={embedSrc}
+                    width="100%" height="100%"
+                    allowFullScreen allow="autoplay; encrypted-media; picture-in-picture"
+                    style={{border:0,display:"block"}}
+                    title={selectedContent.title}
                   />
-                ) : (
-                  /* Box estiloso sempre visível — spinner dentro quando loading */
-                  <div style={{
-                    height:"100%",
-                    background:"linear-gradient(160deg,rgba(8,3,0,.99) 0%,rgba(38,15,2,.99) 50%,rgba(15,5,0,.99) 100%)",
-                    border:"1px solid rgba(245,158,11,.22)",
-                    borderRadius:20,
-                    overflow:"hidden",
-                    display:"flex",flexDirection:"column",
-                    alignItems:"center",justifyContent:"center",gap:14,
-                  }}>
-                    {transLoading && selected ? (
-                      <>
-                        <div style={{display:"flex",alignItems:"flex-end",gap:3}}>
-                          {EQ_CLS.map((cls,i)=>(
-                            <div key={i} className={cls} style={{width:5,backgroundColor:EQ_COL[i],borderRadius:3,minHeight:3}} />
-                          ))}
-                        </div>
-                        <span style={{fontSize:12,color:"rgba(245,158,11,.55)",fontWeight:600}}>A carregar legenda…</span>
-                      </>
-                    ) : selected ? (
-                      <>
-                        <span style={{fontSize:38,opacity:.35}}>🎬</span>
-                        <span style={{fontSize:13,color:"rgba(245,158,11,.35)",textAlign:"center",padding:"0 24px"}}>
-                          Legenda indisponível para este clip
-                        </span>
-                      </>
-                    ) : (
-                      <>
-                        <span style={{fontSize:38,opacity:.25}}>🎬</span>
-                        <span style={{fontSize:13,color:"rgba(245,158,11,.22)",textAlign:"center",padding:"0 24px"}}>
-                          Escolhe uma cena para ver a legenda
-                        </span>
-                      </>
-                    )}
+                </div>
+
+                {/* Info do filme */}
+                <div style={{flexShrink:0,padding:"12px 16px",
+                  background:"linear-gradient(180deg,rgba(0,0,0,.6) 0%,transparent 100%)",
+                  display:"flex",alignItems:"center",gap:12}}>
+                  {/* Poster pequeno */}
+                  <img src={`${TMDB_IMG}${selectedContent.poster}`} alt=""
+                    style={{width:42,height:62,borderRadius:6,objectFit:"cover",
+                      flexShrink:0,boxShadow:"0 4px 14px rgba(0,0,0,.6)"}}
+                    onError={e=>(e.currentTarget.style.display="none")}/>
+                  <div style={{flex:1,minWidth:0}}>
+                    <p style={{margin:0,fontSize:isMobile?14:16,fontWeight:900,
+                      overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>
+                      {selectedContent.title}
+                    </p>
+                    <p style={{margin:"2px 0 0",fontSize:11,color:levelColor,fontWeight:600}}>
+                      {selectedContent.year} · {selectedContent.genre}
+                      {selectedContent.type==="series"&&` · T${selectedContent.season}E${selectedContent.episode}`}
+                    </p>
+                    <p style={{margin:"4px 0 0",fontSize:11,color:"rgba(255,255,255,.45)",
+                      lineHeight:1.4,
+                      overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>
+                      💡 {selectedContent.why}
+                    </p>
                   </div>
-                )}
+                  <div style={{flexShrink:0,textAlign:"right"}}>
+                    <span style={{fontSize:10,fontWeight:700,padding:"3px 10px",borderRadius:50,
+                      background:`${levelColor}20`,color:levelColor,
+                      border:`1px solid ${levelColor}40`}}>
+                      {LEVEL_CFG[selectedContent.level-1]?.cefr}
+                    </span>
+                  </div>
+                </div>
               </div>
 
+              {/* Painel de aprendizagem */}
+              <div style={{width:isMobile?"100%":320,flexShrink:0,
+                display:"flex",flexDirection:"column",
+                background:"rgba(0,0,0,.45)",backdropFilter:"blur(16px)",
+                borderLeft:isMobile?"none":"1px solid rgba(255,255,255,.06)",
+                borderTop:isMobile?"1px solid rgba(255,255,255,.06)":"none",
+                overflow:"hidden"}}>
+
+                {/* Tabs do painel */}
+                <div style={{flexShrink:0,display:"flex",
+                  borderBottom:"1px solid rgba(255,255,255,.06)"}}>
+                  {([
+                    {t:"words" as const, Icon:BookOpen,    label:"Vocabulário"},
+                    {t:"notes" as const, Icon:Pencil,      label:"Notas"},
+                    {t:"quiz"  as const, Icon:ListChecks,  label:"Desafio"},
+                  ]).map(({t,Icon,label})=>(
+                    <button key={t} onClick={()=>setPanelTab(t)}
+                      style={{flex:1,background:"transparent",border:"none",
+                        borderBottom:panelTab===t?`2px solid ${levelColor}`:"2px solid transparent",
+                        padding:"10px 4px",cursor:"pointer",fontFamily:"inherit",
+                        display:"flex",alignItems:"center",justifyContent:"center",gap:5,
+                        fontSize:11,fontWeight:700,
+                        color:panelTab===t?"#fff":"rgba(255,255,255,.4)",
+                        transition:"all .2s"}}>
+                      <Icon size={13} strokeWidth={2.5}/>{!isMobile&&label}
+                      {isMobile&&<span style={{fontSize:9}}>{label}</span>}
+                    </button>
+                  ))}
+                </div>
+
+                {/* Conteúdo do painel */}
+                <div style={{flex:1,overflow:"auto",padding:14}}>
+
+                  {/* ── Vocabulário ── */}
+                  {panelTab==="words" && (
+                    <div style={{display:"flex",flexDirection:"column",gap:8}}>
+                      <p style={{margin:"0 0 10px",fontSize:11,color:"rgba(255,255,255,.4)"}}>
+                        Palavras-chave de <strong style={{color:"#fff"}}>{selectedContent.title}</strong>
+                      </p>
+                      {selectedContent.words.map((w,i)=>{
+                        const known=knownWords.has(w.word);
+                        return (
+                          <div key={i} style={{
+                            background:known?"rgba(29,185,84,.08)":"rgba(255,255,255,.04)",
+                            border:`1px solid ${known?"rgba(29,185,84,.2)":"rgba(255,255,255,.07)"}`,
+                            borderRadius:12,padding:"10px 12px",
+                            display:"flex",alignItems:"center",gap:10,
+                            transition:"all .2s"}}>
+                            <div style={{flex:1,minWidth:0}}>
+                              <p style={{margin:0,fontSize:13,fontWeight:800,
+                                color:known?"#4ade80":"#fff"}}>{w.word}</p>
+                              <p style={{margin:"2px 0 0",fontSize:11,
+                                color:"rgba(255,255,255,.4)"}}>{w.meaning}</p>
+                            </div>
+                            <button onClick={()=>setKnownWords(s=>{
+                              const n=new Set(s);
+                              known?n.delete(w.word):n.add(w.word); return n;
+                            })} style={{flexShrink:0,width:28,height:28,borderRadius:"50%",
+                              background:known?"rgba(29,185,84,.2)":"rgba(255,255,255,.06)",
+                              border:`1px solid ${known?"rgba(29,185,84,.4)":"rgba(255,255,255,.1)"}`,
+                              cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",
+                              transition:"all .2s"}}>
+                              {known
+                                ?<Check size={13} color="#4ade80" strokeWidth={2.5}/>
+                                :<Volume2 size={12} color="rgba(255,255,255,.4)" strokeWidth={2}/>}
+                            </button>
+                          </div>
+                        );
+                      })}
+                      {knownWords.size>0&&(
+                        <p style={{margin:"6px 0 0",fontSize:10,color:"#4ade80",textAlign:"center"}}>
+                          ✓ {knownWords.size} palavra{knownWords.size!==1?"s":""} aprendida{knownWords.size!==1?"s":""}!
+                        </p>
+                      )}
+                    </div>
+                  )}
+
+                  {/* ── Notas ── */}
+                  {panelTab==="notes" && (
+                    <div style={{display:"flex",flexDirection:"column",gap:10}}>
+                      <p style={{margin:"0 0 6px",fontSize:11,color:"rgba(255,255,255,.4)"}}>
+                        Escreve frases que ouviste ou palavras novas:
+                      </p>
+                      <textarea value={note} onChange={e=>setNote(e.target.value)}
+                        placeholder={"Ex: \"Life is like a box of chocolates\" — significa que a vida é imprevisível…"}
+                        style={{width:"100%",minHeight:180,background:"rgba(255,255,255,.05)",
+                          border:"1px solid rgba(255,255,255,.1)",borderRadius:12,
+                          padding:"10px 12px",fontSize:12,color:"#fff",
+                          outline:"none",fontFamily:"inherit",resize:"vertical",
+                          lineHeight:1.5,boxSizing:"border-box"}}
+                        onFocus={e=>e.target.style.borderColor=levelColor}
+                        onBlur={e=>e.target.style.borderColor="rgba(255,255,255,.1)"}
+                      />
+                      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+                        <span style={{fontSize:10,color:"rgba(255,255,255,.25)"}}>
+                          {note.length} caracteres
+                        </span>
+                        {note&&(
+                          <button onClick={()=>setNote("")}
+                            style={{background:"rgba(239,68,68,.1)",border:"1px solid rgba(239,68,68,.2)",
+                              borderRadius:50,padding:"4px 10px",fontSize:10,fontWeight:600,
+                              color:"#f87171",cursor:"pointer",fontFamily:"inherit",
+                              display:"flex",alignItems:"center",gap:4}}>
+                            <RotateCcw size={10} strokeWidth={2.5}/>Limpar
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* ── Quiz / Desafio ── */}
+                  {panelTab==="quiz" && (
+                    <div style={{display:"flex",flexDirection:"column",gap:12}}>
+                      <div style={{background:`${levelColor}10`,border:`1px solid ${levelColor}25`,
+                        borderRadius:12,padding:"12px 14px"}}>
+                        <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:8}}>
+                          <Lightbulb size={14} color={levelColor} strokeWidth={2.5}/>
+                          <span style={{fontSize:11,fontWeight:700,color:levelColor}}>Desafio da Cena</span>
+                        </div>
+                        <p style={{margin:0,fontSize:12,color:"rgba(255,255,255,.6)",lineHeight:1.5}}>
+                          Completa a frase famosa de{" "}
+                          <strong style={{color:"#fff"}}>{selectedContent.title}</strong>:
+                        </p>
+                      </div>
+
+                      {/* Frase com lacuna */}
+                      <div style={{background:"rgba(0,0,0,.3)",borderRadius:12,padding:"14px",
+                        fontSize:14,fontWeight:700,lineHeight:2,textAlign:"center",
+                        border:"1px solid rgba(255,255,255,.08)"}}>
+                        {selectedContent.challenge.phrase.replace(
+                          selectedContent.challenge.blank,
+                          "______"
+                        )}
+                      </div>
+
+                      {/* Input */}
+                      <div style={{display:"flex",gap:8}}>
+                        <input value={quizInput}
+                          onChange={e=>setQuizInput(e.target.value)}
+                          onKeyDown={e=>{if(e.key==="Enter")submitQuiz();}}
+                          placeholder="A tua resposta…"
+                          disabled={quizStatus!=="idle"}
+                          style={{flex:1,background:"rgba(255,255,255,.06)",
+                            border:`2px solid ${quizStatus==="correct"?"#4ade80":quizStatus==="wrong"?"#f87171":"rgba(255,255,255,.1)"}`,
+                            borderRadius:50,padding:"8px 14px",fontSize:13,color:"#fff",
+                            outline:"none",fontFamily:"inherit",transition:"border-color .2s"}}
+                          onFocus={e=>{ if(quizStatus==="idle") e.target.style.borderColor=levelColor; }}
+                          onBlur={e=>{ if(quizStatus==="idle") e.target.style.borderColor="rgba(255,255,255,.1)"; }}
+                        />
+                        <button onClick={submitQuiz}
+                          disabled={!quizInput.trim()||quizStatus!=="idle"}
+                          style={{background:`linear-gradient(135deg,${levelColor},${levelColor}88)`,
+                            border:"none",borderRadius:50,padding:"0 16px",
+                            fontSize:13,fontWeight:800,color:"#000",cursor:"pointer",
+                            opacity:(!quizInput.trim()||quizStatus!=="idle")?.4:1,
+                            boxShadow:`0 3px 12px ${levelColor}40`,flexShrink:0}}>
+                          OK
+                        </button>
+                      </div>
+
+                      {/* Feedback */}
+                      {quizStatus==="correct"&&(
+                        <div className="fade-up" style={{display:"flex",alignItems:"center",gap:8,
+                          background:"rgba(29,185,84,.12)",border:"1px solid rgba(29,185,84,.25)",
+                          borderRadius:12,padding:"10px 14px"}}>
+                          <Check size={16} color="#4ade80" strokeWidth={2.5}/>
+                          <p style={{margin:0,fontSize:12,color:"#4ade80",fontWeight:700}}>
+                            Correto! 🎉 Excelente!
+                          </p>
+                        </div>
+                      )}
+                      {quizStatus==="wrong"&&(
+                        <div className="fade-up" style={{display:"flex",alignItems:"center",gap:8,
+                          background:"rgba(239,68,68,.1)",border:"1px solid rgba(239,68,68,.2)",
+                          borderRadius:12,padding:"10px 14px"}}>
+                          <X size={16} color="#f87171" strokeWidth={2.5}/>
+                          <p style={{margin:0,fontSize:12,color:"#fca5a5"}}>
+                            A resposta é: <strong style={{color:"#fff"}}>
+                              {selectedContent.challenge.answer}
+                            </strong>
+                          </p>
+                        </div>
+                      )}
+
+                      <div style={{marginTop:4,padding:"10px 14px",
+                        background:"rgba(255,255,255,.03)",borderRadius:12,
+                        border:"1px solid rgba(255,255,255,.06)"}}>
+                        <p style={{margin:"0 0 4px",fontSize:10,fontWeight:700,
+                          color:"rgba(255,255,255,.3)",letterSpacing:".06em"}}>DICA DE APRENDIZAGEM</p>
+                        <p style={{margin:0,fontSize:11,color:"rgba(255,255,255,.5)",lineHeight:1.5}}>
+                          {LEVEL_CFG[selectedContent.level-1]?.description}
+                        </p>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
             </div>
-          </div>
+          )}
         </div>
       </div>
     </>

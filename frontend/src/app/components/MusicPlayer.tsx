@@ -53,7 +53,7 @@ const ANIM_STYLE = `
 /* ── Tipos ────────────────────────────────────────────────────────── */
 interface Track {
   id: string; title: string; artist: string; thumbnail: string;
-  previewUrl: string | null; albumName: string;
+  previewUrl: string | null; albumName: string; lastfmUrl?: string;
 }
 type Difficulty = "normal" | "hard" | "learned";
 
@@ -359,19 +359,20 @@ export function MusicPlayer() {
     setLoading(true); setError(""); setResults([]);
     try {
       const res  = await fetch(`${BACKEND}/api/spotify/search?q=${encodeURIComponent(raw)}`);
-      if (!res.ok) throw new Error("Erro ao pesquisar no Spotify");
+      if (!res.ok) throw new Error("Erro ao pesquisar músicas");
       const data = await res.json();
       const tracks: Track[] = (data.tracks?.items || []).map((t: any) => ({
         id:         t.id,
         title:      t.name,
         artist:     t.artists.map((a: any) => a.name).join(", "),
-        thumbnail:  t.album?.images?.[1]?.url || t.album?.images?.[0]?.url || "",
+        thumbnail:  t.album?.images?.[2]?.url || t.album?.images?.[3]?.url || t.album?.images?.[1]?.url || t.album?.images?.[0]?.url || "",
         previewUrl: t.preview_url ?? null,
         albumName:  t.album?.name || "",
+        lastfmUrl:  t.external_urls?.spotify || "",
       }));
       const top = tracks.slice(0, 12);
       setResults(top);
-      if (!top.length) setError("Nenhuma música encontrada no Spotify.");
+      if (!top.length) setError("Nenhuma música encontrada.");
       else if (autoSelectRef.current && top[0]) {
         selectTrack(top[0]);
         autoSelectRef.current = false;
@@ -601,25 +602,55 @@ export function MusicPlayer() {
             {/* Coluna principal */}
             <div style={{display:"flex",flexDirection:"column",gap:10,overflow:"hidden",minWidth:0}}>
 
-              {/* Spotify Embed */}
+              {/* Card da música seleccionada */}
               <div style={{flexShrink:0}}>
                 {selected ? (
-                  <div style={{borderRadius:16,overflow:"hidden",boxShadow:"0 0 30px rgba(109,40,217,.2)"}}>
-                    <iframe
-                      key={selected.id}
-                      src={`https://open.spotify.com/embed/track/${selected.id}?utm_source=generator&theme=0`}
-                      width="100%"
-                      height="152"
-                      allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"
-                      loading="lazy"
-                      style={{border:0,display:"block"}}
-                    />
+                  <div style={{
+                    borderRadius:16,overflow:"hidden",
+                    background:"linear-gradient(135deg,rgba(30,8,70,.95),rgba(12,4,45,.95))",
+                    border:"1px solid rgba(168,85,247,.3)",
+                    boxShadow:"0 0 30px rgba(109,40,217,.2)",
+                    display:"flex",alignItems:"center",gap:14,padding:"14px 16px",
+                  }}>
+                    {/* Capa */}
+                    {selected.thumbnail ? (
+                      <img src={selected.thumbnail} alt=""
+                        style={{width:72,height:72,borderRadius:10,objectFit:"cover",flexShrink:0,
+                          boxShadow:"0 4px 20px rgba(0,0,0,.5)"}} />
+                    ) : (
+                      <div style={{width:72,height:72,borderRadius:10,background:"rgba(168,85,247,.15)",
+                        display:"flex",alignItems:"center",justifyContent:"center",fontSize:28,flexShrink:0}}>🎵</div>
+                    )}
+                    {/* Info */}
+                    <div style={{flex:1,minWidth:0}}>
+                      <p style={{margin:0,fontWeight:800,fontSize:"clamp(.9rem,2.5vw,1.1rem)",
+                        color:"#fff",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>
+                        {selected.title}
+                      </p>
+                      <p style={{margin:"3px 0 0",fontSize:13,color:"rgba(196,181,253,.75)",
+                        overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>
+                        {selected.artist}
+                      </p>
+                      {selected.lastfmUrl && (
+                        <a href={selected.lastfmUrl} target="_blank" rel="noopener noreferrer"
+                          style={{display:"inline-block",marginTop:8,fontSize:11,fontWeight:700,
+                            color:"#e9d5ff",background:"rgba(168,85,247,.2)",
+                            border:"1px solid rgba(168,85,247,.3)",borderRadius:99,
+                            padding:"3px 12px",textDecoration:"none"}}>
+                          🎵 Ouvir no Last.fm
+                        </a>
+                      )}
+                    </div>
+                    {/* Eq animado */}
+                    <div style={{flexShrink:0}}>
+                      <Equalizer active={isPlaying} size={32} />
+                    </div>
                   </div>
                 ) : (
                   <div style={{
-                    height:152,borderRadius:16,
-                    background:"rgba(168,85,247,.06)",
-                    border:"1px solid rgba(168,85,247,.15)",
+                    height:100,borderRadius:16,
+                    background:"rgba(168,85,247,.04)",
+                    border:"1px solid rgba(168,85,247,.12)",
                     display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",
                     gap:10,color:"rgba(168,85,247,.25)",
                   }}>

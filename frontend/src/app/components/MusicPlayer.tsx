@@ -5,6 +5,11 @@
 
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import { Link } from "react-router";
+import {
+  Mic2, BookOpen, Music2, ChevronLeft, Search, List, Play,
+  CheckCircle2, XCircle, SkipForward, ChevronRight, Layers,
+  Star, Zap, Trophy, BookMarked, Sprout, AlignLeft,
+} from "lucide-react";
 
 declare global {
   interface Window { YT: any; onYouTubeIframeAPIReady?: () => void; }
@@ -54,6 +59,8 @@ const BACKEND   = import.meta.env.VITE_API_URL || "https://ngadalearn-api.onrend
 const EQ_CLS    = ["eq1","eq2","eq3","eq4","eq5"];
 
 /* ── Níveis de aprendizagem ──────────────────────────────────────── */
+const LEVEL_ICONS = [Sprout, BookMarked, Layers, Zap, Trophy];
+
 const LEVELS: LevelConfig[] = [
   {
     id:1, name:"Iniciante", cefr:"A1",
@@ -328,56 +335,61 @@ function LevelSelect({onSelect}:{onSelect:(l:LevelConfig)=>void}) {
 
       {/* Cards de nível */}
       <div style={{display:"flex",flexDirection:"column",gap:10}}>
-        {LEVELS.map(lv=>(
+        {LEVELS.map((lv,i)=>{
+          const LvIcon = LEVEL_ICONS[i];
+          return (
           <button key={lv.id} onClick={()=>onSelect(lv)}
             onMouseEnter={()=>setHov(lv.id)} onMouseLeave={()=>setHov(null)}
             style={{
               background:hov===lv.id?lv.bg.replace(".95","1"):lv.bg,
-              border:`1.5px solid ${lv.accent}30`,
+              border:`1.5px solid ${lv.accent}35`,
               borderRadius:20,padding:"14px 18px",cursor:"pointer",
               textAlign:"left",color:"#fff",fontFamily:"inherit",
               display:"flex",alignItems:"center",gap:14,
               boxShadow:hov===lv.id
-                ?`0 8px 32px ${lv.accent}30, 0 0 0 1px ${lv.accent}50`
+                ?`0 10px 36px ${lv.accent}35, 0 0 0 1px ${lv.accent}50`
                 :"0 4px 16px rgba(0,0,0,.3)",
               transform:hov===lv.id?"translateY(-2px) scale(1.01)":"none",
               transition:"all .22s cubic-bezier(.34,1.56,.64,1)",
             }}>
-            {/* Emoji + CEFR */}
+            {/* Ícone SVG + CEFR */}
             <div style={{flexShrink:0,display:"flex",flexDirection:"column",
-              alignItems:"center",gap:2,width:48}}>
-              <span style={{fontSize:28}}>{lv.emoji}</span>
-              <span style={{fontSize:9,fontWeight:900,letterSpacing:".1em",
-                color:lv.accent,background:`${lv.accent}20`,
-                borderRadius:50,padding:"1px 6px"}}>{lv.cefr}</span>
+              alignItems:"center",gap:4,width:44}}>
+              <div style={{width:40,height:40,borderRadius:12,
+                background:`${lv.accent}20`,border:`1.5px solid ${lv.accent}40`,
+                display:"flex",alignItems:"center",justifyContent:"center",
+                boxShadow:`0 2px 12px ${lv.accent}25`}}>
+                <LvIcon size={20} color={lv.accent} strokeWidth={2}/>
+              </div>
+              <span style={{fontSize:9,fontWeight:900,letterSpacing:".08em",
+                color:lv.accent,background:`${lv.accent}18`,
+                borderRadius:50,padding:"1px 7px"}}>{lv.cefr}</span>
             </div>
 
             {/* Info */}
             <div style={{flex:1,minWidth:0}}>
-              <p style={{margin:0,fontSize:16,fontWeight:900,letterSpacing:"-.2px"}}>
+              <p style={{margin:0,fontSize:15,fontWeight:900,letterSpacing:"-.2px"}}>
                 {lv.name}
               </p>
-              <p style={{margin:"3px 0 0",fontSize:11,color:"rgba(255,255,255,.55)",
+              <p style={{margin:"3px 0 0",fontSize:11,color:"rgba(255,255,255,.5)",
                 lineHeight:1.4}}>{lv.description}</p>
-              {/* Tips preview */}
-              <div style={{display:"flex",gap:5,marginTop:7,flexWrap:"wrap"}}>
-                {lv.tips.slice(0,2).map((t,i)=>(
-                  <span key={i} style={{fontSize:9,fontWeight:600,
-                    color:lv.accent,background:`${lv.accent}18`,
-                    borderRadius:50,padding:"2px 8px"}}>
+              <div style={{display:"flex",gap:5,marginTop:6,flexWrap:"wrap"}}>
+                {lv.tips.slice(0,2).map((t,ti)=>(
+                  <span key={ti} style={{fontSize:9,fontWeight:600,
+                    color:lv.accent,background:`${lv.accent}15`,
+                    borderRadius:50,padding:"2px 8px",border:`1px solid ${lv.accent}25`}}>
                     {t}
                   </span>
                 ))}
               </div>
             </div>
 
-            {/* Seta */}
-            <svg width={18} height={18} fill="none" viewBox="0 0 24 24"
-              stroke={lv.accent} strokeWidth={2.5} style={{flexShrink:0,opacity:.7}}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7"/>
-            </svg>
+            {/* Seta Lucide */}
+            <ChevronRight size={18} color={lv.accent} strokeWidth={2.5}
+              style={{flexShrink:0,opacity:hov===lv.id?1:.5,transition:"opacity .2s"}}/>
           </button>
-        ))}
+          );
+        })}
       </div>
 
       <p style={{textAlign:"center",fontSize:11,color:"rgba(255,255,255,.2)",
@@ -405,10 +417,8 @@ function TrackList({query,setQuery,loading,error,results,selected,isPlaying,sear
       <div style={{padding:"12px 10px 8px",flexShrink:0}}>
         <form onSubmit={e=>{e.preventDefault();searchTracks(query);}} style={{display:"flex",gap:8,marginBottom:8}}>
           <div style={{flex:1,position:"relative"}}>
-            <svg style={{position:"absolute",left:10,top:"50%",transform:"translateY(-50%)",
-              opacity:.45,pointerEvents:"none"}} width={14} height={14} fill="none" viewBox="0 0 24 24" stroke="white" strokeWidth={2.5}>
-              <circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/>
-            </svg>
+            <Search size={14} strokeWidth={2.5} color="rgba(255,255,255,.45)"
+              style={{position:"absolute",left:12,top:"50%",transform:"translateY(-50%)",pointerEvents:"none"}}/>
             <input value={query} onChange={e=>setQuery(e.target.value)} placeholder="Pesquisar músicas…"
               style={{width:"100%",background:"rgba(255,255,255,.08)",border:"1px solid rgba(255,255,255,.1)",
                 borderRadius:50,padding:"9px 12px 9px 34px",fontSize:13,color:"#fff",outline:"none",
@@ -743,57 +753,52 @@ export function MusicPlayer() {
             <Link to="/lessons" style={{
               display:"flex",alignItems:"center",justifyContent:"center",
               width:38,height:38,borderRadius:"50%",flexShrink:0,
-              color:"rgba(255,255,255,.75)",textDecoration:"none",
+              color:"rgba(255,255,255,.8)",textDecoration:"none",
               background:"rgba(255,255,255,.09)",border:"1px solid rgba(255,255,255,.12)",
-              boxShadow:"0 2px 8px rgba(0,0,0,.3)"}}>
-              <svg width={15} height={15} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7"/>
-              </svg>
+              boxShadow:"0 2px 10px rgba(0,0,0,.4)"}}>
+              <ChevronLeft size={18} strokeWidth={2.5}/>
             </Link>
 
-            {/* Título — só visível em desktop */}
-            <div className="hidden lg:flex" style={{alignItems:"center",gap:6,flex:1,
-              justifyContent:"center"}}>
-              <svg width={16} height={16} viewBox="0 0 24 24" fill="#1DB954">
-                <path d="M12 3v10.55A4 4 0 1 0 14 17V7h4V3z"/>
-              </svg>
-              <span style={{fontSize:14,fontWeight:900,letterSpacing:"-.2px"}}>Música · Inglês</span>
+            {/* Título */}
+            <div style={{flex:1,display:"flex",alignItems:"center",gap:6,
+              justifyContent:isMobile?"flex-start":"center"}}>
+              <div style={{width:28,height:28,borderRadius:8,
+                background:"linear-gradient(135deg,#1DB954,#16a34a)",
+                display:"flex",alignItems:"center",justifyContent:"center",
+                boxShadow:"0 2px 10px rgba(29,185,84,.4)",flexShrink:0}}>
+                <Music2 size={14} color="#000" strokeWidth={2.5}/>
+              </div>
+              <span style={{fontSize:isMobile?13:14,fontWeight:900,letterSpacing:"-.3px",
+                whiteSpace:"nowrap"}}>Música · Inglês</span>
+              {selectedLevel&&(
+                <span style={{fontSize:10,fontWeight:700,padding:"2px 8px",borderRadius:50,
+                  background:`${selectedLevel.accent}20`,color:selectedLevel.accent,
+                  border:`1px solid ${selectedLevel.accent}40`,whiteSpace:"nowrap"}}>
+                  {selectedLevel.cefr}
+                </span>
+              )}
             </div>
 
-            {/* Título mobile — simples, sem absoluto */}
-            {isMobile && (
-              <div style={{flex:1,display:"flex",alignItems:"center",gap:5}}>
-                <svg width={14} height={14} viewBox="0 0 24 24" fill="#1DB954">
-                  <path d="M12 3v10.55A4 4 0 1 0 14 17V7h4V3z"/>
-                </svg>
-                <span style={{fontSize:13,fontWeight:800,letterSpacing:"-.2px"}}>Música · Inglês</span>
-              </div>
-            )}
-
-            {/* Tabs mobile — só aparecem quando tem nível selecionado */}
+            {/* Tabs mobile */}
             {isMobile && selectedLevel && (
               <div style={{flexShrink:0,display:"flex",gap:2,
-                background:"rgba(255,255,255,.07)",borderRadius:50,padding:3,
+                background:"rgba(255,255,255,.06)",borderRadius:50,padding:3,
                 border:"1px solid rgba(255,255,255,.1)",
                 boxShadow:"0 2px 10px rgba(0,0,0,.3)"}}>
                 {([
-                  {tab:"list" as const, label:"≡"},
-                  {tab:"player" as const, label:"▶"},
-                ]).map(({tab,label})=>(
+                  {tab:"list" as const, Icon:AlignLeft},
+                  {tab:"player" as const, Icon:Play},
+                ]).map(({tab,Icon})=>(
                   <button key={tab} onClick={()=>setMobileTab(tab)}
                     style={{
-                      background:mobileTab===tab
-                        ?"linear-gradient(135deg,#1DB954,#16a34a)"
-                        :"transparent",
-                      border:"none",borderRadius:50,
-                      width:34,height:34,
-                      fontSize:15,fontWeight:900,
+                      background:mobileTab===tab?"linear-gradient(135deg,#1DB954,#16a34a)":"transparent",
+                      border:"none",borderRadius:50,width:34,height:34,
                       color:mobileTab===tab?"#000":"rgba(255,255,255,.5)",
-                      cursor:"pointer",fontFamily:"inherit",transition:"all .2s",
+                      cursor:"pointer",transition:"all .2s",
                       boxShadow:mobileTab===tab?"0 2px 8px rgba(29,185,84,.4)":"none",
                       display:"flex",alignItems:"center",justifyContent:"center",
                     }}>
-                    {label}
+                    <Icon size={14} strokeWidth={2.5}/>
                   </button>
                 ))}
               </div>
@@ -898,18 +903,26 @@ export function MusicPlayer() {
                   </div>
                   {/* Modo de aprendizagem */}
                   <div style={{flexShrink:0,display:"flex",gap:3,
-                    background:"rgba(0,0,0,.3)",borderRadius:18,padding:3,
-                    border:"1px solid rgba(255,255,255,.08)"}}>
-                    {(["karaoke","quiz"] as LearnMode[]).map(m=>{
+                    background:"rgba(0,0,0,.35)",borderRadius:50,padding:4,
+                    border:"1px solid rgba(255,255,255,.08)",
+                    boxShadow:"inset 0 1px 3px rgba(0,0,0,.4)"}}>
+                    {([
+                      {m:"karaoke" as LearnMode, Icon:Mic2,   label:"Karaoke", grad:"linear-gradient(135deg,#1DB954,#16a34a)", glow:"rgba(29,185,84,.4)"},
+                      {m:"quiz"    as LearnMode, Icon:BookOpen, label:"Quiz",   grad:"linear-gradient(135deg,#7c3aed,#6d28d9)", glow:"rgba(124,58,237,.4)"},
+                    ]).map(({m,Icon,label,grad,glow})=>{
                       const act=learnMode===m;
                       return (
                         <button key={m} onClick={()=>setLearnMode(m)}
-                          style={{background:act?(m==="quiz"?"linear-gradient(135deg,#7c3aed,#6d28d9)":"linear-gradient(135deg,#1DB954,#16a34a)"):"transparent",
-                            border:"none",borderRadius:15,padding:isMobile?"4px 8px":"5px 11px",
-                            fontSize:isMobile?10:11,fontWeight:700,cursor:"pointer",fontFamily:"inherit",
-                            color:act?"#fff":"rgba(255,255,255,.45)",
-                            boxShadow:act?"0 2px 8px rgba(0,0,0,.4)":"none",transition:"all .2s"}}>
-                          {m==="karaoke"?"🎤":"📝"}{!isMobile&&(m==="karaoke"?" Karaoke":" Quiz")}
+                          style={{background:act?grad:"transparent",
+                            border:"none",borderRadius:50,
+                            padding:isMobile?"6px 10px":"6px 14px",
+                            display:"flex",alignItems:"center",gap:5,
+                            fontSize:11,fontWeight:700,cursor:"pointer",fontFamily:"inherit",
+                            color:act?"#fff":"rgba(255,255,255,.4)",
+                            boxShadow:act?`0 3px 12px ${glow}`:"none",
+                            transition:"all .22s"}}>
+                          <Icon size={13} strokeWidth={2.5}/>
+                          {!isMobile&&<span>{label}</span>}
                         </button>
                       );
                     })}
@@ -941,9 +954,13 @@ export function MusicPlayer() {
                     borderRadius:10}}>
                     <span style={{fontSize:12,fontWeight:700,color:"#a78bfa"}}>📝 Quiz</span>
                     <div style={{flex:1}}/>
-                    <span style={{fontSize:12,color:"#4ade80",fontWeight:700}}>✓ {score}</span>
+                    <span style={{fontSize:12,color:"#4ade80",fontWeight:700,display:"flex",alignItems:"center",gap:3}}>
+                      <CheckCircle2 size={12} strokeWidth={2.5}/> {score}
+                    </span>
                     <span style={{fontSize:11,color:"rgba(255,255,255,.2)"}}>|</span>
-                    <span style={{fontSize:12,color:"#f87171",fontWeight:700}}>✗ {misses}</span>
+                    <span style={{fontSize:12,color:"#f87171",fontWeight:700,display:"flex",alignItems:"center",gap:3}}>
+                      <XCircle size={12} strokeWidth={2.5}/> {misses}
+                    </span>
                   </div>
                 )}
 
@@ -1001,25 +1018,33 @@ export function MusicPlayer() {
                                 border:"none",borderRadius:50,padding:"9px 22px",fontSize:13,
                                 fontWeight:800,color:"#fff",cursor:"pointer",fontFamily:"inherit",
                                 opacity:(!quizInput.trim()||quizStatus!=="idle")?.4:1,
-                                boxShadow:"0 4px 14px rgba(124,58,237,.4)",transition:"all .2s"}}>
-                              Confirmar ↵
+                                boxShadow:"0 4px 14px rgba(124,58,237,.4)",transition:"all .2s",
+                                display:"flex",alignItems:"center",gap:6}}>
+                              <CheckCircle2 size={15} strokeWidth={2.5}/>
+                              Confirmar
                             </button>
                             <button onClick={()=>{setActiveLine(p=>Math.min(lines.length-1,p+1));setQuizInput("");setQuizStatus("idle");}}
                               style={{background:"rgba(255,255,255,.06)",
                                 border:"1px solid rgba(255,255,255,.1)",
-                                borderRadius:20,padding:"8px 16px",fontSize:12,
-                                fontWeight:600,color:"rgba(255,255,255,.6)",
-                                cursor:"pointer",fontFamily:"inherit",transition:"all .2s"}}>
-                              Saltar →
+                                borderRadius:50,padding:"9px 16px",fontSize:12,
+                                fontWeight:600,color:"rgba(255,255,255,.55)",
+                                cursor:"pointer",fontFamily:"inherit",transition:"all .2s",
+                                display:"flex",alignItems:"center",gap:5}}>
+                              <SkipForward size={13} strokeWidth={2.5}/>
+                              Saltar
                             </button>
                           </div>
 
                           {/* Dica após errar */}
                           {quizStatus==="wrong"&&quizWord&&(
-                            <p className="fade-up" style={{margin:0,fontSize:12,
-                              color:"#fca5a5",textAlign:"center"}}>
-                              ❌ A palavra era: <strong style={{color:"#f87171"}}>{quizWord.word}</strong>
-                            </p>
+                            <div className="fade-up" style={{display:"flex",alignItems:"center",
+                              gap:6,background:"rgba(239,68,68,.12)",borderRadius:12,
+                              padding:"8px 14px",border:"1px solid rgba(239,68,68,.2)"}}>
+                              <XCircle size={14} color="#f87171" strokeWidth={2.5}/>
+                              <p style={{margin:0,fontSize:12,color:"#fca5a5"}}>
+                                A palavra era: <strong style={{color:"#fff"}}>{quizWord.word}</strong>
+                              </p>
+                            </div>
                           )}
                         </div>
 

@@ -720,7 +720,6 @@ export function LandingPage() {
           {/* Linha base */}
           <div style={{ borderTop: "1px solid rgba(255,255,255,.06)", paddingTop: 24, display: "flex", flexWrap: "wrap", gap: 8, justifyContent: "space-between", alignItems: "center" }}>
             <p style={{ fontSize: 12, color: "rgba(255,255,255,.18)", margin: 0 }}>© 2026 NgadaLearn. Todos os direitos reservados.</p>
-            <p style={{ fontSize: 12, color: "rgba(255,255,255,.15)", margin: 0 }}>Feito com ❤️ em Portugal</p>
           </div>
         </div>
       </footer>

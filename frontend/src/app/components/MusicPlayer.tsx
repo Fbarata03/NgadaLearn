@@ -3,7 +3,7 @@
    Last.fm search · YouTube audio · Karaoke lyrics
    ════════════════════════════════════════════════════════════════════ */
 
-import { useState, useEffect, useRef, useCallback } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import { Link } from "react-router";
 
 /* ── CSS global ──────────────────────────────────────────────────── */
@@ -187,6 +187,108 @@ function LyricsRiser({ lines, active, isPlaying, onNext, onPrev }: {
 }
 
 /* ════════════════════════════════════════════════════════════════════
+   TRACK LIST — fora do MusicPlayer para não perder foco ao digitar
+   ════════════════════════════════════════════════════════════════════ */
+interface TrackListProps {
+  query: string; setQuery: (q:string)=>void;
+  loading: boolean; error: string;
+  results: Track[]; selected: Track|null; isPlaying: boolean;
+  searchTracks: (q:string)=>void;
+  selectTrack: (t:Track)=>void;
+  autoSelectRef: React.MutableRefObject<boolean>;
+}
+
+function TrackList({ query, setQuery, loading, error, results, selected,
+  isPlaying, searchTracks, selectTrack, autoSelectRef }: TrackListProps) {
+  return (
+    <div style={{display:"flex",flexDirection:"column",height:"100%"}}>
+      {/* Search */}
+      <div style={{padding:"12px 12px 8px",flexShrink:0}}>
+        <form onSubmit={e=>{e.preventDefault();searchTracks(query);}}
+          style={{display:"flex",gap:8,marginBottom:8}}>
+          <div style={{flex:1,position:"relative"}}>
+            <svg style={{position:"absolute",left:10,top:"50%",transform:"translateY(-50%)",
+              opacity:.5,pointerEvents:"none"}} width={14} height={14} fill="none" viewBox="0 0 24 24" stroke="white" strokeWidth={2.5}>
+              <circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/>
+            </svg>
+            <input
+              value={query}
+              onChange={e=>setQuery(e.target.value)}
+              placeholder="O que queres ouvir?"
+              style={{width:"100%",background:"#3E3E3E",border:"none",borderRadius:20,
+                padding:"9px 12px 9px 32px",fontSize:13,color:"#fff",outline:"none",
+                fontFamily:"inherit",boxSizing:"border-box"}}
+            />
+          </div>
+          <button type="submit" disabled={loading}
+            style={{background:"#1DB954",border:"none",borderRadius:20,padding:"0 16px",
+              color:"#000",fontWeight:800,fontSize:13,cursor:"pointer",flexShrink:0,
+              opacity:loading?.6:1,transition:"opacity .2s"}}>
+            {loading?"…":"Ir"}
+          </button>
+        </form>
+        <div style={{display:"flex",flexWrap:"wrap",gap:6}}>
+          {SUGGESTED.map(s=>(
+            <button key={s} type="button"
+              onClick={()=>{setQuery(s);autoSelectRef.current=true;searchTracks(s);}}
+              style={{background:"rgba(255,255,255,.08)",border:"none",borderRadius:20,padding:"5px 12px",
+                fontSize:11,color:"rgba(255,255,255,.7)",cursor:"pointer",fontFamily:"inherit"}}>
+              {s}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {error && (
+        <div style={{margin:"0 12px 8px",padding:"8px 12px",background:"rgba(220,38,38,.15)",
+          border:"1px solid rgba(220,38,38,.3)",borderRadius:8,fontSize:12,color:"#fca5a5"}}>
+          ⚠️ {error}
+        </div>
+      )}
+
+      <div style={{flex:1,overflowY:"auto",padding:"0 8px 8px"}}>
+        {loading && (
+          <div style={{display:"flex",flexDirection:"column",alignItems:"center",
+            justifyContent:"center",padding:"32px 0",gap:12}}>
+            <div style={{display:"flex",alignItems:"flex-end",gap:2}}>
+              {EQ_CLS.map(c=><div key={c} className={c} style={{width:5,borderRadius:2,
+                backgroundColor:"#1DB954",minHeight:3}}/>)}
+            </div>
+            <span style={{fontSize:12,color:"rgba(255,255,255,.4)"}}>A carregar…</span>
+          </div>
+        )}
+        {results.map((track,idx)=>{
+          const isSel = selected?.id===track.id;
+          return (
+            <button key={track.id} onClick={()=>selectTrack(track)}
+              className={`sp-track${isSel?" sp-track-active":""}`}
+              style={{width:"100%",background:"transparent",border:"none",borderRadius:6,
+                display:"flex",alignItems:"center",gap:12,padding:"8px 8px",cursor:"pointer",
+                textAlign:"left",color:"#fff",fontFamily:"inherit",transition:"background .15s"}}>
+              <div style={{width:20,textAlign:"center",flexShrink:0}}>
+                {isSel&&isPlaying
+                  ? <Equalizer active={true}/>
+                  : <span style={{fontSize:13,color:isSel?"#1DB954":"rgba(255,255,255,.4)",fontWeight:isSel?700:400}}>{idx+1}</span>}
+              </div>
+              {track.thumbnail
+                ? <img src={track.thumbnail} alt="" style={{width:40,height:40,borderRadius:4,objectFit:"cover",flexShrink:0}}/>
+                : <div style={{width:40,height:40,borderRadius:4,background:"rgba(255,255,255,.06)",
+                    display:"flex",alignItems:"center",justifyContent:"center",fontSize:18,flexShrink:0}}>🎵</div>}
+              <div style={{flex:1,minWidth:0}}>
+                <p style={{margin:0,fontSize:13,fontWeight:500,color:isSel?"#1DB954":"#fff",
+                  overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{track.title}</p>
+                <p style={{margin:"2px 0 0",fontSize:11,color:"rgba(255,255,255,.45)",
+                  overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{track.artist}</p>
+              </div>
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+/* ════════════════════════════════════════════════════════════════════
    COMPONENTE PRINCIPAL
    ════════════════════════════════════════════════════════════════════ */
 export function MusicPlayer() {
@@ -283,99 +385,6 @@ export function MusicPlayer() {
     setMobileTab("player");
   }
 
-  /* ── Lista de músicas ──────────────────────────────────────────── */
-  const TrackList = () => (
-    <div style={{display:"flex",flexDirection:"column",height:"100%",gap:0}}>
-      {/* Search */}
-      <div style={{padding:"12px 12px 8px",flexShrink:0}}>
-        <form onSubmit={e=>{e.preventDefault();searchTracks(query);}}
-          style={{display:"flex",gap:8,marginBottom:8}}>
-          <div style={{flex:1,position:"relative"}}>
-            <svg style={{position:"absolute",left:10,top:"50%",transform:"translateY(-50%)",
-              opacity:.5,pointerEvents:"none"}} width={14} height={14} fill="none" viewBox="0 0 24 24" stroke="white" strokeWidth={2.5}>
-              <circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/>
-            </svg>
-            <input value={query} onChange={e=>setQuery(e.target.value)}
-              placeholder="O que queres ouvir?"
-              style={{width:"100%",background:"#3E3E3E",border:"none",borderRadius:20,
-                padding:"9px 12px 9px 32px",fontSize:13,color:"#fff",outline:"none",
-                fontFamily:"inherit",boxSizing:"border-box"}} />
-          </div>
-          <button type="submit" disabled={loading}
-            style={{background:"#1DB954",border:"none",borderRadius:20,padding:"0 16px",
-              color:"#000",fontWeight:800,fontSize:13,cursor:"pointer",flexShrink:0,
-              opacity:loading?.6:1,transition:"opacity .2s"}}>
-            {loading?"…":"Ir"}
-          </button>
-        </form>
-        {/* Sugestões */}
-        <div style={{display:"flex",flexWrap:"wrap",gap:6}}>
-          {SUGGESTED.map(s=>(
-            <button key={s} type="button"
-              onClick={()=>{setQuery(s);autoSelectRef.current=true;searchTracks(s);}}
-              style={{background:"#282828",border:"none",borderRadius:20,padding:"5px 12px",
-                fontSize:11,color:"rgba(255,255,255,.7)",cursor:"pointer",
-                fontFamily:"inherit",transition:"background .15s"}}
-              onMouseEnter={e=>(e.currentTarget.style.background="#3E3E3E")}
-              onMouseLeave={e=>(e.currentTarget.style.background="#282828")}>
-              {s}
-            </button>
-          ))}
-        </div>
-      </div>
-
-      {error && (
-        <div style={{margin:"0 12px 8px",padding:"8px 12px",background:"rgba(220,38,38,.15)",
-          border:"1px solid rgba(220,38,38,.3)",borderRadius:8,fontSize:12,color:"#fca5a5"}}>
-          ⚠️ {error}
-        </div>
-      )}
-
-      {/* Lista */}
-      <div style={{flex:1,overflowY:"auto",padding:"0 8px 8px"}}>
-        {loading && (
-          <div style={{display:"flex",flexDirection:"column",alignItems:"center",
-            justifyContent:"center",padding:"32px 0",gap:12}}>
-            <div style={{display:"flex",alignItems:"flex-end",gap:2}}>
-              {EQ_CLS.map((c,i)=><div key={c} className={c} style={{width:5,borderRadius:2,
-                backgroundColor:"#1DB954",minHeight:3}} />)}
-            </div>
-            <span style={{fontSize:12,color:"rgba(255,255,255,.4)"}}>A carregar…</span>
-          </div>
-        )}
-        {results.map((track,idx)=>{
-          const isSel = selected?.id===track.id;
-          return (
-            <button key={track.id} onClick={()=>selectTrack(track)}
-              className={`sp-track${isSel?" sp-track-active":""}`}
-              style={{width:"100%",background:"transparent",border:"none",borderRadius:6,
-                display:"flex",alignItems:"center",gap:12,padding:"8px 8px",cursor:"pointer",
-                textAlign:"left",transition:"background .15s",color:"#fff",fontFamily:"inherit"}}>
-              {/* Nº / eq */}
-              <div style={{width:20,textAlign:"center",flexShrink:0}}>
-                {isSel&&isPlaying ? <Equalizer active={true}/> :
-                  <span style={{fontSize:13,color:isSel?"#1DB954":"rgba(255,255,255,.4)",fontWeight:isSel?700:400}}>{idx+1}</span>}
-              </div>
-              {/* Thumbnail */}
-              {track.thumbnail
-                ? <img src={track.thumbnail} alt="" style={{width:40,height:40,borderRadius:4,objectFit:"cover",flexShrink:0}}/>
-                : <div style={{width:40,height:40,borderRadius:4,background:"#282828",display:"flex",
-                    alignItems:"center",justifyContent:"center",fontSize:18,flexShrink:0}}>🎵</div>}
-              {/* Info */}
-              <div style={{flex:1,minWidth:0}}>
-                <p style={{margin:0,fontSize:13,fontWeight:500,
-                  color:isSel?"#1DB954":"#fff",
-                  overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{track.title}</p>
-                <p style={{margin:"2px 0 0",fontSize:11,color:"rgba(255,255,255,.45)",
-                  overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{track.artist}</p>
-              </div>
-            </button>
-          );
-        })}
-      </div>
-    </div>
-  );
-
   /* ══════════════════════════════════════════════════════════════
      RENDER
   ══════════════════════════════════════════════════════════════ */
@@ -430,7 +439,9 @@ export function MusicPlayer() {
           <div className={mobileTab==="list"?"flex":"hidden lg:flex"}
             style={{width:280,minWidth:280,flexDirection:"column",
               background:"rgba(0,0,0,.35)",backdropFilter:"blur(10px)",borderRight:"1px solid rgba(168,85,247,.12)",overflow:"hidden"}}>
-            <TrackList />
+            <TrackList query={query} setQuery={setQuery} loading={loading} error={error}
+              results={results} selected={selected} isPlaying={isPlaying}
+              searchTracks={searchTracks} selectTrack={selectTrack} autoSelectRef={autoSelectRef} />
           </div>
 
           {/* Área principal — player + letras */}

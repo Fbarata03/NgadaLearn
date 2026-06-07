@@ -1,59 +1,47 @@
 /* ════════════════════════════════════════════════════════════════════
-   NgadaLearn — Music Search proxy (Last.fm)
-   Usa a Last.fm API gratuita — não requer Premium
+   NgadaLearn — Music Search proxy (iTunes Search API)
+   Gratuita, sem chave, devolve artwork em alta resolução
    ════════════════════════════════════════════════════════════════════ */
 
 const express = require("express");
 const router  = express.Router();
 
-const LASTFM_API_KEY = process.env.LASTFM_API_KEY;
-const LASTFM_BASE    = "https://ws.audioscrobbler.com/2.0/";
-
 /* ── GET /api/spotify/search?q=<query> ───────────────────────────── */
 router.get("/search", async (req, res) => {
-     const q = (req.query.q || "").trim();
-     if (!q) return res.status(400).json({ error: "Parâmetro ?q obrigatório" });
+  const q = (req.query.q || "").trim();
+  if (!q) return res.status(400).json({ error: "Parâmetro ?q obrigatório" });
 
-             if (!LASTFM_API_KEY) {
-                    return res.status(500).json({ error: "LASTFM_API_KEY não configurada" });
-             }
+  try {
+    const url = `https://itunes.apple.com/search?term=${encodeURIComponent(q)}&media=music&entity=song&limit=15&lang=en_us`;
+    const r   = await fetch(url);
+    if (!r.ok) throw new Error(`iTunes API devolveu ${r.status}`);
 
-             try {
-                    const url =
-                             `${LASTFM_BASE}?method=track.search` +
-                             `&track=${encodeURIComponent(q)}` +
-                             `&api_key=${LASTFM_API_KEY}` +
-                             `&format=json` +
-                             `&limit=15`;
+    const data = await r.json();
 
-       const r = await fetch(url);
-                    if (!r.ok) throw new Error(`Last.fm API devolveu ${r.status}`);
+    /* Normaliza para o mesmo envelope que o frontend espera */
+    const tracks = (data.results || []).map(t => ({
+      id:          String(t.trackId),
+      name:        t.trackName    || "",
+      artists:     [{ name: t.artistName || "" }],
+      album: {
+        name:   t.collectionName || "",
+        images: [
+          /* 600×600 — alta resolução */
+          { url: (t.artworkUrl100 || "").replace("100x100bb", "600x600bb") },
+          /* 100×100 — fallback */
+          { url: t.artworkUrl100 || "" },
+        ].filter(i => i.url),
+      },
+      preview_url:   t.previewUrl     || null,
+      external_urls: { spotify: t.trackViewUrl || "" },
+      duration_ms:   t.trackTimeMillis || 0,
+    }));
 
-       const data = await r.json();
-                    const matches = data?.results?.trackmatches?.track || [];
-
-       /* Normaliza para o mesmo formato que o frontend espera do Spotify */
-       const tracks = matches.map((t) => ({
-                id: t.mbid || `${t.artist}-${t.name}`,
-                name: t.name,
-                artists: [{ name: t.artist }],
-                album: {
-                           name: "",
-                           images: t.image
-                             ? t.image.map((img) => ({ url: img["#text"], height: null, width: null }))
-                                        : [],
-                },
-                preview_url: null,
-                external_urls: { spotify: t.url },
-                duration_ms: 0,
-       }));
-
-       /* Devolve no mesmo envelope que o Spotify: { tracks: { items: [...] } } */
-       res.json({ tracks: { items: tracks } });
-             } catch (err) {
-                    console.error("[lastfm] search error:", err.message);
-                    res.status(500).json({ error: err.message });
-             }
+    res.json({ tracks: { items: tracks } });
+  } catch (err) {
+    console.error("[itunes] search error:", err.message);
+    res.status(500).json({ error: err.message });
+  }
 });
 
 module.exports = router;

@@ -35,7 +35,7 @@ const ANIM_STYLE = `
 /* ── Tipos ────────────────────────────────────────────────────────── */
 interface Track {
   id: string; title: string; artist: string;
-  thumbnail: string; lastfmUrl?: string;
+  thumbnail: string; albumName?: string; storeUrl?: string;
 }
 type Difficulty = "normal" | "hard" | "learned";
 interface LyricLine { id: number; en: string; pt: string; difficulty: Difficulty; }
@@ -279,10 +279,12 @@ function TrackList({ query, setQuery, loading, error, results, selected,
                 : <div style={{width:40,height:40,borderRadius:4,background:"rgba(255,255,255,.06)",
                     display:"flex",alignItems:"center",justifyContent:"center",fontSize:18,flexShrink:0}}>🎵</div>}
               <div style={{flex:1,minWidth:0}}>
-                <p style={{margin:0,fontSize:13,fontWeight:500,color:isSel?"#1DB954":"#fff",
+                <p style={{margin:0,fontSize:13,fontWeight:600,color:isSel?"#1DB954":"#fff",
                   overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{track.title}</p>
                 <p style={{margin:"2px 0 0",fontSize:11,color:"rgba(255,255,255,.45)",
-                  overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{track.artist}</p>
+                  overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>
+                  {track.artist}{track.albumName?" · "+track.albumName:""}
+                </p>
               </div>
             </button>
           );
@@ -415,8 +417,9 @@ export function MusicPlayer() {
         id:        t.id,
         title:     t.name,
         artist:    t.artists.map((a: any)=>a.name).join(", "),
-        thumbnail: [t.album?.images?.[2]?.url,t.album?.images?.[3]?.url,t.album?.images?.[1]?.url,t.album?.images?.[0]?.url].find(u=>u&&u.trim()!="")||"",
-        lastfmUrl: t.external_urls?.spotify||"",
+        thumbnail: [t.album?.images?.[0]?.url, t.album?.images?.[1]?.url].find(u=>u&&u.trim()!="")||"",
+        albumName: t.album?.name||"",
+        storeUrl:  t.external_urls?.spotify||"",
       }));
       const top = tracks.slice(0,12);
       setResults(top);
@@ -516,54 +519,67 @@ export function MusicPlayer() {
 
             {selected ? (
               <>
-                {/* Info da música seleccionada */}
-                <div style={{flexShrink:0,display:"flex",alignItems:"center",
-                  gap:16,padding:"16px 20px 12px",
-                  background:"linear-gradient(180deg,rgba(29,185,84,.08) 0%,transparent 100%)"}}>
-                  {selected.thumbnail
-                    ? <img src={selected.thumbnail} alt=""
-                        style={{width:64,height:64,borderRadius:8,objectFit:"cover",
-                          flexShrink:0,boxShadow:"0 8px 24px rgba(0,0,0,.5)"}}/>
-                    : <div style={{width:64,height:64,borderRadius:8,background:"#282828",
-                        display:"flex",alignItems:"center",justifyContent:"center",
-                        fontSize:28,flexShrink:0}}>🎵</div>}
-                  <div style={{flex:1,minWidth:0}}>
-                    <p style={{margin:0,fontSize:"clamp(1rem,2.5vw,1.4rem)",fontWeight:900,
-                      overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{selected.title}</p>
-                    <p style={{margin:"4px 0 0",fontSize:13,color:"rgba(255,255,255,.6)",
-                      overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{selected.artist}</p>
-                    {selected.lastfmUrl && (
-                      <a href={selected.lastfmUrl} target="_blank" rel="noopener noreferrer"
-                        style={{display:"inline-flex",alignItems:"center",gap:4,marginTop:8,
-                          fontSize:11,color:"#1DB954",textDecoration:"none",fontWeight:600}}>
-                        <svg width={12} height={12} viewBox="0 0 24 24" fill="#1DB954"><path d="M12 3v10.55A4 4 0 1 0 14 17V7h4V3z"/></svg>
-                        Last.fm
-                      </a>
-                    )}
+                {/* ── Now Playing — card estilo Spotify ── */}
+                <div style={{flexShrink:0,padding:"14px 16px 10px",
+                  background:`linear-gradient(180deg,${selected.thumbnail?"rgba(0,0,0,.55)":"rgba(29,185,84,.06)"} 0%,transparent 100%)`}}>
+                  <div style={{display:"flex",gap:14,alignItems:"center"}}>
+
+                    {/* Capa do álbum — grande */}
+                    <div style={{position:"relative",flexShrink:0}}>
+                      {selected.thumbnail ? (
+                        <img src={selected.thumbnail} alt=""
+                          style={{width:88,height:88,borderRadius:6,objectFit:"cover",
+                            display:"block",boxShadow:"0 8px 32px rgba(0,0,0,.7)"}}/>
+                      ) : (
+                        <div style={{width:88,height:88,borderRadius:6,
+                          background:"linear-gradient(135deg,#282828,#1a1a1a)",
+                          display:"flex",alignItems:"center",justifyContent:"center",fontSize:36}}>🎵</div>
+                      )}
+                      {/* Indicador de a tocar */}
+                      {isPlaying && (
+                        <div style={{position:"absolute",bottom:4,right:4,
+                          background:"#1DB954",borderRadius:"50%",
+                          width:20,height:20,display:"flex",alignItems:"center",justifyContent:"center"}}>
+                          <Equalizer active={true} />
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Info */}
+                    <div style={{flex:1,minWidth:0}}>
+                      <p style={{margin:0,fontSize:"clamp(.95rem,2.2vw,1.25rem)",fontWeight:900,
+                        overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",
+                        letterSpacing:"-.3px"}}>{selected.title}</p>
+                      <p style={{margin:"3px 0 0",fontSize:13,color:"#1DB954",fontWeight:600,
+                        overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{selected.artist}</p>
+                      {selected.albumName && (
+                        <p style={{margin:"2px 0 0",fontSize:11,color:"rgba(255,255,255,.35)",
+                          overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{selected.albumName}</p>
+                      )}
+                    </div>
                   </div>
-                  <Equalizer active={isPlaying} />
                 </div>
 
                 {/* YouTube player (IFrame API) */}
-                <div style={{flexShrink:0,margin:"0 20px 12px",borderRadius:10,overflow:"hidden",
-                  background:"#000",boxShadow:"0 4px 24px rgba(0,0,0,.6)",
-                  aspectRatio:"16/9",maxHeight:"min(35vh,240px)"}}>
+                <div style={{flexShrink:0,margin:"0 16px 10px",borderRadius:10,overflow:"hidden",
+                  background:"#000",boxShadow:"0 4px 24px rgba(0,0,0,.7)",
+                  aspectRatio:"16/9",maxHeight:"min(32vh,220px)"}}>
                   {ytVideoId ? (
                     <div id="yt-player-root" style={{width:"100%",height:"100%"}} />
                   ) : (
                     <div style={{width:"100%",height:"100%",display:"flex",alignItems:"center",
-                      justifyContent:"center",gap:8,background:"#181818"}}>
+                      justifyContent:"center",gap:8,background:"#111"}}>
                       {selected && <>
-                        <div style={{width:14,height:14,border:"2px solid rgba(255,255,255,.12)",
+                        <div style={{width:14,height:14,border:"2px solid rgba(255,255,255,.1)",
                           borderTopColor:"#1DB954",borderRadius:"50%",animation:"spin .8s linear infinite"}}/>
-                        <span style={{fontSize:12,color:"rgba(255,255,255,.3)"}}>A procurar vídeo…</span>
+                        <span style={{fontSize:12,color:"rgba(255,255,255,.25)"}}>A procurar vídeo…</span>
                       </>}
                     </div>
                   )}
                 </div>
 
                 {/* Letras karaoke */}
-                <div style={{flex:1,minHeight:0,padding:"0 20px 16px"}}>
+                <div style={{flex:1,minHeight:0,padding:"0 16px 14px"}}>
                   {lyricsLoading ? (
                     <div style={{height:"100%",display:"flex",alignItems:"center",
                       justifyContent:"center",gap:8}}>

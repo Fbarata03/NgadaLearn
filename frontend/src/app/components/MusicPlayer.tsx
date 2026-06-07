@@ -5,11 +5,6 @@
 
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import { Link } from "react-router";
-import {
-  Mic2, BookOpen, Music2, ChevronLeft, Search, List, Play,
-  CheckCircle2, XCircle, SkipForward, ChevronRight, Layers,
-  Star, Zap, Trophy, BookMarked, Sprout, AlignLeft,
-} from "lucide-react";
 
 declare global {
   interface Window { YT: any; onYouTubeIframeAPIReady?: () => void; }
@@ -48,66 +43,10 @@ type Difficulty = "normal"|"hard"|"learned";
 interface LyricLine { id:number; en:string; pt:string; difficulty:Difficulty; }
 type LearnMode = "karaoke"|"quiz";
 
-interface LevelConfig {
-  id:number; name:string; cefr:string; description:string;
-  emoji:string; accent:string; bg:string;
-  query:string; suggested:string[]; tips:string[];
-}
-
 /* ── Constantes ───────────────────────────────────────────────────── */
 const BACKEND   = import.meta.env.VITE_API_URL || "https://ngadalearn-api.onrender.com";
 const EQ_CLS    = ["eq1","eq2","eq3","eq4","eq5"];
-
-/* ── Níveis de aprendizagem ──────────────────────────────────────── */
-const LEVEL_ICONS = [Sprout, BookMarked, Layers, Zap, Trophy];
-
-const LEVELS: LevelConfig[] = [
-  {
-    id:1, name:"Iniciante", cefr:"A1",
-    description:"Palavras do dia-a-dia, ritmo lento, melodia simples",
-    emoji:"🌱", accent:"#4ade80",
-    bg:"linear-gradient(135deg,rgba(5,46,22,.95),rgba(20,83,45,.95))",
-    query:"Ed Sheeran Perfect official",
-    suggested:["Ed Sheeran","Passenger","The Beatles"],
-    tips:["Repete cada linha em voz alta","Foca nas palavras que reconheces","Usa o modo Karaoke"],
-  },
-  {
-    id:2, name:"Elementar", cefr:"A2",
-    description:"Frases curtas, temas emocionais, vocabulário comum",
-    emoji:"📖", accent:"#60a5fa",
-    bg:"linear-gradient(135deg,rgba(12,74,110,.95),rgba(3,105,161,.95))",
-    query:"Adele Someone Like You official",
-    suggested:["Adele","Taylor Swift","Dua Lipa"],
-    tips:["Identifica expressões do quotidiano","Tenta cantar sem ver a letra","Usa o modo Quiz para testar"],
-  },
-  {
-    id:3, name:"Intermédio", cefr:"B1",
-    description:"Vocabulário variado, metáforas, expressões idiomáticas",
-    emoji:"🎯", accent:"#a78bfa",
-    bg:"linear-gradient(135deg,rgba(76,29,149,.95),rgba(109,40,217,.95))",
-    query:"Coldplay Fix You official",
-    suggested:["Coldplay","John Mayer","OneRepublic"],
-    tips:["Analisa o significado das metáforas","Escreve as letras que ouviste","Pratica o ritmo da fala"],
-  },
-  {
-    id:4, name:"Avançado", cefr:"B2",
-    description:"Linguagem rica, coloquialismos, ritmo mais rápido",
-    emoji:"⚡", accent:"#fb923c",
-    bg:"linear-gradient(135deg,rgba(124,45,18,.95),rgba(194,65,12,.95))",
-    query:"Linkin Park In The End official",
-    suggested:["Linkin Park","Queen","Imagine Dragons"],
-    tips:["Estuda o contexto cultural das expressões","Entende sem pausar o vídeo","Canta no tempo real da música"],
-  },
-  {
-    id:5, name:"Fluente", cefr:"C1+",
-    description:"Slang, pronúncia nativa, velocidade real, rap e jazz",
-    emoji:"🏆", accent:"#fbbf24",
-    bg:"linear-gradient(135deg,rgba(133,77,14,.95),rgba(202,138,4,.95))",
-    query:"Eminem Lose Yourself official",
-    suggested:["Eminem","Kendrick Lamar","Frank Sinatra"],
-    tips:["Tenta entender sem legendas","Canta na velocidade original","Explica o significado em inglês"],
-  },
-];
+const SUGGESTED = ["Ed Sheeran","Adele","Taylor Swift","Coldplay"];
 const SKIP_WORDS = new Set(["the","a","an","in","on","at","to","for","of","and","or","but","is","are","was","were","i","you","he","she","it","we","they","my","your","his","her","our","their","this","that","with","from","not","have","has","had","be","been","will","would","can","could","do","does","did","get","got","just","like","im","its","so","as","up","out","no","me","him","us","them","when","what","how","if","oh","yeah","dont","cant","wont","ill"]);
 
 /* ── Utilitários ──────────────────────────────────────────────────── */
@@ -313,94 +252,6 @@ function LyricsRiser({lines,active,isPlaying,onNext,onPrev}:{
 }
 
 /* ════════════════════════════════════════════════════════════════════
-   LEVEL SELECT — ecrã de seleção de nível
-   ════════════════════════════════════════════════════════════════════ */
-function LevelSelect({onSelect}:{onSelect:(l:LevelConfig)=>void}) {
-  const [hov, setHov] = useState<number|null>(null);
-  return (
-    <div style={{flex:1,overflow:"auto",padding:"0 16px 24px",
-      display:"flex",flexDirection:"column",gap:0}}>
-
-      {/* Título */}
-      <div style={{textAlign:"center",padding:"28px 0 20px"}}>
-        <div style={{fontSize:40,marginBottom:8}}>🎵</div>
-        <h2 style={{margin:0,fontSize:"clamp(1.2rem,3vw,1.7rem)",fontWeight:900,
-          letterSpacing:"-.5px"}}>
-          Aprende Inglês com Música
-        </h2>
-        <p style={{margin:"8px 0 0",fontSize:13,color:"rgba(255,255,255,.45)"}}>
-          Escolhe o teu nível para começar
-        </p>
-      </div>
-
-      {/* Cards de nível */}
-      <div style={{display:"flex",flexDirection:"column",gap:10}}>
-        {LEVELS.map((lv,i)=>{
-          const LvIcon = LEVEL_ICONS[i];
-          return (
-          <button key={lv.id} onClick={()=>onSelect(lv)}
-            onMouseEnter={()=>setHov(lv.id)} onMouseLeave={()=>setHov(null)}
-            style={{
-              background:hov===lv.id?lv.bg.replace(".95","1"):lv.bg,
-              border:`1.5px solid ${lv.accent}35`,
-              borderRadius:20,padding:"14px 18px",cursor:"pointer",
-              textAlign:"left",color:"#fff",fontFamily:"inherit",
-              display:"flex",alignItems:"center",gap:14,
-              boxShadow:hov===lv.id
-                ?`0 10px 36px ${lv.accent}35, 0 0 0 1px ${lv.accent}50`
-                :"0 4px 16px rgba(0,0,0,.3)",
-              transform:hov===lv.id?"translateY(-2px) scale(1.01)":"none",
-              transition:"all .22s cubic-bezier(.34,1.56,.64,1)",
-            }}>
-            {/* Ícone SVG + CEFR */}
-            <div style={{flexShrink:0,display:"flex",flexDirection:"column",
-              alignItems:"center",gap:4,width:44}}>
-              <div style={{width:40,height:40,borderRadius:12,
-                background:`${lv.accent}20`,border:`1.5px solid ${lv.accent}40`,
-                display:"flex",alignItems:"center",justifyContent:"center",
-                boxShadow:`0 2px 12px ${lv.accent}25`}}>
-                <LvIcon size={20} color={lv.accent} strokeWidth={2}/>
-              </div>
-              <span style={{fontSize:9,fontWeight:900,letterSpacing:".08em",
-                color:lv.accent,background:`${lv.accent}18`,
-                borderRadius:50,padding:"1px 7px"}}>{lv.cefr}</span>
-            </div>
-
-            {/* Info */}
-            <div style={{flex:1,minWidth:0}}>
-              <p style={{margin:0,fontSize:15,fontWeight:900,letterSpacing:"-.2px"}}>
-                {lv.name}
-              </p>
-              <p style={{margin:"3px 0 0",fontSize:11,color:"rgba(255,255,255,.5)",
-                lineHeight:1.4}}>{lv.description}</p>
-              <div style={{display:"flex",gap:5,marginTop:6,flexWrap:"wrap"}}>
-                {lv.tips.slice(0,2).map((t,ti)=>(
-                  <span key={ti} style={{fontSize:9,fontWeight:600,
-                    color:lv.accent,background:`${lv.accent}15`,
-                    borderRadius:50,padding:"2px 8px",border:`1px solid ${lv.accent}25`}}>
-                    {t}
-                  </span>
-                ))}
-              </div>
-            </div>
-
-            {/* Seta Lucide */}
-            <ChevronRight size={18} color={lv.accent} strokeWidth={2.5}
-              style={{flexShrink:0,opacity:hov===lv.id?1:.5,transition:"opacity .2s"}}/>
-          </button>
-          );
-        })}
-      </div>
-
-      <p style={{textAlign:"center",fontSize:11,color:"rgba(255,255,255,.2)",
-        marginTop:16,lineHeight:1.5}}>
-        Podes mudar de nível a qualquer momento
-      </p>
-    </div>
-  );
-}
-
-/* ════════════════════════════════════════════════════════════════════
    TRACK LIST — fora do MusicPlayer (evita re-mount ao digitar)
    ════════════════════════════════════════════════════════════════════ */
 interface TrackListProps {
@@ -408,17 +259,18 @@ interface TrackListProps {
   results:Track[]; selected:Track|null; isPlaying:boolean;
   searchTracks:(q:string)=>void; selectTrack:(t:Track)=>void;
   autoSelectRef:React.MutableRefObject<boolean>;
-  suggested?:string[];
 }
-function TrackList({query,setQuery,loading,error,results,selected,isPlaying,searchTracks,selectTrack,autoSelectRef,suggested=["Ed Sheeran","Adele","Taylor Swift","Coldplay"]}:TrackListProps) {
+function TrackList({query,setQuery,loading,error,results,selected,isPlaying,searchTracks,selectTrack,autoSelectRef}:TrackListProps) {
   return (
     <div style={{display:"flex",flexDirection:"column",height:"100%"}}>
       {/* Pesquisa */}
       <div style={{padding:"12px 10px 8px",flexShrink:0}}>
         <form onSubmit={e=>{e.preventDefault();searchTracks(query);}} style={{display:"flex",gap:8,marginBottom:8}}>
           <div style={{flex:1,position:"relative"}}>
-            <Search size={14} strokeWidth={2.5} color="rgba(255,255,255,.45)"
-              style={{position:"absolute",left:12,top:"50%",transform:"translateY(-50%)",pointerEvents:"none"}}/>
+            <svg style={{position:"absolute",left:10,top:"50%",transform:"translateY(-50%)",
+              opacity:.45,pointerEvents:"none"}} width={14} height={14} fill="none" viewBox="0 0 24 24" stroke="white" strokeWidth={2.5}>
+              <circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/>
+            </svg>
             <input value={query} onChange={e=>setQuery(e.target.value)} placeholder="Pesquisar músicas…"
               style={{width:"100%",background:"rgba(255,255,255,.08)",border:"1px solid rgba(255,255,255,.1)",
                 borderRadius:50,padding:"9px 12px 9px 34px",fontSize:13,color:"#fff",outline:"none",
@@ -436,7 +288,7 @@ function TrackList({query,setQuery,loading,error,results,selected,isPlaying,sear
           </button>
         </form>
         <div style={{display:"flex",flexWrap:"wrap",gap:5}}>
-          {suggested.map(s=>(
+          {SUGGESTED.map(s=>(
             <button key={s} onClick={()=>{setQuery(s);autoSelectRef.current=true;searchTracks(s);}}
               style={{background:"rgba(255,255,255,.06)",border:"1px solid rgba(255,255,255,.08)",
                 borderRadius:20,padding:"4px 11px",fontSize:11,color:"rgba(255,255,255,.65)",
@@ -523,7 +375,6 @@ export function MusicPlayer() {
   const [score,  setScore]  = useState(0);
   const [misses, setMisses] = useState(0);
 
-  const [selectedLevel, setSelectedLevel] = useState<LevelConfig|null>(null);
   const [mobileTab, setMobileTab] = useState<"list"|"player">("player");
   const [isMobile,  setIsMobile]  = useState(()=>window.innerWidth<1024);
   useEffect(()=>{
@@ -692,10 +543,7 @@ export function MusicPlayer() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   },[]);
 
-  useEffect(()=>{
-    if (selectedLevel) searchTracks(selectedLevel.query);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  },[selectedLevel]);
+  useEffect(()=>{searchTracks("Ed Sheeran official");},[searchTracks]);
 
   async function fetchLyrics(title:string,artist:string){
     setLyricsLoading(true); setRawEn(""); setRawPt("");
@@ -745,60 +593,40 @@ export function MusicPlayer() {
 
         {/* ── Header ── */}
         <div style={{flexShrink:0,paddingTop:"env(safe-area-inset-top)",
-          background:"rgba(0,0,0,.85)",backdropFilter:"blur(24px)",
+          background:"rgba(0,0,0,.8)",backdropFilter:"blur(24px)",
           borderBottom:"1px solid rgba(255,255,255,.06)"}}>
-          <div style={{height:52,display:"flex",alignItems:"center",padding:"0 10px",gap:8}}>
-
-            {/* ← Voltar */}
-            <Link to="/lessons" style={{
-              display:"flex",alignItems:"center",justifyContent:"center",
-              width:38,height:38,borderRadius:"50%",flexShrink:0,
-              color:"rgba(255,255,255,.8)",textDecoration:"none",
-              background:"rgba(255,255,255,.09)",border:"1px solid rgba(255,255,255,.12)",
-              boxShadow:"0 2px 10px rgba(0,0,0,.4)"}}>
-              <ChevronLeft size={18} strokeWidth={2.5}/>
+          <div style={{height:50,display:"flex",alignItems:"center",padding:"0 12px",gap:8}}>
+            {/* Voltar */}
+            <Link to="/lessons" style={{display:"flex",alignItems:"center",justifyContent:"center",
+              width:36,height:36,borderRadius:"50%",flexShrink:0,
+              color:"rgba(255,255,255,.7)",textDecoration:"none",
+              background:"rgba(255,255,255,.08)",border:"1px solid rgba(255,255,255,.1)"}}>
+              <svg width={14} height={14} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7"/>
+              </svg>
             </Link>
 
-            {/* Título */}
-            <div style={{flex:1,display:"flex",alignItems:"center",gap:6,
-              justifyContent:isMobile?"flex-start":"center"}}>
-              <div style={{width:28,height:28,borderRadius:8,
-                background:"linear-gradient(135deg,#1DB954,#16a34a)",
-                display:"flex",alignItems:"center",justifyContent:"center",
-                boxShadow:"0 2px 10px rgba(29,185,84,.4)",flexShrink:0}}>
-                <Music2 size={14} color="#000" strokeWidth={2.5}/>
-              </div>
-              <span style={{fontSize:isMobile?13:14,fontWeight:900,letterSpacing:"-.3px",
-                whiteSpace:"nowrap"}}>Música · Inglês</span>
-              {selectedLevel&&(
-                <span style={{fontSize:10,fontWeight:700,padding:"2px 8px",borderRadius:50,
-                  background:`${selectedLevel.accent}20`,color:selectedLevel.accent,
-                  border:`1px solid ${selectedLevel.accent}40`,whiteSpace:"nowrap"}}>
-                  {selectedLevel.cefr}
-                </span>
-              )}
+            {/* Título + ícone — centro */}
+            <div style={{flex:1,display:"flex",alignItems:"center",justifyContent:"center",gap:6}}>
+              <svg width={16} height={16} viewBox="0 0 24 24" fill="#1DB954">
+                <path d="M12 3v10.55A4 4 0 1 0 14 17V7h4V3z"/>
+              </svg>
+              <span style={{fontSize:13,fontWeight:900,letterSpacing:"-.2px",whiteSpace:"nowrap"}}>
+                Música · Inglês
+              </span>
             </div>
 
-            {/* Tabs mobile */}
-            {isMobile && selectedLevel && (
-              <div style={{flexShrink:0,display:"flex",gap:2,
-                background:"rgba(255,255,255,.06)",borderRadius:50,padding:3,
-                border:"1px solid rgba(255,255,255,.1)",
-                boxShadow:"0 2px 10px rgba(0,0,0,.3)"}}>
-                {([
-                  {tab:"list" as const, Icon:AlignLeft},
-                  {tab:"player" as const, Icon:Play},
-                ]).map(({tab,Icon})=>(
+            {/* Tabs mobile (só no mobile) */}
+            {isMobile && (
+              <div style={{display:"flex",gap:3,background:"rgba(255,255,255,.06)",
+                borderRadius:18,padding:3,flexShrink:0}}>
+                {(["list","player"] as const).map(tab=>(
                   <button key={tab} onClick={()=>setMobileTab(tab)}
-                    style={{
-                      background:mobileTab===tab?"linear-gradient(135deg,#1DB954,#16a34a)":"transparent",
-                      border:"none",borderRadius:50,width:34,height:34,
-                      color:mobileTab===tab?"#000":"rgba(255,255,255,.5)",
-                      cursor:"pointer",transition:"all .2s",
-                      boxShadow:mobileTab===tab?"0 2px 8px rgba(29,185,84,.4)":"none",
-                      display:"flex",alignItems:"center",justifyContent:"center",
-                    }}>
-                    <Icon size={14} strokeWidth={2.5}/>
+                    style={{background:mobileTab===tab?"#1DB954":"transparent",
+                      border:"none",borderRadius:15,padding:"4px 10px",fontSize:11,fontWeight:700,
+                      color:mobileTab===tab?"#000":"rgba(255,255,255,.55)",cursor:"pointer",
+                      fontFamily:"inherit",transition:"all .2s",whiteSpace:"nowrap"}}>
+                    {tab==="list"?"≡ Lista":"▶ Player"}
                   </button>
                 ))}
               </div>
@@ -809,62 +637,19 @@ export function MusicPlayer() {
         {/* ── Layout ── */}
         <div style={{flex:1,overflow:"hidden",display:"flex",maxWidth:1400,margin:"0 auto",width:"100%"}}>
 
-          {/* Sidebar — Level Select OU Track List */}
+          {/* Sidebar */}
           <div className={mobileTab==="list"?"flex":"hidden lg:flex"}
-            style={{width:selectedLevel?272:"min(100%,420px)",minWidth:selectedLevel?272:280,
-              flexDirection:"column",
+            style={{width:272,minWidth:272,flexDirection:"column",
               background:"rgba(0,0,0,.4)",backdropFilter:"blur(12px)",
               borderRight:"1px solid rgba(255,255,255,.05)",overflow:"hidden",
-              boxShadow:"2px 0 20px rgba(0,0,0,.3)",
-              ...((!selectedLevel&&!isMobile)?{margin:"0 auto"}:{})}}>
-
-            {selectedLevel ? (
-              /* ── Track List com cabeçalho de nível ── */
-              <div style={{display:"flex",flexDirection:"column",height:"100%"}}>
-                {/* Cabeçalho do nível */}
-                <div style={{flexShrink:0,padding:"10px 12px 6px",
-                  background:selectedLevel.bg,
-                  borderBottom:"1px solid rgba(255,255,255,.06)"}}>
-                  <div style={{display:"flex",alignItems:"center",gap:10}}>
-                    <span style={{fontSize:22}}>{selectedLevel.emoji}</span>
-                    <div style={{flex:1,minWidth:0}}>
-                      <p style={{margin:0,fontSize:13,fontWeight:900}}>
-                        {selectedLevel.name}
-                        <span style={{marginLeft:6,fontSize:10,fontWeight:700,
-                          color:selectedLevel.accent,background:`${selectedLevel.accent}20`,
-                          borderRadius:50,padding:"1px 7px"}}>{selectedLevel.cefr}</span>
-                      </p>
-                      <p style={{margin:"1px 0 0",fontSize:10,color:"rgba(255,255,255,.5)",
-                        overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>
-                        {selectedLevel.description}
-                      </p>
-                    </div>
-                    <button onClick={()=>{setSelectedLevel(null);setResults([]);setSelected(null);}}
-                      style={{background:"rgba(255,255,255,.1)",border:"1px solid rgba(255,255,255,.15)",
-                        borderRadius:50,padding:"4px 10px",fontSize:10,fontWeight:700,
-                        color:"rgba(255,255,255,.7)",cursor:"pointer",fontFamily:"inherit",
-                        flexShrink:0,whiteSpace:"nowrap"}}>
-                      ← Níveis
-                    </button>
-                  </div>
-                </div>
-                <TrackList query={query} setQuery={setQuery} loading={loading} error={error}
-                  results={results} selected={selected} isPlaying={isPlaying}
-                  searchTracks={searchTracks} selectTrack={selectTrack} autoSelectRef={autoSelectRef}
-                  suggested={selectedLevel.suggested}/>
-              </div>
-            ) : (
-              /* ── Level Select ── */
-              <LevelSelect onSelect={lv=>{
-                setSelectedLevel(lv);
-                autoSelectRef.current=true;
-                setMobileTab("list");
-              }}/>
-            )}
+              boxShadow:"2px 0 20px rgba(0,0,0,.3)"}}>
+            <TrackList query={query} setQuery={setQuery} loading={loading} error={error}
+              results={results} selected={selected} isPlaying={isPlaying}
+              searchTracks={searchTracks} selectTrack={selectTrack} autoSelectRef={autoSelectRef}/>
           </div>
 
-          {/* Área principal — só mostra se tiver nível selecionado */}
-          <div className={selectedLevel&&mobileTab==="player"?"flex":selectedLevel?"hidden lg:flex":"hidden lg:flex"}
+          {/* Área principal */}
+          <div className={mobileTab==="player"?"flex":"hidden lg:flex"}
             style={{flex:1,flexDirection:"column",overflow:"hidden",minWidth:0}}>
 
             {selected ? (
@@ -903,26 +688,18 @@ export function MusicPlayer() {
                   </div>
                   {/* Modo de aprendizagem */}
                   <div style={{flexShrink:0,display:"flex",gap:3,
-                    background:"rgba(0,0,0,.35)",borderRadius:50,padding:4,
-                    border:"1px solid rgba(255,255,255,.08)",
-                    boxShadow:"inset 0 1px 3px rgba(0,0,0,.4)"}}>
-                    {([
-                      {m:"karaoke" as LearnMode, Icon:Mic2,   label:"Karaoke", grad:"linear-gradient(135deg,#1DB954,#16a34a)", glow:"rgba(29,185,84,.4)"},
-                      {m:"quiz"    as LearnMode, Icon:BookOpen, label:"Quiz",   grad:"linear-gradient(135deg,#7c3aed,#6d28d9)", glow:"rgba(124,58,237,.4)"},
-                    ]).map(({m,Icon,label,grad,glow})=>{
+                    background:"rgba(0,0,0,.3)",borderRadius:18,padding:3,
+                    border:"1px solid rgba(255,255,255,.08)"}}>
+                    {(["karaoke","quiz"] as LearnMode[]).map(m=>{
                       const act=learnMode===m;
                       return (
                         <button key={m} onClick={()=>setLearnMode(m)}
-                          style={{background:act?grad:"transparent",
-                            border:"none",borderRadius:50,
-                            padding:isMobile?"6px 10px":"6px 14px",
-                            display:"flex",alignItems:"center",gap:5,
-                            fontSize:11,fontWeight:700,cursor:"pointer",fontFamily:"inherit",
-                            color:act?"#fff":"rgba(255,255,255,.4)",
-                            boxShadow:act?`0 3px 12px ${glow}`:"none",
-                            transition:"all .22s"}}>
-                          <Icon size={13} strokeWidth={2.5}/>
-                          {!isMobile&&<span>{label}</span>}
+                          style={{background:act?(m==="quiz"?"linear-gradient(135deg,#7c3aed,#6d28d9)":"linear-gradient(135deg,#1DB954,#16a34a)"):"transparent",
+                            border:"none",borderRadius:15,padding:isMobile?"4px 8px":"5px 11px",
+                            fontSize:isMobile?10:11,fontWeight:700,cursor:"pointer",fontFamily:"inherit",
+                            color:act?"#fff":"rgba(255,255,255,.45)",
+                            boxShadow:act?"0 2px 8px rgba(0,0,0,.4)":"none",transition:"all .2s"}}>
+                          {m==="karaoke"?"🎤":"📝"}{!isMobile&&(m==="karaoke"?" Karaoke":" Quiz")}
                         </button>
                       );
                     })}
@@ -954,13 +731,9 @@ export function MusicPlayer() {
                     borderRadius:10}}>
                     <span style={{fontSize:12,fontWeight:700,color:"#a78bfa"}}>📝 Quiz</span>
                     <div style={{flex:1}}/>
-                    <span style={{fontSize:12,color:"#4ade80",fontWeight:700,display:"flex",alignItems:"center",gap:3}}>
-                      <CheckCircle2 size={12} strokeWidth={2.5}/> {score}
-                    </span>
+                    <span style={{fontSize:12,color:"#4ade80",fontWeight:700}}>✓ {score}</span>
                     <span style={{fontSize:11,color:"rgba(255,255,255,.2)"}}>|</span>
-                    <span style={{fontSize:12,color:"#f87171",fontWeight:700,display:"flex",alignItems:"center",gap:3}}>
-                      <XCircle size={12} strokeWidth={2.5}/> {misses}
-                    </span>
+                    <span style={{fontSize:12,color:"#f87171",fontWeight:700}}>✗ {misses}</span>
                   </div>
                 )}
 
@@ -1018,33 +791,25 @@ export function MusicPlayer() {
                                 border:"none",borderRadius:50,padding:"9px 22px",fontSize:13,
                                 fontWeight:800,color:"#fff",cursor:"pointer",fontFamily:"inherit",
                                 opacity:(!quizInput.trim()||quizStatus!=="idle")?.4:1,
-                                boxShadow:"0 4px 14px rgba(124,58,237,.4)",transition:"all .2s",
-                                display:"flex",alignItems:"center",gap:6}}>
-                              <CheckCircle2 size={15} strokeWidth={2.5}/>
-                              Confirmar
+                                boxShadow:"0 4px 14px rgba(124,58,237,.4)",transition:"all .2s"}}>
+                              Confirmar ↵
                             </button>
                             <button onClick={()=>{setActiveLine(p=>Math.min(lines.length-1,p+1));setQuizInput("");setQuizStatus("idle");}}
                               style={{background:"rgba(255,255,255,.06)",
                                 border:"1px solid rgba(255,255,255,.1)",
-                                borderRadius:50,padding:"9px 16px",fontSize:12,
-                                fontWeight:600,color:"rgba(255,255,255,.55)",
-                                cursor:"pointer",fontFamily:"inherit",transition:"all .2s",
-                                display:"flex",alignItems:"center",gap:5}}>
-                              <SkipForward size={13} strokeWidth={2.5}/>
-                              Saltar
+                                borderRadius:20,padding:"8px 16px",fontSize:12,
+                                fontWeight:600,color:"rgba(255,255,255,.6)",
+                                cursor:"pointer",fontFamily:"inherit",transition:"all .2s"}}>
+                              Saltar →
                             </button>
                           </div>
 
                           {/* Dica após errar */}
                           {quizStatus==="wrong"&&quizWord&&(
-                            <div className="fade-up" style={{display:"flex",alignItems:"center",
-                              gap:6,background:"rgba(239,68,68,.12)",borderRadius:12,
-                              padding:"8px 14px",border:"1px solid rgba(239,68,68,.2)"}}>
-                              <XCircle size={14} color="#f87171" strokeWidth={2.5}/>
-                              <p style={{margin:0,fontSize:12,color:"#fca5a5"}}>
-                                A palavra era: <strong style={{color:"#fff"}}>{quizWord.word}</strong>
-                              </p>
-                            </div>
+                            <p className="fade-up" style={{margin:0,fontSize:12,
+                              color:"#fca5a5",textAlign:"center"}}>
+                              ❌ A palavra era: <strong style={{color:"#f87171"}}>{quizWord.word}</strong>
+                            </p>
                           )}
                         </div>
 

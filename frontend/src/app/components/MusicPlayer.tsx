@@ -713,6 +713,8 @@ export function MusicPlayer() {
               if (state === -1 || state === 5) skipToNextVideo();
             }, 12000);
 
+            const vid = selectedRef.current?.id ?? "";
+
             function parseEv(events: any[]): TimedSub[] {
               return (events || [])
                 .filter((ev:any) => ev.segs?.length)
@@ -725,15 +727,37 @@ export function MusicPlayer() {
                 .filter((s:any) => s.text);
             }
 
+            const done = (segs: TimedSub[]) => {
+              transcriptLoadedRef.current = true;
+              setTranscript(segs); setTransLoading(false);
+            };
+
+            /* Estratégia 1: timedtext directamente do browser (IP do utilizador) */
+            (async () => {
+              if (transcriptLoadedRef.current || !vid) return;
+              for (const lang of ["en", "en&kind=asr", "en-US"]) {
+                try {
+                  const r = await fetch(
+                    `https://www.youtube.com/api/timedtext?v=${vid}&lang=${lang}&fmt=json3`
+                  );
+                  if (!r.ok) continue;
+                  const d = await r.json();
+                  const segs = parseEv(d.events);
+                  if (segs.length >= 3) { done(segs); return; }
+                } catch { /* CORS ou falha */ }
+              }
+            })();
+
+            /* Estratégia 2: getPlayerResponse + proxy (polling) */
             const safetyTimer = setTimeout(() => {
               if (!transcriptLoadedRef.current) setTransLoading(false);
-            }, 8000);
+            }, 10000);
 
             let attempts = 0;
             const poll = setInterval(async () => {
-              if (transcriptLoadedRef.current) { clearInterval(poll); return; }
+              if (transcriptLoadedRef.current) { clearInterval(poll); clearTimeout(safetyTimer); return; }
               attempts++;
-              if (attempts > 16) { clearInterval(poll); clearTimeout(safetyTimer); setTransLoading(false); return; }
+              if (attempts > 20) { clearInterval(poll); clearTimeout(safetyTimer); setTransLoading(false); return; }
 
               try { e.target.setOption("captions", "track", {}); } catch { /* */ }
 
@@ -751,24 +775,16 @@ export function MusicPlayer() {
                 if (r.ok) {
                   const d = await r.json();
                   const segs = parseEv(d.events);
-                  if (segs.length >= 3) {
-                    transcriptLoadedRef.current = true;
-                    setTranscript(segs); setTransLoading(false); return;
-                  }
+                  if (segs.length >= 3) { done(segs); return; }
                 }
-              } catch { /* CORS — proxy */ }
+              } catch { /* CORS */ }
 
               try {
-                const r = await fetch(
-                  `${BACKEND}/api/youtube/caption-proxy?url=${encodeURIComponent(track.baseUrl)}`
-                );
+                const r = await fetch(`${BACKEND}/api/youtube/caption-proxy?url=${encodeURIComponent(track.baseUrl)}`);
                 if (r.ok) {
                   const d = await r.json();
                   const segs = parseEv(d.events);
-                  if (segs.length >= 3) {
-                    transcriptLoadedRef.current = true;
-                    setTranscript(segs); setTransLoading(false); return;
-                  }
+                  if (segs.length >= 3) { done(segs); return; }
                 }
               } catch { /* */ }
 

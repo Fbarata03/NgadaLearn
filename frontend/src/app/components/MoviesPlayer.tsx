@@ -788,6 +788,8 @@ export function MoviesPlayer() {
               if (state === -1 || state === 5) skipToNextClip();
             }, 12000);
 
+            const vid = selectedRef.current?.id ?? "";
+
             function parseEv(events: any[]): TimedSub[] {
               return (events || [])
                 .filter((ev:any) => ev.segs?.length)
@@ -800,17 +802,37 @@ export function MoviesPlayer() {
                 .filter((s:any) => s.text);
             }
 
-            /* Timeout de segurança — garante que o spinner para sempre */
+            const done = (segs: TimedSub[]) => {
+              transcriptLoadedRef.current = true;
+              setTranscript(segs); setTransLoading(false);
+            };
+
+            /* Estratégia 1: timedtext directamente do browser (IP do utilizador, não bloqueado) */
+            (async () => {
+              if (transcriptLoadedRef.current || !vid) return;
+              for (const lang of ["en", "en&kind=asr", "en-US"]) {
+                try {
+                  const r = await fetch(
+                    `https://www.youtube.com/api/timedtext?v=${vid}&lang=${lang}&fmt=json3`
+                  );
+                  if (!r.ok) continue;
+                  const d = await r.json();
+                  const segs = parseEv(d.events);
+                  if (segs.length >= 3) { done(segs); return; }
+                } catch { /* CORS ou falha — próxima */ }
+              }
+            })();
+
+            /* Estratégia 2: getPlayerResponse + directo/proxy (polling) */
             const safetyTimer = setTimeout(() => {
               if (!transcriptLoadedRef.current) setTransLoading(false);
-            }, 8000);
+            }, 10000);
 
-            /* Polling: tenta obter captionTracks de getPlayerResponse() */
             let attempts = 0;
             const poll = setInterval(async () => {
-              if (transcriptLoadedRef.current) { clearInterval(poll); return; }
+              if (transcriptLoadedRef.current) { clearInterval(poll); clearTimeout(safetyTimer); return; }
               attempts++;
-              if (attempts > 16) { clearInterval(poll); clearTimeout(safetyTimer); setTransLoading(false); return; }
+              if (attempts > 20) { clearInterval(poll); clearTimeout(safetyTimer); setTransLoading(false); return; }
 
               try { e.target.setOption("captions", "track", {}); } catch { /* */ }
 
@@ -823,35 +845,26 @@ export function MoviesPlayer() {
 
               clearInterval(poll); clearTimeout(safetyTimer);
 
+              /* 2a: fetch directo da URL assinada */
               try {
-                /* Fetch directo — URLs assinadas do YT podem ter CORS */
                 const r = await fetch(decodeURIComponent(track.baseUrl) + "&fmt=json3");
                 if (r.ok) {
                   const d = await r.json();
                   const segs = parseEv(d.events);
-                  if (segs.length >= 3) {
-                    transcriptLoadedRef.current = true;
-                    setTranscript(segs); setTransLoading(false); return;
-                  }
+                  if (segs.length >= 3) { done(segs); return; }
                 }
-              } catch { /* CORS — tenta proxy */ }
+              } catch { /* CORS */ }
 
+              /* 2b: proxy backend */
               try {
-                /* Proxy no backend */
-                const r = await fetch(
-                  `${BACKEND}/api/youtube/caption-proxy?url=${encodeURIComponent(track.baseUrl)}`
-                );
+                const r = await fetch(`${BACKEND}/api/youtube/caption-proxy?url=${encodeURIComponent(track.baseUrl)}`);
                 if (r.ok) {
                   const d = await r.json();
                   const segs = parseEv(d.events);
-                  if (segs.length >= 3) {
-                    transcriptLoadedRef.current = true;
-                    setTranscript(segs); setTransLoading(false); return;
-                  }
+                  if (segs.length >= 3) { done(segs); return; }
                 }
               } catch { /* */ }
 
-              /* Tudo falhou — parar spinner */
               setTransLoading(false);
             }, 500);
           },

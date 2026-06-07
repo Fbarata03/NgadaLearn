@@ -800,12 +800,17 @@ export function MoviesPlayer() {
                 .filter((s:any) => s.text);
             }
 
+            /* Timeout de segurança — garante que o spinner para sempre */
+            const safetyTimer = setTimeout(() => {
+              if (!transcriptLoadedRef.current) setTransLoading(false);
+            }, 8000);
+
             /* Polling: tenta obter captionTracks de getPlayerResponse() */
             let attempts = 0;
             const poll = setInterval(async () => {
               if (transcriptLoadedRef.current) { clearInterval(poll); return; }
               attempts++;
-              if (attempts > 12) { clearInterval(poll); setTransLoading(false); return; }
+              if (attempts > 16) { clearInterval(poll); clearTimeout(safetyTimer); setTransLoading(false); return; }
 
               try { e.target.setOption("captions", "track", {}); } catch { /* */ }
 
@@ -814,12 +819,12 @@ export function MoviesPlayer() {
               const track = tracks.find((t:any) => t.languageCode === "en") ||
                             tracks.find((t:any) => t.languageCode?.startsWith("en")) ||
                             tracks[0];
-              if (!track?.baseUrl) return; // ainda não disponível — próxima iteração
+              if (!track?.baseUrl) return;
 
-              clearInterval(poll);
+              clearInterval(poll); clearTimeout(safetyTimer);
 
-              /* 1. Fetch directo do browser (URLs assinadas do YT permitem CORS) */
               try {
+                /* Fetch directo — URLs assinadas do YT podem ter CORS */
                 const r = await fetch(decodeURIComponent(track.baseUrl) + "&fmt=json3");
                 if (r.ok) {
                   const d = await r.json();
@@ -831,8 +836,8 @@ export function MoviesPlayer() {
                 }
               } catch { /* CORS — tenta proxy */ }
 
-              /* 2. Proxy no backend */
               try {
+                /* Proxy no backend */
                 const r = await fetch(
                   `${BACKEND}/api/youtube/caption-proxy?url=${encodeURIComponent(track.baseUrl)}`
                 );
@@ -841,10 +846,13 @@ export function MoviesPlayer() {
                   const segs = parseEv(d.events);
                   if (segs.length >= 3) {
                     transcriptLoadedRef.current = true;
-                    setTranscript(segs); setTransLoading(false);
+                    setTranscript(segs); setTransLoading(false); return;
                   }
                 }
               } catch { /* */ }
+
+              /* Tudo falhou — parar spinner */
+              setTransLoading(false);
             }, 500);
           },
           onStateChange: (e:any) => {
@@ -900,7 +908,7 @@ export function MoviesPlayer() {
           transcriptLoadedRef.current = true;
           setTranscript(segs); setTransLoading(false);
         }
-        /* senão mantém transLoading=true — o fallback do browser trata */
+        /* se vazio: o poll do player trata — o safetyTimer garante que pára */
       })
       .catch(() => setTransLoading(false));
   }, [selected?.id]);

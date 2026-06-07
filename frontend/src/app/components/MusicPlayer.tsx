@@ -725,11 +725,15 @@ export function MusicPlayer() {
                 .filter((s:any) => s.text);
             }
 
+            const safetyTimer = setTimeout(() => {
+              if (!transcriptLoadedRef.current) setTransLoading(false);
+            }, 8000);
+
             let attempts = 0;
             const poll = setInterval(async () => {
               if (transcriptLoadedRef.current) { clearInterval(poll); return; }
               attempts++;
-              if (attempts > 12) { clearInterval(poll); return; }
+              if (attempts > 16) { clearInterval(poll); clearTimeout(safetyTimer); setTransLoading(false); return; }
 
               try { e.target.setOption("captions", "track", {}); } catch { /* */ }
 
@@ -740,7 +744,7 @@ export function MusicPlayer() {
                             tracks[0];
               if (!track?.baseUrl) return;
 
-              clearInterval(poll);
+              clearInterval(poll); clearTimeout(safetyTimer);
 
               try {
                 const r = await fetch(decodeURIComponent(track.baseUrl) + "&fmt=json3");
@@ -763,10 +767,12 @@ export function MusicPlayer() {
                   const segs = parseEv(d.events);
                   if (segs.length >= 3) {
                     transcriptLoadedRef.current = true;
-                    setTranscript(segs); setTransLoading(false);
+                    setTranscript(segs); setTransLoading(false); return;
                   }
                 }
               } catch { /* */ }
+
+              setTransLoading(false);
             }, 500);
           },
           onStateChange: (e: any) => {
@@ -854,7 +860,7 @@ export function MusicPlayer() {
           transcriptLoadedRef.current = true;
           setTranscript(segs); setTransLoading(false);
         }
-        /* senão mantém loading — fallback do player vai tentar */
+        /* se vazio: o poll do player trata — o safetyTimer garante que pára */
       })
       .catch(() => setTransLoading(false));
   }, [selected?.id]);

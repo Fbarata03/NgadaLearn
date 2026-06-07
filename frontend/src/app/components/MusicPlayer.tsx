@@ -313,6 +313,7 @@ export function MusicPlayer() {
   /* Player */
   const [selected,  setSelected]  = useState<Track | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
+  const [ytVideoId, setYtVideoId] = useState<string | null>(null);
   const autoSelectRef = useRef(true);
 
   /* Letras */
@@ -417,13 +418,28 @@ export function MusicPlayer() {
     setLyricsLoading(false);
   }
 
+  /* ── Buscar vídeo YouTube para o áudio ──────────────────────── */
+  async function fetchYouTube(title: string, artist: string) {
+    setYtVideoId(null);
+    try {
+      const q = `${title} ${artist} official audio`;
+      const r = await fetch(`${BACKEND}/api/youtube/search?q=${encodeURIComponent(q)}&max=1`);
+      if (!r.ok) return;
+      const d = await r.json();
+      const vid = d.videos?.[0]?.id;
+      if (vid) setYtVideoId(vid);
+    } catch { /* silencioso */ }
+  }
+
   /* ── Selecionar música ───────────────────────────────────────── */
   function selectTrack(track: Track) {
     setSelected(track);
     setIsPlaying(false);
+    setYtVideoId(null);
     setRawEn(""); setRawPt("");
     setLines([]); setActiveLine(0);
     fetchLyrics(track.title, track.artist);
+    fetchYouTube(track.title, track.artist);
   }
 
   function activeLyricText() {
@@ -436,7 +452,7 @@ export function MusicPlayer() {
       <form onSubmit={e=>{e.preventDefault();searchTracks(query);}}
         className="flex-shrink-0 bg-white/10 backdrop-blur rounded-2xl p-3 space-y-2.5">
         <label className="block text-[11px] font-bold text-purple-300 uppercase tracking-widest">
-          🔍 Pesquisar no Spotify
+          🔍 Pesquisar músicas
         </label>
         <div className="flex gap-2">
           <input value={query} onChange={e=>setQuery(e.target.value)}
@@ -661,6 +677,23 @@ export function MusicPlayer() {
                   </div>
                 )}
               </div>
+
+              {/* YouTube embed para áudio */}
+              {ytVideoId && (
+                <div style={{flexShrink:0,borderRadius:14,overflow:"hidden",
+                  boxShadow:"0 0 20px rgba(109,40,217,.25)"}}>
+                  <iframe
+                    key={ytVideoId}
+                    src={`https://www.youtube-nocookie.com/embed/${ytVideoId}?autoplay=0&rel=0&modestbranding=1&playsinline=1`}
+                    width="100%" height="200"
+                    allow="autoplay; encrypted-media; picture-in-picture"
+                    allowFullScreen
+                    loading="lazy"
+                    style={{border:0,display:"block"}}
+                    title="player"
+                  />
+                </div>
+              )}
 
               {/* Controlo de letras + Now Playing */}
               {selected && (

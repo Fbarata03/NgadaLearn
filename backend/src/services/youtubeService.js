@@ -232,41 +232,64 @@ async function tryYoutubeTranscript(videoId) {
 }
 
 async function tryInnerTube(videoId) {
-  try {
-    const res = await fetch(
-      "https://www.youtube.com/youtubei/v1/player?key=AIzaSyAO_FJ2SlqU8Q4STEHLGCilw_Y9_11qcW8",
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "X-YouTube-Client-Name": "1",
-          "X-YouTube-Client-Version": "2.20240101.00.00",
-          "User-Agent": YT_UA,
-          "Accept-Language": "en-US,en;q=0.9",
-        },
-        body: JSON.stringify({
-          context: { client: { clientName: "WEB", clientVersion: "2.20240101.00.00", hl: "en", gl: "US" } },
-          videoId,
-          racyCheckOk: false, contentCheckOk: false,
-        }),
-        signal: AbortSignal.timeout(10000),
-      }
-    );
-    if (!res.ok) return null;
-    const data = await res.json().catch(() => null);
-    const tracks = data?.captions?.playerCaptionsTracklistRenderer?.captionTracks || [];
-    const track = tracks.find(t => t.languageCode === "en") ||
-                  tracks.find(t => t.languageCode?.startsWith("en")) || tracks[0];
-    if (!track?.baseUrl) return null;
-    const cr = await fetch(
-      decodeURIComponent(track.baseUrl) + "&fmt=json3",
-      { headers: { "User-Agent": YT_UA }, signal: AbortSignal.timeout(8000) }
-    );
-    if (!cr.ok) return null;
-    const cd = await cr.json().catch(() => null);
-    const segs = eventsToSegments(cd?.events);
-    return segs.length >= 3 ? segs : null;
-  } catch { return null; }
+  /* Tenta cliente ANDROID primeiro — menos bloqueado que WEB em IPs de datacenter */
+  for (const client of [
+    {
+      name: "3", version: "17.31.35",
+      ua: "com.google.android.youtube/17.31.35 (Linux; U; Android 11) gzip",
+      ctx: { clientName: "ANDROID", clientVersion: "17.31.35", androidSdkVersion: 30, hl: "en", gl: "US" },
+    },
+    {
+      name: "1", version: "2.20240101.00.00",
+      ua: YT_UA,
+      ctx: { clientName: "WEB", clientVersion: "2.20240101.00.00", hl: "en", gl: "US" },
+    },
+    {
+      name: "85", version: "2.0",
+      ua: YT_UA,
+      ctx: { clientName: "TVHTML5_SIMPLY_EMBEDDED_PLAYER", clientVersion: "2.0",
+             thirdParty: { embedUrl: "https://www.youtube.com/" } },
+    },
+  ]) {
+    try {
+      const res = await fetch(
+        "https://www.youtube.com/youtubei/v1/player?key=AIzaSyAO_FJ2SlqU8Q4STEHLGCilw_Y9_11qcW8",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "X-YouTube-Client-Name": client.name,
+            "X-YouTube-Client-Version": client.version,
+            "User-Agent": client.ua,
+            "Accept-Language": "en-US,en;q=0.9",
+            "Origin": "https://www.youtube.com",
+            "Referer": "https://www.youtube.com/",
+          },
+          body: JSON.stringify({
+            context: { client: client.ctx },
+            videoId,
+            racyCheckOk: false, contentCheckOk: false,
+          }),
+          signal: AbortSignal.timeout(10000),
+        }
+      );
+      if (!res.ok) continue;
+      const data = await res.json().catch(() => null);
+      const tracks = data?.captions?.playerCaptionsTracklistRenderer?.captionTracks || [];
+      const track = tracks.find(t => t.languageCode === "en") ||
+                    tracks.find(t => t.languageCode?.startsWith("en")) || tracks[0];
+      if (!track?.baseUrl) continue;
+      const cr = await fetch(
+        decodeURIComponent(track.baseUrl) + "&fmt=json3",
+        { headers: { "User-Agent": client.ua }, signal: AbortSignal.timeout(8000) }
+      );
+      if (!cr.ok) continue;
+      const cd = await cr.json().catch(() => null);
+      const segs = eventsToSegments(cd?.events);
+      if (segs.length >= 3) return segs;
+    } catch { /* próximo cliente */ }
+  }
+  return null;
 }
 
 async function tryTimedText(videoId) {
@@ -301,4 +324,16 @@ async function fetchTranscript(videoId) {
   return { data: segments, fromCache: false };
 }
 
-module.exports = { searchVideos, getVideoDetails, getStatus, fetchTranscript };
+/* Remove entradas de falha do cache de transcripts para forçar nova tentativa */
+function clearTranscriptFailCache() {
+  for (const [key] of cache) {
+    if (key.startsWith("transcript:")) {
+      const entry = cache.get(key);
+      if (entry && Array.isArray(entry.data) && entry.data.length === 0) {
+        cache.delete(key);
+      }
+    }
+  }
+}
+
+module.exports = { searchVideos, getVideoDetails, getStatus, fetchTranscript, clearTranscriptFailCache };

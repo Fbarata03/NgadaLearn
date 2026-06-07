@@ -6,7 +6,7 @@
 
 const router    = require("express").Router();
 const rateLimit = require("express-rate-limit");
-const { searchVideos, getVideoDetails, getStatus, fetchTranscript } = require("../services/youtubeService");
+const { searchVideos, getVideoDetails, getStatus, fetchTranscript, clearTranscriptFailCache } = require("../services/youtubeService");
 
 /* ── Rate limit específico para pesquisas YouTube ────────────────── */
 const searchLimiter = rateLimit({
@@ -198,6 +198,14 @@ router.get("/ping", async (req, res) => {
    ════════════════════════════════════════════════════════════════════ */
 router.get("/status", (req, res) => {
   res.json(getStatus());
+});
+
+/* ════════════════════════════════════════════════════════════════════
+   POST /api/youtube/cache-clear  — limpa cache de transcripts falhados
+   ════════════════════════════════════════════════════════════════════ */
+router.post("/cache-clear", (req, res) => {
+  clearTranscriptFailCache();
+  res.json({ ok: true });
 });
 
 module.exports = router;

@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Link } from "react-router";
 import {
   Star, Users, Shield, Award, Check, ChevronDown, ChevronUp,

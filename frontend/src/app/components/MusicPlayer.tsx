@@ -735,40 +735,65 @@ export function MusicPlayer() {
 
         {/* ── Header ── */}
         <div style={{flexShrink:0,paddingTop:"env(safe-area-inset-top)",
-          background:"rgba(0,0,0,.8)",backdropFilter:"blur(24px)",
+          background:"rgba(0,0,0,.85)",backdropFilter:"blur(24px)",
           borderBottom:"1px solid rgba(255,255,255,.06)"}}>
-          <div style={{height:50,display:"flex",alignItems:"center",padding:"0 12px",gap:8}}>
-            {/* Voltar */}
-            <Link to="/lessons" style={{display:"flex",alignItems:"center",justifyContent:"center",
-              width:36,height:36,borderRadius:"50%",flexShrink:0,
-              color:"rgba(255,255,255,.7)",textDecoration:"none",
-              background:"rgba(255,255,255,.08)",border:"1px solid rgba(255,255,255,.1)"}}>
-              <svg width={14} height={14} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+          <div style={{height:52,display:"flex",alignItems:"center",padding:"0 10px",gap:8}}>
+
+            {/* ← Voltar */}
+            <Link to="/lessons" style={{
+              display:"flex",alignItems:"center",justifyContent:"center",
+              width:38,height:38,borderRadius:"50%",flexShrink:0,
+              color:"rgba(255,255,255,.75)",textDecoration:"none",
+              background:"rgba(255,255,255,.09)",border:"1px solid rgba(255,255,255,.12)",
+              boxShadow:"0 2px 8px rgba(0,0,0,.3)"}}>
+              <svg width={15} height={15} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7"/>
               </svg>
             </Link>
 
-            {/* Título + ícone — centro */}
-            <div style={{flex:1,display:"flex",alignItems:"center",justifyContent:"center",gap:6}}>
+            {/* Título — só visível em desktop */}
+            <div className="hidden lg:flex" style={{alignItems:"center",gap:6,flex:1,
+              justifyContent:"center"}}>
               <svg width={16} height={16} viewBox="0 0 24 24" fill="#1DB954">
                 <path d="M12 3v10.55A4 4 0 1 0 14 17V7h4V3z"/>
               </svg>
-              <span style={{fontSize:13,fontWeight:900,letterSpacing:"-.2px",whiteSpace:"nowrap"}}>
-                Música · Inglês
-              </span>
+              <span style={{fontSize:14,fontWeight:900,letterSpacing:"-.2px"}}>Música · Inglês</span>
             </div>
 
-            {/* Tabs mobile (só no mobile) */}
+            {/* Título mobile — simples, sem absoluto */}
             {isMobile && (
-              <div style={{display:"flex",gap:3,background:"rgba(255,255,255,.06)",
-                borderRadius:18,padding:3,flexShrink:0}}>
-                {(["list","player"] as const).map(tab=>(
+              <div style={{flex:1,display:"flex",alignItems:"center",gap:5}}>
+                <svg width={14} height={14} viewBox="0 0 24 24" fill="#1DB954">
+                  <path d="M12 3v10.55A4 4 0 1 0 14 17V7h4V3z"/>
+                </svg>
+                <span style={{fontSize:13,fontWeight:800,letterSpacing:"-.2px"}}>Música · Inglês</span>
+              </div>
+            )}
+
+            {/* Tabs mobile — só aparecem quando tem nível selecionado */}
+            {isMobile && selectedLevel && (
+              <div style={{flexShrink:0,display:"flex",gap:2,
+                background:"rgba(255,255,255,.07)",borderRadius:50,padding:3,
+                border:"1px solid rgba(255,255,255,.1)",
+                boxShadow:"0 2px 10px rgba(0,0,0,.3)"}}>
+                {([
+                  {tab:"list" as const, label:"≡"},
+                  {tab:"player" as const, label:"▶"},
+                ]).map(({tab,label})=>(
                   <button key={tab} onClick={()=>setMobileTab(tab)}
-                    style={{background:mobileTab===tab?"#1DB954":"transparent",
-                      border:"none",borderRadius:15,padding:"4px 10px",fontSize:11,fontWeight:700,
-                      color:mobileTab===tab?"#000":"rgba(255,255,255,.55)",cursor:"pointer",
-                      fontFamily:"inherit",transition:"all .2s",whiteSpace:"nowrap"}}>
-                    {tab==="list"?"≡ Lista":"▶ Player"}
+                    style={{
+                      background:mobileTab===tab
+                        ?"linear-gradient(135deg,#1DB954,#16a34a)"
+                        :"transparent",
+                      border:"none",borderRadius:50,
+                      width:34,height:34,
+                      fontSize:15,fontWeight:900,
+                      color:mobileTab===tab?"#000":"rgba(255,255,255,.5)",
+                      cursor:"pointer",fontFamily:"inherit",transition:"all .2s",
+                      boxShadow:mobileTab===tab?"0 2px 8px rgba(29,185,84,.4)":"none",
+                      display:"flex",alignItems:"center",justifyContent:"center",
+                    }}>
+                    {label}
                   </button>
                 ))}
               </div>

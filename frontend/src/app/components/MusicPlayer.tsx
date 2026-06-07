@@ -6,6 +6,10 @@
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import { Link } from "react-router";
 
+declare global {
+  interface Window { YT: any; onYouTubeIframeAPIReady?: () => void; }
+}
+
 /* ── CSS global ──────────────────────────────────────────────────── */
 const ANIM_STYLE = `
 @keyframes eq1{0%,100%{height:4px}50%{height:18px}}
@@ -307,6 +311,8 @@ export function MusicPlayer() {
   const [mobileTab, setMobileTab] = useState<"list"|"player">("player");
   const autoSelectRef = useRef(true);
   const autoAdvRef    = useRef<ReturnType<typeof setInterval>|null>(null);
+  const ytPlayerRef   = useRef<any>(null);
+  const linesLenRef   = useRef(0);
 
   useEffect(() => {
     if (rawEn||rawPt) { setLines(parseLyrics(rawEn,rawPt)); setActiveLine(0); }
@@ -322,7 +328,66 @@ export function MusicPlayer() {
 
   useEffect(() => ()=>{ if (autoAdvRef.current) clearInterval(autoAdvRef.current); }, []);
 
-  /* Buscar vídeo YouTube */
+  /* Manter linesLenRef sempre atualizado (acessível nos callbacks YT) */
+  useEffect(() => { linesLenRef.current = lines.length; }, [lines.length]);
+
+  /* Carregar YouTube IFrame API (uma vez) */
+  useEffect(() => {
+    if (document.getElementById("yt-api-script")) return;
+    const tag = document.createElement("script");
+    tag.id    = "yt-api-script";
+    tag.src   = "https://www.youtube.com/iframe_api";
+    tag.async = true;
+    document.head.appendChild(tag);
+  }, []);
+
+  /* Criar player YouTube quando ytVideoId muda */
+  useEffect(() => {
+    if (!ytVideoId) return;
+
+    function buildPlayer() {
+      if (ytPlayerRef.current) {
+        try { ytPlayerRef.current.destroy(); } catch {}
+        ytPlayerRef.current = null;
+      }
+      const container = document.getElementById("yt-player-root");
+      if (!container) return;
+      container.innerHTML = "";
+      const div = document.createElement("div");
+      div.id = "yt-player-div";
+      container.appendChild(div);
+
+      ytPlayerRef.current = new window.YT.Player("yt-player-div", {
+        videoId:    ytVideoId,
+        width:      "100%",
+        height:     "100%",
+        playerVars: { rel: 0, modestbranding: 1, playsinline: 1, autoplay: 0 },
+        events: {
+          onStateChange: (e: any) => {
+            const playing = e.data === 1;
+            setIsPlaying(playing);
+          },
+        },
+      });
+    }
+
+    if (window.YT?.Player) {
+      buildPlayer();
+    } else {
+      const prev = window.onYouTubeIframeAPIReady;
+      window.onYouTubeIframeAPIReady = () => { prev?.(); buildPlayer(); };
+    }
+
+    return () => {
+      if (ytPlayerRef.current) {
+        try { ytPlayerRef.current.destroy(); } catch {}
+        ytPlayerRef.current = null;
+      }
+      setIsPlaying(false);
+    };
+  }, [ytVideoId]);
+
+  /* Buscar vídeo YouTube quando a música muda */
   useEffect(() => {
     if (!selected) { setYtVideoId(null); return; }
     let cancelled = false;
@@ -479,40 +544,23 @@ export function MusicPlayer() {
                   <Equalizer active={isPlaying} />
                 </div>
 
-                {/* YouTube player */}
+                {/* YouTube player (IFrame API) */}
                 <div style={{flexShrink:0,margin:"0 20px 12px",borderRadius:10,overflow:"hidden",
-                  background:"#000",boxShadow:"0 4px 24px rgba(0,0,0,.6)"}}>
+                  background:"#000",boxShadow:"0 4px 24px rgba(0,0,0,.6)",
+                  aspectRatio:"16/9",maxHeight:"min(35vh,240px)"}}>
                   {ytVideoId ? (
-                    <iframe key={ytVideoId}
-                      src={`https://www.youtube-nocookie.com/embed/${ytVideoId}?autoplay=0&rel=0&modestbranding=1&playsinline=1`}
-                      width="100%" height="180"
-                      allow="autoplay; encrypted-media; picture-in-picture"
-                      allowFullScreen style={{border:0,display:"block"}}
-                      title="player" />
+                    <div id="yt-player-root" style={{width:"100%",height:"100%"}} />
                   ) : (
-                    <div style={{height:52,display:"flex",alignItems:"center",
+                    <div style={{width:"100%",height:"100%",display:"flex",alignItems:"center",
                       justifyContent:"center",gap:8,background:"#181818"}}>
-                      <div style={{width:14,height:14,border:"2px solid rgba(255,255,255,.15)",
-                        borderTopColor:"#1DB954",borderRadius:"50%",animation:"spin .8s linear infinite"}}/>
-                      <span style={{fontSize:12,color:"rgba(255,255,255,.35)"}}>A procurar vídeo…</span>
+                      {selected && <>
+                        <div style={{width:14,height:14,border:"2px solid rgba(255,255,255,.12)",
+                          borderTopColor:"#1DB954",borderRadius:"50%",animation:"spin .8s linear infinite"}}/>
+                        <span style={{fontSize:12,color:"rgba(255,255,255,.3)"}}>A procurar vídeo…</span>
+                      </>}
                     </div>
                   )}
                 </div>
-
-                {/* Botão toggle letras */}
-                {lines.length>0 && (
-                  <div style={{flexShrink:0,padding:"0 20px 10px"}}>
-                    <button onClick={()=>setIsPlaying(p=>!p)}
-                      style={{width:"100%",padding:"10px 0",borderRadius:30,fontWeight:800,
-                        fontSize:13,border:"none",cursor:"pointer",fontFamily:"inherit",
-                        transition:"all .2s",
-                        background:isPlaying?"rgba(29,185,84,.15)":"#1DB954",
-                        color:isPlaying?"#1DB954":"#000",
-                        outline:isPlaying?"1px solid rgba(29,185,84,.4)":"none"}}>
-                      {isPlaying?"⏸  Pausar letras":"▶  Iniciar letras (auto-avanço)"}
-                    </button>
-                  </div>
-                )}
 
                 {/* Letras karaoke */}
                 <div style={{flex:1,minHeight:0,padding:"0 20px 16px"}}>

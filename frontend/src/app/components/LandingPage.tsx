@@ -228,8 +228,12 @@ export function LandingPage() {
           className="hero-grid">
           <style>{`
             @media(max-width:900px){
-              .hero-grid { grid-template-columns:1fr!important; gap:40px!important; padding-top:70px!important; }
-              .hero-photo-col { order:-1; }
+              .hero-grid { grid-template-columns:1fr!important; gap:32px!important; padding:64px 20px 52px!important; }
+              .hero-photo-col { order:-1; max-height:260px!important; overflow:hidden; border-radius:20px; }
+              .hero-photo-col > div { max-height:260px!important; border-radius:20px!important; }
+            }
+            @media(max-width:480px){
+              .hero-grid { padding:56px 16px 44px!important; }
             }
           `}</style>
 
@@ -255,14 +259,21 @@ export function LandingPage() {
             </p>
 
             {/* CTAs */}
-            <div className="lp-in-4" style={{ display: "flex", flexWrap: "wrap", gap: 12, marginBottom: 48 }}>
+            <div className="lp-in-4 hero-ctas" style={{ display: "flex", flexWrap: "wrap", gap: 12, marginBottom: 40 }}>
+              <style>{`
+                @media(max-width:600px){
+                  .hero-ctas { flex-direction:column!important; }
+                  .hero-ctas a { width:100%!important; }
+                  .hero-ctas button { width:100%!important; justify-content:center!important; min-height:52px!important; font-size:17px!important; }
+                }
+              `}</style>
               <Link to="/subscribe" style={{ textDecoration: "none" }}>
-                <button style={{ display: "flex", alignItems: "center", gap: 10, background: "linear-gradient(135deg,#7c3aed,#4f46e5)", color: "#fff", border: "none", borderRadius: 14, padding: "15px 28px", fontSize: 16, fontWeight: 800, cursor: "pointer", boxShadow: "0 8px 36px rgba(124,58,237,.55)", whiteSpace: "nowrap" }}>
+                <button style={{ display: "flex", alignItems: "center", gap: 10, background: "linear-gradient(135deg,#7c3aed,#4f46e5)", color: "#fff", border: "none", borderRadius: 14, padding: "15px 28px", fontSize: 16, fontWeight: 800, cursor: "pointer", boxShadow: "0 8px 36px rgba(124,58,237,.55)", whiteSpace: "nowrap", minHeight: 52 }}>
                   Começar Agora <ArrowRight size={18} />
                 </button>
               </Link>
               <Link to="/demo" style={{ textDecoration: "none" }}>
-                <button style={{ display: "flex", alignItems: "center", gap: 9, background: "rgba(255,255,255,.06)", color: "rgba(255,255,255,.8)", border: "1px solid rgba(255,255,255,.14)", borderRadius: 14, padding: "15px 24px", fontSize: 16, fontWeight: 700, cursor: "pointer", backdropFilter: "blur(8px)", whiteSpace: "nowrap" }}>
+                <button style={{ display: "flex", alignItems: "center", gap: 9, background: "rgba(255,255,255,.06)", color: "rgba(255,255,255,.8)", border: "1px solid rgba(255,255,255,.14)", borderRadius: 14, padding: "15px 24px", fontSize: 16, fontWeight: 700, cursor: "pointer", backdropFilter: "blur(8px)", whiteSpace: "nowrap", minHeight: 52 }}>
                   Ver Aula Gratuita →
                 </button>
               </Link>

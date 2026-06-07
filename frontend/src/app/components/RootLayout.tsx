@@ -58,28 +58,40 @@ export function RootLayout() {
       ]
     : [];
 
+  /* Bottom nav (mobile) — 5 items para utilizadores autenticados */
+  const BOTTOM_NAV = [
+    { to: "/dashboard", label: "Progresso", icon: LayoutDashboard },
+    { to: "/lessons",   label: "Aulas",     icon: BookOpen },
+    { to: "/music",     label: "Música",    icon: Music },
+    { to: "/movies",    label: "Filmes",    icon: Film },
+    { to: "/",          label: "Início",    icon: Home },
+  ];
+
+  /* Páginas onde o bottom nav NÃO deve aparecer (full-screen players) */
+  const hideBottomNav = ["/music", "/movies"].includes(location.pathname);
+
   return (
     <div className="min-h-screen flex flex-col bg-white">
       {/* ── HEADER ── */}
-      <header className="border-b bg-white sticky top-0 z-50 shadow-[0_2px_8px_rgba(0,0,0,0.08)]">
-        <div className="container mx-auto px-4 h-16 flex items-center gap-4">
+      <header className="border-b bg-white/95 backdrop-blur-sm sticky top-0 z-50 shadow-[0_1px_12px_rgba(0,0,0,0.06)]">
+        <div className="container mx-auto px-4 h-14 md:h-16 flex items-center gap-3">
           {/* Logo */}
-          <Link to="/" title="Página Inicial" aria-label="Ir para a página inicial" className="flex items-center gap-1.5 sm:gap-2 flex-shrink-0">
-            <GraduationCap className="w-7 h-7 sm:w-8 sm:h-8 text-purple-600" />
-            <span className="font-black text-lg sm:text-xl text-gray-900 tracking-tight">NgadaLearn</span>
+          <Link to="/" title="Página Inicial" aria-label="Ir para a página inicial" className="flex items-center gap-1.5 flex-shrink-0">
+            <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-purple-600 to-indigo-600 flex items-center justify-center shadow-sm">
+              <GraduationCap className="w-4.5 h-4.5 text-white" style={{width:18,height:18}} />
+            </div>
+            <span className="font-black text-base sm:text-lg text-gray-900 tracking-tight">NgadaLearn</span>
           </Link>
 
           {/* Nav (desktop) */}
           {navLinks.length > 0 && (
-            <nav className="hidden md:flex items-center gap-6 flex-1 ml-4">
-              {navLinks.map(({ to, label }) => (
-                <Link
-                  key={to}
-                  to={to}
-                  className={`text-sm font-medium transition-colors hover:text-purple-600 ${
-                    location.pathname === to ? "text-purple-700 font-semibold" : "text-gray-700"
-                  }`}
-                >
+            <nav className="hidden md:flex items-center gap-5 flex-1 ml-4">
+              {navLinks.map(({ to, label, icon: Icon }) => (
+                <Link key={to} to={to}
+                  className={`flex items-center gap-1.5 text-sm font-medium transition-colors hover:text-purple-600 ${
+                    location.pathname === to ? "text-purple-700 font-semibold" : "text-gray-600"
+                  }`}>
+                  <Icon className="w-3.5 h-3.5" />
                   {label}
                 </Link>
               ))}
@@ -87,7 +99,7 @@ export function RootLayout() {
           )}
 
           {/* Right actions */}
-          <div className="flex items-center gap-3 ml-auto">
+          <div className="flex items-center gap-2 ml-auto">
             {isAuthenticated ? (
               /* ── Utilizador logado ── */
               <div className="relative hidden md:block">
@@ -167,15 +179,25 @@ export function RootLayout() {
               </>
             )}
 
-            {/* Hamburger — touch target 44×44 */}
-            <button
-              className="md:hidden min-w-[44px] min-h-[44px] flex items-center justify-center rounded-xl hover:bg-gray-100 transition-colors"
-              onClick={() => setMobileOpen(!mobileOpen)}
-              aria-label={mobileOpen ? "Fechar menu" : "Abrir menu"}
-              aria-expanded={mobileOpen}
-            >
-              <Menu className="w-5 h-5 text-gray-700" />
-            </button>
+            {/* Mobile: avatar se autenticado, hamburger se visitante */}
+            {isAuthenticated ? (
+              <button
+                className="md:hidden min-w-[40px] min-h-[40px] flex items-center justify-center rounded-full bg-purple-100 border-2 border-purple-200 transition-all active:scale-95"
+                onClick={() => setMobileOpen(!mobileOpen)}
+                aria-label="Menu do utilizador"
+              >
+                <User className="w-4 h-4 text-purple-700" />
+              </button>
+            ) : (
+              <button
+                className="md:hidden min-w-[44px] min-h-[44px] flex items-center justify-center rounded-xl hover:bg-gray-100 transition-colors"
+                onClick={() => setMobileOpen(!mobileOpen)}
+                aria-label={mobileOpen ? "Fechar menu" : "Abrir menu"}
+                aria-expanded={mobileOpen}
+              >
+                <Menu className="w-5 h-5 text-gray-700" />
+              </button>
+            )}
           </div>
         </div>
       </header>
@@ -301,14 +323,14 @@ export function RootLayout() {
         />
       )}
 
-      <main className="flex-1">
+      <main className={`flex-1 ${isAccessActive && !hideBottomNav ? "pb-[64px] md:pb-0" : ""}`}>
         <AnimatePresence mode="wait" initial={false}>
           <motion.div
             key={location.pathname}
-            initial={{ opacity: 0, x: 60 }}
-            animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: -60 }}
-            transition={{ duration: 0.28, ease: [0.4, 0, 0.2, 1] }}
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -12 }}
+            transition={{ duration: 0.22, ease: [0.4, 0, 0.2, 1] }}
           >
             <Outlet />
           </motion.div>
@@ -385,6 +407,32 @@ export function RootLayout() {
           </div>
         </div>
       </footer>
+      )}
+
+      {/* ── BOTTOM NAVIGATION BAR — mobile, só utilizadores autenticados ── */}
+      {isAccessActive && !hideBottomNav && (
+        <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-white/95 backdrop-blur-sm border-t border-gray-100"
+          style={{ boxShadow: "0 -4px 20px rgba(0,0,0,0.07)", paddingBottom: "env(safe-area-inset-bottom)" }}>
+          <div style={{ display: "flex" }}>
+            {BOTTOM_NAV.map(({ to, label, icon: Icon }) => {
+              const active = location.pathname === to;
+              return (
+                <Link key={to} to={to}
+                  style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 3, minHeight: 58, textDecoration: "none", position: "relative", transition: "all .15s" }}>
+                  {active && (
+                    <span style={{ position: "absolute", top: 0, left: "20%", right: "20%", height: 2, borderRadius: "0 0 3px 3px", background: "linear-gradient(90deg,#7c3aed,#4f46e5)" }} />
+                  )}
+                  <div style={{ width: 36, height: 36, borderRadius: 12, display: "flex", alignItems: "center", justifyContent: "center", background: active ? "rgba(124,58,237,.1)" : "transparent", transition: "background .15s" }}>
+                    <Icon style={{ width: 20, height: 20, color: active ? "#7c3aed" : "#9ca3af" }} />
+                  </div>
+                  <span style={{ fontSize: 10, fontWeight: active ? 700 : 500, color: active ? "#7c3aed" : "#9ca3af", lineHeight: 1 }}>
+                    {label}
+                  </span>
+                </Link>
+              );
+            })}
+          </div>
+        </nav>
       )}
     </div>
   );

@@ -229,7 +229,7 @@ export function Dashboard() {
     <div style={{ background: "#f4f3ff", minHeight: "100vh", fontFamily: "system-ui,-apple-system,sans-serif" }}>
 
       {/* ── Hero ── */}
-      <div style={{ background: "linear-gradient(135deg,#07070f 0%,#1e1b4b 55%,#312e81 100%)", padding: "36px 24px 40px", position: "relative", overflow: "hidden" }}>
+      <div style={{ background: "linear-gradient(135deg,#07070f 0%,#1e1b4b 55%,#312e81 100%)", padding: "clamp(20px,4vw,36px) 20px clamp(24px,4vw,40px)", position: "relative", overflow: "hidden" }}>
         <div style={{ position:"absolute", top:"-20%", left:"-5%", width:400, height:400, borderRadius:"50%", background:"radial-gradient(circle,rgba(124,58,237,.3) 0%,transparent 65%)", filter:"blur(70px)", pointerEvents:"none" }} />
         <div style={{ position:"absolute", bottom:"-30%", right:"-5%", width:320, height:320, borderRadius:"50%", background:"radial-gradient(circle,rgba(79,70,229,.2) 0%,transparent 65%)", filter:"blur(80px)", pointerEvents:"none" }} />
 
@@ -261,7 +261,7 @@ export function Dashboard() {
         </div>
       </div>
 
-      <div style={{ maxWidth: 1100, margin: "0 auto", padding: "28px 20px 60px" }}>
+      <div style={{ maxWidth: 1100, margin: "0 auto", padding: "20px 16px 80px" }}>
 
         {/* ── Banner boas-vindas (só quando 0 aulas) ── */}
         {totalCompleted === 0 && (
@@ -307,7 +307,8 @@ export function Dashboard() {
         </div>
 
         {/* ── Progresso + Próximas Aulas ── */}
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20, marginBottom: 24 }} className="md:grid-cols-2 grid-cols-1">
+        <style>{`@media(max-width:640px){.dash-2col{grid-template-columns:1fr!important;}}`}</style>
+        <div className="dash-2col" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, marginBottom: 20 }}>
 
           {/* Progresso por Módulo */}
           <div style={{ background: "#fff", borderRadius: 22, padding: "24px", boxShadow: "0 2px 12px rgba(0,0,0,.06)", border: "1px solid rgba(0,0,0,.05)" }}>

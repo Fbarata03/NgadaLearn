@@ -7,6 +7,43 @@ import {
 } from "lucide-react";
 
 /* ─── Animações ─── */
+/* ─── Carrossel simples com touch ─── */
+function Carousel({ children, dots = true }: { children: React.ReactNode[]; dots?: boolean }) {
+  const [idx, setIdx] = useState(0);
+  const startX = useRef(0);
+  const total = children.length;
+
+  const prev = () => setIdx(i => (i - 1 + total) % total);
+  const next = () => setIdx(i => (i + 1) % total);
+
+  return (
+    <div style={{ position: "relative" }}>
+      <div
+        style={{ overflow: "hidden" }}
+        onTouchStart={e => { startX.current = e.touches[0].clientX; }}
+        onTouchEnd={e => {
+          const dx = e.changedTouches[0].clientX - startX.current;
+          if (dx < -40) next();
+          else if (dx > 40) prev();
+        }}
+      >
+        <div style={{ display: "flex", transition: "transform .35s ease", transform: `translateX(-${idx * 100}%)` }}>
+          {children.map((child, i) => (
+            <div key={i} style={{ minWidth: "100%", boxSizing: "border-box" }}>{child}</div>
+          ))}
+        </div>
+      </div>
+      {dots && (
+        <div style={{ display: "flex", justifyContent: "center", gap: 7, marginTop: 20 }}>
+          {children.map((_, i) => (
+            <button key={i} onClick={() => setIdx(i)} style={{ width: i === idx ? 20 : 8, height: 8, borderRadius: 99, border: "none", background: i === idx ? "#7c3aed" : "#d1d5db", cursor: "pointer", transition: "all .2s", padding: 0 }} />
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 const ANIM = `
   @keyframes blob1 {
     0%,100% { transform: translate(0,0) scale(1); }
@@ -131,6 +168,7 @@ const RATING_BARS = [
 export function LandingPage() {
   const [openFaq, setOpenFaq] = useState<number | null>(null);
   const [rates, setRates] = useState<{ eur?: number; brl?: number } | null>(null);
+  const [showSticky, setShowSticky] = useState(false);
 
   useEffect(() => {
     fetch("https://open.er-api.com/v6/latest/USD")
@@ -139,9 +177,39 @@ export function LandingPage() {
       .catch(() => {});
   }, []);
 
+  useEffect(() => {
+    const onScroll = () => setShowSticky(window.scrollY > 500);
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
+
   return (
     <div style={{ fontFamily: "system-ui,-apple-system,sans-serif", overflowX: "hidden" }}>
       <style>{ANIM}</style>
+
+      {/* ── Botão CTA Sticky (aparece ao fazer scroll) ── */}
+      {showSticky && (
+        <div style={{ position: "fixed", bottom: 20, left: "50%", transform: "translateX(-50%)", zIndex: 1000, pointerEvents: "none" }}
+          className="sticky-cta-wrap">
+          <style>{`
+            @keyframes sticky-in{from{opacity:0;transform:translateX(-50%) translateY(16px)}to{opacity:1;transform:translateX(-50%) translateY(0)}}
+            .sticky-cta-wrap{animation:sticky-in .3s ease both}
+            @media(min-width:768px){.sticky-cta-wrap{display:none!important}}
+          `}</style>
+          <Link to="/subscribe" style={{ pointerEvents: "auto", textDecoration: "none" }}>
+            <button style={{
+              background: "linear-gradient(135deg,#7c3aed,#4f46e5)",
+              color: "#fff", border: "none", borderRadius: 12,
+              padding: "14px 28px", fontSize: 15, fontWeight: 800,
+              cursor: "pointer", fontFamily: "inherit",
+              boxShadow: "0 8px 32px rgba(124,58,237,.45), 0 2px 8px rgba(0,0,0,.2)",
+              whiteSpace: "nowrap", minHeight: 48,
+            }}>
+              Começar Agora →
+            </button>
+          </Link>
+        </div>
+      )}
 
       {/* ════════════════════════════════════════
           HERO — split layout
@@ -351,7 +419,8 @@ export function LandingPage() {
             <span style={{ fontSize: 11, fontWeight: 800, letterSpacing: "0.15em", color: "#7c3aed", textTransform: "uppercase" }}>Como funciona</span>
             <h2 style={{ fontSize: "clamp(26px,4vw,42px)", fontWeight: 900, margin: "10px 0 0", color: "#111", letterSpacing: "-0.5px" }}>3 passos para a fluência</h2>
           </div>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(220px,1fr))", position: "relative" }}>
+          {/* Desktop: grid | Mobile: carrossel */}
+          <div className="hidden sm:grid" style={{ gridTemplateColumns: "repeat(auto-fit,minmax(220px,1fr))", position: "relative" }}>
             <div style={{ position: "absolute", top: 36, left: "17%", right: "17%", height: 2, background: "linear-gradient(to right,#7c3aed,#4f46e5)", zIndex: 0 }} />
             {STEPS.map(({ n, title, desc }) => (
               <div key={n} style={{ display: "flex", flexDirection: "column", alignItems: "center", textAlign: "center", padding: "0 28px", position: "relative", zIndex: 1 }}>
@@ -362,6 +431,19 @@ export function LandingPage() {
                 <p style={{ fontSize: 14, color: "#6b7280", lineHeight: 1.65, margin: 0 }}>{desc}</p>
               </div>
             ))}
+          </div>
+          <div className="sm:hidden">
+            <Carousel>
+              {STEPS.map(({ n, title, desc }) => (
+                <div key={n} style={{ display: "flex", flexDirection: "column", alignItems: "center", textAlign: "center", padding: "0 16px" }}>
+                  <div style={{ width: 72, height: 72, borderRadius: "50%", background: "linear-gradient(135deg,#7c3aed,#4f46e5)", display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 20, boxShadow: "0 8px 28px rgba(124,58,237,.4)", border: "4px solid #fff" }}>
+                    <span style={{ fontSize: 22, fontWeight: 900, color: "#fff" }}>{n}</span>
+                  </div>
+                  <h3 style={{ fontSize: 18, fontWeight: 800, color: "#111", margin: "0 0 10px" }}>{title}</h3>
+                  <p style={{ fontSize: 15, color: "#6b7280", lineHeight: 1.7, margin: 0, maxWidth: 280 }}>{desc}</p>
+                </div>
+              ))}
+            </Carousel>
           </div>
         </div>
       </section>
@@ -381,7 +463,8 @@ export function LandingPage() {
             </div>
           </div>
 
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(280px,1fr))", gap: 20 }}>
+          {/* Desktop: grid | Mobile: carrossel */}
+          <div className="hidden sm:grid" style={{ gridTemplateColumns: "repeat(auto-fit,minmax(280px,1fr))", gap: 20 }}>
             {REVIEWS.map((r) => (
               <div key={r.name} className="lp-card" style={{ background: "#fff", borderRadius: 22, padding: "26px", border: "1px solid #ede9fe", display: "flex", flexDirection: "column", gap: 14 }}>
                 <div style={{ display: "flex", gap: 2 }}>{[...Array(r.stars)].map((_,i) => <Star key={i} size={14} fill="#f59e0b" color="#f59e0b" />)}</div>
@@ -400,6 +483,28 @@ export function LandingPage() {
                 </div>
               </div>
             ))}
+          </div>
+          <div className="sm:hidden">
+            <Carousel>
+              {REVIEWS.map((r) => (
+                <div key={r.name} style={{ background: "#fff", borderRadius: 22, padding: "24px", border: "1px solid #ede9fe", display: "flex", flexDirection: "column", gap: 14, margin: "0 4px" }}>
+                  <div style={{ display: "flex", gap: 2 }}>{[...Array(r.stars)].map((_,i) => <Star key={i} size={14} fill="#f59e0b" color="#f59e0b" />)}</div>
+                  <p style={{ fontSize: 14, color: "#374151", lineHeight: 1.75, margin: 0 }}>"{r.text}"</p>
+                  <div style={{ display: "inline-flex", alignItems: "center", gap: 5, background: "#f0fdf4", border: "1px solid #bbf7d0", borderRadius: 99, padding: "4px 12px", alignSelf: "flex-start" }}>
+                    <Check size={11} color="#16a34a" />
+                    <span style={{ fontSize: 11, fontWeight: 700, color: "#16a34a" }}>{r.badge}</span>
+                  </div>
+                  <div style={{ display: "flex", alignItems: "center", gap: 10, borderTop: "1px solid #f3f4f6", paddingTop: 14 }}>
+                    <img src={r.avatar} alt={r.name} style={{ width: 40, height: 40, borderRadius: "50%", objectFit: "cover", border: "2px solid #ede9fe", flexShrink: 0 }}
+                      onError={e => { (e.target as HTMLImageElement).src = `https://ui-avatars.com/api/?name=${encodeURIComponent(r.name)}&background=7c3aed&color=fff&size=80`; }} />
+                    <div>
+                      <div style={{ fontSize: 13, fontWeight: 700, color: "#111" }}>{r.name}</div>
+                      <div style={{ fontSize: 11, color: "#9ca3af" }}>{r.location}</div>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </Carousel>
           </div>
 
           {/* Barras de rating */}

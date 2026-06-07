@@ -282,20 +282,21 @@ export function Dashboard() {
         )}
 
         {/* ── Stats cards ── */}
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(220px,1fr))", gap: 16, marginBottom: 24 }}>
+        <style>{`@media(max-width:500px){.stats-grid{grid-template-columns:1fr 1fr!important;}}`}</style>
+        <div className="stats-grid" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(200px,1fr))", gap: 12, marginBottom: 24 }}>
           {[
             { type: "lessons" as const, value: totalCompleted, label: "Aulas Concluídas", sub: `${totalCompleted}/${totalAll}`, progress: pct },
             { type: "streak"  as const, value: streak,         label: "Dias em Sequência", sub: streak === 0 ? "Começa hoje!" : streak >= 7 ? "Incrível! 🔥" : "Continue assim!", progress: null },
             { type: "minutes" as const, value: totalMinutes,   label: "Minutos Estudados", sub: `≈ ${Math.round(totalMinutes / 60)}h de estudo`, progress: null },
             { type: "level"   as const, value: level,          label: "Nível Atual",       sub: `Próximo: ${nextLevel}`, progress: null },
           ].map(({ type, value, label, sub, progress }) => (
-            <div key={type} style={{ background: "#fff", borderRadius: 22, padding: "22px 20px", boxShadow: "0 2px 12px rgba(0,0,0,.06)", border: "1px solid rgba(0,0,0,.05)" }}>
-              <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 14 }}>
+            <div key={type} style={{ background: "#fff", borderRadius: 18, padding: "16px 14px", boxShadow: "0 2px 12px rgba(0,0,0,.06)", border: "1px solid rgba(0,0,0,.05)" }}>
+              <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 10 }}>
                 <StatIcon type={type} />
-                <span style={{ fontSize: type === "level" ? 18 : 32, fontWeight: 900, color: "#111", lineHeight: 1 }}>{value}</span>
+                <span style={{ fontSize: type === "level" ? 14 : 26, fontWeight: 900, color: "#111", lineHeight: 1, textAlign: "right", wordBreak: "break-word", maxWidth: "55%" }}>{value}</span>
               </div>
-              <p style={{ fontWeight: 700, fontSize: 13, color: "#374151", margin: "0 0 4px" }}>{label}</p>
-              <p style={{ fontSize: 12, color: "#9ca3af", margin: 0 }}>{sub}</p>
+              <p style={{ fontWeight: 700, fontSize: 12, color: "#374151", margin: "0 0 3px" }}>{label}</p>
+              <p style={{ fontSize: 11, color: "#9ca3af", margin: 0 }}>{sub}</p>
               {progress !== null && (
                 <div style={{ marginTop: 10, height: 5, background: "#f0eeff", borderRadius: 99, overflow: "hidden" }}>
                   <div style={{ height: "100%", width: `${progress}%`, background: "linear-gradient(90deg,#7c3aed,#4f46e5)", borderRadius: 99, transition: "width .5s ease" }} />

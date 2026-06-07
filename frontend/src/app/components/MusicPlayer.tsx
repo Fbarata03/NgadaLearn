@@ -603,7 +603,7 @@ export function MusicPlayer() {
   const liveSubIdxRef  = useRef(-1);
   const liveTimerRef        = useRef<ReturnType<typeof setInterval> | null>(null);
   const autoAdvRef          = useRef<ReturnType<typeof setInterval> | null>(null);
-  const autoSelectMusicRef  = useRef(false);
+  const autoSelectMusicRef  = useRef(true); // auto-seleciona o primeiro resultado ao carregar
   const transcriptLoadedRef = useRef(false);
   const transcriptLines = useMemo(() => transcript.map(s => s.text), [transcript]);
 
@@ -1044,8 +1044,14 @@ export function MusicPlayer() {
             <p className="text-xs text-purple-300">A carregar…</p>
           </div>
         )}
-        {results.map(video => {
+        {results.map((video, idx) => {
           const active = selected?.id === video.id;
+          const lvl = idx < 4 ? "Iniciante" : idx < 8 ? "Intermédio" : "Avançado";
+          const lvlStyle = lvl === "Iniciante"
+            ? {background:"rgba(34,197,94,.18)",color:"#4ade80",border:"1px solid rgba(34,197,94,.3)"}
+            : lvl === "Intermédio"
+            ? {background:"rgba(234,179,8,.18)",color:"#facc15",border:"1px solid rgba(234,179,8,.3)"}
+            : {background:"rgba(239,68,68,.18)",color:"#f87171",border:"1px solid rgba(239,68,68,.3)"};
           return (
             <button key={video.id} onClick={()=>selectVideo(video)}
               className={`w-full text-left flex gap-3 p-3 rounded-xl transition-all border ${
@@ -1070,6 +1076,7 @@ export function MusicPlayer() {
               <div className="overflow-hidden flex-1">
                 <p className="text-xs font-semibold line-clamp-2 leading-snug text-white">{htmlDecode(video.title)}</p>
                 <p className="text-[11px] text-purple-300/80 mt-1 truncate">{htmlDecode(video.channel)}</p>
+                <span style={{...lvlStyle, fontSize:9, fontWeight:700, borderRadius:99, padding:"1px 7px", display:"inline-block", marginTop:3}}>{lvl}</span>
               </div>
             </button>
           );

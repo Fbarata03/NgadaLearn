@@ -720,7 +720,7 @@ export function MoviesPlayer() {
   /* Linhas do transcript memoizadas — evita recriar o array em cada render */
   const transcriptLines = useMemo(() => transcript.map(s => s.text), [transcript]);
 
-  const autoSelectRef = useRef(false);
+  const autoSelectRef = useRef(true); // auto-seleciona o primeiro resultado ao carregar
 
   /* Popup de palavra clicada */
   const [wordPopup, setWordPopup] = useState<{ word: string; x: number; y: number } | null>(null);
@@ -1085,8 +1085,14 @@ export function MoviesPlayer() {
             <p className="text-xs text-amber-300">A filtrar…</p>
           </div>
         )}
-        {!loading && results.map(clip=>{
+        {!loading && results.map((clip, idx)=>{
           const active=selected?.id===clip.id;
+          const lvl = idx < 4 ? "Iniciante" : idx < 8 ? "Intermédio" : "Avançado";
+          const lvlStyle = lvl === "Iniciante"
+            ? {background:"rgba(34,197,94,.18)",color:"#4ade80",border:"1px solid rgba(34,197,94,.3)"}
+            : lvl === "Intermédio"
+            ? {background:"rgba(234,179,8,.18)",color:"#facc15",border:"1px solid rgba(234,179,8,.3)"}
+            : {background:"rgba(239,68,68,.18)",color:"#f87171",border:"1px solid rgba(239,68,68,.3)"};
           return (
             <button key={clip.id}
               onClick={()=>{setSelected(clip);setIsPlaying(false);setVidError(false);}}
@@ -1116,9 +1122,12 @@ export function MoviesPlayer() {
                 <p className="text-[11px] text-amber-300/70 mt-1 truncate">
                   {clip.channel.replace(/&#39;/g,"'").replace(/&amp;/g,"&")}
                 </p>
-                {clip.isOfficial&&(
-                  <span className="text-[9px] bg-amber-500/20 text-amber-300 px-1.5 py-0.5 rounded-full mt-0.5 inline-block">✓ Oficial</span>
-                )}
+                <div className="flex items-center gap-1.5 mt-0.5">
+                  {clip.isOfficial&&(
+                    <span className="text-[9px] bg-amber-500/20 text-amber-300 px-1.5 py-0.5 rounded-full inline-block">✓ Oficial</span>
+                  )}
+                  <span style={{...lvlStyle, fontSize:9, fontWeight:700, borderRadius:99, padding:"1px 7px", display:"inline-block"}}>{lvl}</span>
+                </div>
               </div>
             </button>
           );

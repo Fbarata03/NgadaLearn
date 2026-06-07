@@ -316,7 +316,7 @@ export function RootLayout() {
       </main>
 
       {/* ── FOOTER — oculto em páginas full-screen e quando o user está autenticado ── */}
-      {!user && !["/music", "/movies"].includes(location.pathname) && (
+      {!user && !["/", "/music", "/movies"].includes(location.pathname) && (
       <footer className="bg-gray-900 text-white mt-auto">
         <div className="container mx-auto px-4 py-8 sm:py-12">
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6 sm:gap-8 mb-8">

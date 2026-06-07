@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { useParams, useNavigate, Link } from "react-router";
-import { getLessonById, type Exercise, type MCExercise, type ListenExercise, type FillExercise } from "../data/lessonsData";
+import { getLessonById, ALL_LESSONS, type Exercise, type MCExercise, type ListenExercise, type FillExercise } from "../data/lessonsData";
 import { useProgress } from "../hooks/useProgress";
 import { Button } from "./ui/button";
 import { Card } from "./ui/card";
@@ -434,6 +434,10 @@ export function LessonPlayer() {
   const catColor = { assimil: "bg-purple-100 text-purple-700", pimsleur: "bg-blue-100 text-blue-700", leituras: "bg-green-100 text-green-700" }[lesson.category];
   const progressPct = completed ? 100 : ((exerciseIdx) / lesson.exercises.length) * 100;
 
+  /* Calcular a lição seguinte na lista global */
+  const allIdx = ALL_LESSONS.findIndex(l => l.id === lesson.id);
+  const nextLesson = allIdx >= 0 && allIdx < ALL_LESSONS.length - 1 ? ALL_LESSONS[allIdx + 1] : null;
+
   /* ── Tela de conclusão ── */
   if (completed) {
     return (
@@ -462,12 +466,21 @@ export function LessonPlayer() {
           )}
 
           <div className="space-y-3">
-            <Button
-              onClick={() => navigate("/lessons")}
-              className="w-full bg-purple-600 hover:bg-purple-700 font-bold py-5"
-            >
-              Próxima Aula →
-            </Button>
+            {nextLesson ? (
+              <Button
+                onClick={() => navigate(`/lessons/${nextLesson.id}`)}
+                className="w-full bg-purple-600 hover:bg-purple-700 font-bold py-5"
+              >
+                Próxima Lição → {nextLesson.title}
+              </Button>
+            ) : (
+              <Button
+                onClick={() => navigate("/lessons")}
+                className="w-full bg-purple-600 hover:bg-purple-700 font-bold py-5"
+              >
+                Ver todas as Aulas →
+              </Button>
+            )}
             <Button
               variant="outline"
               onClick={() => { setExerciseIdx(0); setCompleted(false); }}

@@ -418,19 +418,6 @@ export function MusicPlayer() {
     setLyricsLoading(false);
   }
 
-  /* ── Buscar vídeo YouTube para o áudio ──────────────────────── */
-  async function fetchYouTube(title: string, artist: string) {
-    setYtVideoId(null);
-    try {
-      const q = `${title} ${artist} official audio`;
-      const r = await fetch(`${BACKEND}/api/youtube/search?q=${encodeURIComponent(q)}&max=1`);
-      if (!r.ok) return;
-      const d = await r.json();
-      const vid = d.videos?.[0]?.id;
-      if (vid) setYtVideoId(vid);
-    } catch { /* silencioso */ }
-  }
-
   /* ── Selecionar música ───────────────────────────────────────── */
   function selectTrack(track: Track) {
     setSelected(track);
@@ -439,8 +426,24 @@ export function MusicPlayer() {
     setRawEn(""); setRawPt("");
     setLines([]); setActiveLine(0);
     fetchLyrics(track.title, track.artist);
-    fetchYouTube(track.title, track.artist);
   }
+
+  /* ── Buscar vídeo YouTube quando a música muda ───────────────── */
+  useEffect(() => {
+    if (!selected) { setYtVideoId(null); return; }
+    let cancelled = false;
+    (async () => {
+      try {
+        const q = `${selected.title} ${selected.artist} official audio`;
+        const r = await fetch(`${BACKEND}/api/youtube/search?q=${encodeURIComponent(q)}&max=1`);
+        if (!r.ok || cancelled) return;
+        const d = await r.json();
+        const vid = d.videos?.[0]?.id;
+        if (vid && !cancelled) setYtVideoId(vid);
+      } catch { /* silencioso */ }
+    })();
+    return () => { cancelled = true; };
+  }, [selected?.id]);
 
   function activeLyricText() {
     return lines[activeLine]?.en || "";
@@ -679,21 +682,29 @@ export function MusicPlayer() {
               </div>
 
               {/* YouTube embed para áudio */}
-              {ytVideoId && (
+              {ytVideoId ? (
                 <div style={{flexShrink:0,borderRadius:14,overflow:"hidden",
-                  boxShadow:"0 0 20px rgba(109,40,217,.25)"}}>
+                  boxShadow:"0 0 20px rgba(109,40,217,.25)",aspectRatio:"16/9",
+                  maxHeight:"min(35vh,260px)"}}>
                   <iframe
                     key={ytVideoId}
                     src={`https://www.youtube-nocookie.com/embed/${ytVideoId}?autoplay=0&rel=0&modestbranding=1&playsinline=1`}
-                    width="100%" height="200"
+                    width="100%" height="100%"
                     allow="autoplay; encrypted-media; picture-in-picture"
                     allowFullScreen
-                    loading="lazy"
                     style={{border:0,display:"block"}}
                     title="player"
                   />
                 </div>
-              )}
+              ) : selected ? (
+                <div style={{flexShrink:0,borderRadius:14,height:60,
+                  background:"rgba(168,85,247,.06)",border:"1px solid rgba(168,85,247,.12)",
+                  display:"flex",alignItems:"center",justifyContent:"center",gap:8}}>
+                  <div style={{width:12,height:12,border:"2px solid rgba(168,85,247,.4)",
+                    borderTopColor:"#a855f7",borderRadius:"50%",animation:"spin .8s linear infinite"}}/>
+                  <span style={{fontSize:12,color:"rgba(168,85,247,.5)"}}>A procurar vídeo…</span>
+                </div>
+              ) : null}
 
               {/* Controlo de letras + Now Playing */}
               {selected && (

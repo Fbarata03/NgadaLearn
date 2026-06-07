@@ -130,8 +130,8 @@ function QuizLine({line,quizWord,input,onInput,onSubmit,status,answer}:QuizLineP
               placeholder={"_".repeat(Math.min(quizWord.word.length,8))}
               style={{width:`${Math.max(quizWord.word.length*14,70)}px`,textAlign:"center",
                 background:"rgba(29,185,84,.08)",border:"2px solid rgba(29,185,84,.5)",
-                borderRadius:8,color:"#fff",fontSize:"1rem",fontWeight:700,outline:"none",
-                padding:"3px 8px",fontFamily:"inherit",transition:"border-color .2s"}}
+                borderRadius:50,color:"#fff",fontSize:"1rem",fontWeight:700,outline:"none",
+                padding:"4px 12px",fontFamily:"inherit",transition:"border-color .2s"}}
               onFocus={e=>e.target.style.borderColor="#1DB954"}
               onBlur={e=>e.target.style.borderColor="rgba(29,185,84,.5)"}
             />
@@ -167,8 +167,9 @@ function LyricsRiser({lines,active,isPlaying,onNext,onPrev}:{
 
   return (
     <div ref={wrapRef} style={{height:"100%",display:"flex",flexDirection:"column",
-      background:"rgba(0,0,0,.3)",borderRadius:12,overflow:"hidden",
-      border:"1px solid rgba(255,255,255,.06)",backdropFilter:"blur(10px)"}}>
+      background:"rgba(0,0,0,.3)",borderRadius:20,overflow:"hidden",
+      border:"1px solid rgba(255,255,255,.07)",backdropFilter:"blur(12px)",
+      boxShadow:"0 8px 32px rgba(0,0,0,.4)"}}>
       <div style={{height:PROG,background:"rgba(29,185,84,.15)",flexShrink:0}}>
         <div style={{height:"100%",background:"#1DB954",transition:"width .3s ease",
           width:`${Math.round(((active+1)/lines.length)*100)}%`}}/>
@@ -236,12 +237,12 @@ function LyricsRiser({lines,active,isPlaying,onNext,onPrev}:{
           justifyContent:"space-between",padding:"0 14px",borderTop:"1px solid rgba(255,255,255,.05)"}}>
           <button onClick={onPrev} disabled={active===0}
             style={{background:"rgba(255,255,255,.06)",border:"1px solid rgba(255,255,255,.1)",
-              borderRadius:20,padding:"5px 16px",fontSize:12,fontWeight:700,color:"#fff",
+              borderRadius:50,padding:"6px 18px",fontSize:12,fontWeight:700,color:"#fff",
               opacity:active===0?.3:1,cursor:active===0?"not-allowed":"pointer",
               boxShadow:active===0?"none":"0 2px 8px rgba(0,0,0,.3)"}}>← Ant.</button>
           <button onClick={onNext} disabled={active>=lines.length-1}
             style={{background:"rgba(255,255,255,.06)",border:"1px solid rgba(255,255,255,.1)",
-              borderRadius:20,padding:"5px 16px",fontSize:12,fontWeight:700,color:"#fff",
+              borderRadius:50,padding:"6px 18px",fontSize:12,fontWeight:700,color:"#fff",
               opacity:active>=lines.length-1?.3:1,cursor:active>=lines.length-1?"not-allowed":"pointer",
               boxShadow:active>=lines.length-1?"none":"0 2px 8px rgba(0,0,0,.3)"}}>Próx. →</button>
         </div>
@@ -272,7 +273,7 @@ function TrackList({query,setQuery,loading,error,results,selected,isPlaying,sear
             </svg>
             <input value={query} onChange={e=>setQuery(e.target.value)} placeholder="Pesquisar músicas…"
               style={{width:"100%",background:"rgba(255,255,255,.08)",border:"1px solid rgba(255,255,255,.1)",
-                borderRadius:20,padding:"8px 12px 8px 32px",fontSize:13,color:"#fff",outline:"none",
+                borderRadius:50,padding:"9px 12px 9px 34px",fontSize:13,color:"#fff",outline:"none",
                 fontFamily:"inherit",boxSizing:"border-box",transition:"border-color .2s"}}
               onFocus={e=>e.target.style.borderColor="#1DB954"}
               onBlur={e=>e.target.style.borderColor="rgba(255,255,255,.1)"}
@@ -375,6 +376,11 @@ export function MusicPlayer() {
   const [misses, setMisses] = useState(0);
 
   const [mobileTab, setMobileTab] = useState<"list"|"player">("player");
+  const [isMobile,  setIsMobile]  = useState(()=>window.innerWidth<1024);
+  useEffect(()=>{
+    const h=()=>setIsMobile(window.innerWidth<1024);
+    window.addEventListener("resize",h); return ()=>window.removeEventListener("resize",h);
+  },[]);
   const autoSelectRef  = useRef(true);
   const autoAdvRef     = useRef<ReturnType<typeof setInterval>|null>(null);
   const ytPlayerRef    = useRef<any>(null);
@@ -586,40 +592,45 @@ export function MusicPlayer() {
         paddingBottom:"env(safe-area-inset-bottom)"}}>
 
         {/* ── Header ── */}
-        <div style={{flexShrink:0,height:54,paddingTop:"env(safe-area-inset-top)",
-          background:"rgba(0,0,0,.7)",backdropFilter:"blur(24px)",
-          borderBottom:"1px solid rgba(255,255,255,.05)",
-          display:"flex",alignItems:"center",padding:"0 16px",gap:12,position:"relative"}}>
-          <Link to="/lessons" style={{display:"flex",alignItems:"center",gap:5,
-            color:"rgba(255,255,255,.7)",textDecoration:"none",fontSize:12,fontWeight:600,
-            background:"rgba(255,255,255,.07)",border:"1px solid rgba(255,255,255,.1)",
-            borderRadius:20,padding:"5px 12px",flexShrink:0,boxShadow:"0 2px 8px rgba(0,0,0,.3)"}}>
-            <svg width={14} height={14} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7"/>
-            </svg>
-            <span className="hidden sm:inline">Voltar</span>
-          </Link>
+        <div style={{flexShrink:0,paddingTop:"env(safe-area-inset-top)",
+          background:"rgba(0,0,0,.8)",backdropFilter:"blur(24px)",
+          borderBottom:"1px solid rgba(255,255,255,.06)"}}>
+          <div style={{height:50,display:"flex",alignItems:"center",padding:"0 12px",gap:8}}>
+            {/* Voltar */}
+            <Link to="/lessons" style={{display:"flex",alignItems:"center",justifyContent:"center",
+              width:36,height:36,borderRadius:"50%",flexShrink:0,
+              color:"rgba(255,255,255,.7)",textDecoration:"none",
+              background:"rgba(255,255,255,.08)",border:"1px solid rgba(255,255,255,.1)"}}>
+              <svg width={14} height={14} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7"/>
+              </svg>
+            </Link>
 
-          <div style={{position:"absolute",left:"50%",transform:"translateX(-50%)",
-            display:"flex",alignItems:"center",gap:7}}>
-            <svg width={18} height={18} viewBox="0 0 24 24" fill="#1DB954">
-              <path d="M12 3v10.55A4 4 0 1 0 14 17V7h4V3z"/>
-            </svg>
-            <span style={{fontSize:14,fontWeight:900,letterSpacing:"-.3px"}}>Música · Inglês</span>
-          </div>
+            {/* Título + ícone — centro */}
+            <div style={{flex:1,display:"flex",alignItems:"center",justifyContent:"center",gap:6}}>
+              <svg width={16} height={16} viewBox="0 0 24 24" fill="#1DB954">
+                <path d="M12 3v10.55A4 4 0 1 0 14 17V7h4V3z"/>
+              </svg>
+              <span style={{fontSize:13,fontWeight:900,letterSpacing:"-.2px",whiteSpace:"nowrap"}}>
+                Música · Inglês
+              </span>
+            </div>
 
-          {/* Mobile tabs */}
-          <div className="lg:hidden" style={{marginLeft:"auto",display:"flex",
-            gap:4,background:"rgba(255,255,255,.06)",borderRadius:20,padding:3}}>
-            {(["list","player"] as const).map(tab=>(
-              <button key={tab} onClick={()=>setMobileTab(tab)}
-                style={{background:mobileTab===tab?"rgba(29,185,84,.9)":"transparent",
-                  border:"none",borderRadius:17,padding:"5px 12px",fontSize:11,fontWeight:700,
-                  color:mobileTab===tab?"#000":"rgba(255,255,255,.6)",cursor:"pointer",
-                  fontFamily:"inherit",transition:"all .2s"}}>
-                {tab==="list"?"🎵 Lista":"▶ Player"}
-              </button>
-            ))}
+            {/* Tabs mobile (só no mobile) */}
+            {isMobile && (
+              <div style={{display:"flex",gap:3,background:"rgba(255,255,255,.06)",
+                borderRadius:18,padding:3,flexShrink:0}}>
+                {(["list","player"] as const).map(tab=>(
+                  <button key={tab} onClick={()=>setMobileTab(tab)}
+                    style={{background:mobileTab===tab?"#1DB954":"transparent",
+                      border:"none",borderRadius:15,padding:"4px 10px",fontSize:11,fontWeight:700,
+                      color:mobileTab===tab?"#000":"rgba(255,255,255,.55)",cursor:"pointer",
+                      fontFamily:"inherit",transition:"all .2s",whiteSpace:"nowrap"}}>
+                    {tab==="list"?"≡ Lista":"▶ Player"}
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
         </div>
 
@@ -630,7 +641,8 @@ export function MusicPlayer() {
           <div className={mobileTab==="list"?"flex":"hidden lg:flex"}
             style={{width:272,minWidth:272,flexDirection:"column",
               background:"rgba(0,0,0,.4)",backdropFilter:"blur(12px)",
-              borderRight:"1px solid rgba(255,255,255,.05)",overflow:"hidden"}}>
+              borderRight:"1px solid rgba(255,255,255,.05)",overflow:"hidden",
+              boxShadow:"2px 0 20px rgba(0,0,0,.3)"}}>
             <TrackList query={query} setQuery={setQuery} loading={loading} error={error}
               results={results} selected={selected} isPlaying={isPlaying}
               searchTracks={searchTracks} selectTrack={selectTrack} autoSelectRef={autoSelectRef}/>
@@ -642,88 +654,86 @@ export function MusicPlayer() {
 
             {selected ? (
               <>
-                {/* Now Playing card */}
-                <div style={{flexShrink:0,display:"flex",alignItems:"center",gap:12,
-                  padding:"12px 16px 10px",
-                  background:"linear-gradient(180deg,rgba(0,0,0,.4) 0%,transparent 100%)"}}>
+                {/* ── Now Playing — compacto em mobile, grande em desktop ── */}
+                <div style={{flexShrink:0,display:"flex",alignItems:"center",gap:10,
+                  padding:isMobile?"8px 12px":"12px 16px 10px",
+                  background:"linear-gradient(180deg,rgba(0,0,0,.45) 0%,transparent 100%)"}}>
                   {/* Capa */}
                   <div style={{position:"relative",flexShrink:0}}>
                     {selected.thumbnail
                       ? <img src={selected.thumbnail} alt=""
-                          style={{width:80,height:80,borderRadius:8,objectFit:"cover",
-                            boxShadow:"0 8px 32px rgba(0,0,0,.8)",display:"block"}}/>
-                      : <div style={{width:80,height:80,borderRadius:8,
-                          background:"linear-gradient(135deg,#1a1a2e,#16213e)",
-                          display:"flex",alignItems:"center",justifyContent:"center",fontSize:32}}>🎵</div>}
+                          style={{width:isMobile?48:72,height:isMobile?48:72,
+                            borderRadius:6,objectFit:"cover",display:"block",
+                            boxShadow:"0 4px 20px rgba(0,0,0,.7)"}}/>
+                      : <div style={{width:isMobile?48:72,height:isMobile?48:72,borderRadius:6,
+                          background:"#1a1a2e",display:"flex",alignItems:"center",
+                          justifyContent:"center",fontSize:isMobile?22:28}}>🎵</div>}
                     {isPlaying&&(
-                      <div style={{position:"absolute",inset:0,borderRadius:8,
-                        background:"rgba(0,0,0,.35)",display:"flex",alignItems:"center",
-                        justifyContent:"center"}}>
-                        <Equalizer active size={20}/>
+                      <div style={{position:"absolute",inset:0,borderRadius:6,
+                        background:"rgba(0,0,0,.4)",display:"flex",alignItems:"center",justifyContent:"center"}}>
+                        <Equalizer active size={14}/>
                       </div>
                     )}
                   </div>
                   {/* Info */}
                   <div style={{flex:1,minWidth:0}}>
-                    <p style={{margin:0,fontSize:"clamp(.9rem,2vw,1.2rem)",fontWeight:900,
+                    <p style={{margin:0,fontSize:isMobile?13:15,fontWeight:900,
                       overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{selected.title}</p>
-                    <p style={{margin:"3px 0 1px",fontSize:13,color:"#1DB954",fontWeight:600,
+                    <p style={{margin:"2px 0 0",fontSize:isMobile?11:12,color:"#1DB954",fontWeight:600,
                       overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{selected.artist}</p>
-                    {selected.albumName&&(
-                      <p style={{margin:0,fontSize:10,color:"rgba(255,255,255,.3)",
+                    {!isMobile&&selected.albumName&&(
+                      <p style={{margin:"1px 0 0",fontSize:10,color:"rgba(255,255,255,.3)",
                         overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{selected.albumName}</p>
                     )}
                   </div>
-
                   {/* Modo de aprendizagem */}
-                  <div style={{flexShrink:0,display:"flex",gap:5,
-                    background:"rgba(0,0,0,.3)",borderRadius:20,padding:3,
+                  <div style={{flexShrink:0,display:"flex",gap:3,
+                    background:"rgba(0,0,0,.3)",borderRadius:18,padding:3,
                     border:"1px solid rgba(255,255,255,.08)"}}>
                     {(["karaoke","quiz"] as LearnMode[]).map(m=>{
-                      const active=learnMode===m;
+                      const act=learnMode===m;
                       return (
                         <button key={m} onClick={()=>setLearnMode(m)}
-                          style={{background:active?(m==="quiz"?"linear-gradient(135deg,#7c3aed,#6d28d9)":"linear-gradient(135deg,#1DB954,#16a34a)"):"transparent",
-                            border:"none",borderRadius:17,padding:"5px 12px",
-                            fontSize:11,fontWeight:700,cursor:"pointer",fontFamily:"inherit",
-                            color:active?"#fff":"rgba(255,255,255,.5)",
-                            boxShadow:active?"0 2px 10px rgba(0,0,0,.4)":"none",
-                            transition:"all .2s"}}>
-                          {m==="karaoke"?"🎤 Karaoke":"📝 Quiz"}
+                          style={{background:act?(m==="quiz"?"linear-gradient(135deg,#7c3aed,#6d28d9)":"linear-gradient(135deg,#1DB954,#16a34a)"):"transparent",
+                            border:"none",borderRadius:15,padding:isMobile?"4px 8px":"5px 11px",
+                            fontSize:isMobile?10:11,fontWeight:700,cursor:"pointer",fontFamily:"inherit",
+                            color:act?"#fff":"rgba(255,255,255,.45)",
+                            boxShadow:act?"0 2px 8px rgba(0,0,0,.4)":"none",transition:"all .2s"}}>
+                          {m==="karaoke"?"🎤":"📝"}{!isMobile&&(m==="karaoke"?" Karaoke":" Quiz")}
                         </button>
                       );
                     })}
                   </div>
                 </div>
 
-                {/* YouTube player */}
-                <div style={{flexShrink:0,margin:"0 16px 10px",borderRadius:10,overflow:"hidden",
-                  background:"#000",boxShadow:"0 4px 24px rgba(0,0,0,.8)",
-                  aspectRatio:"16/9",maxHeight:"min(30vh,210px)"}}>
+                {/* ── YouTube player ── */}
+                <div style={{flexShrink:0,margin:isMobile?"0 10px 8px":"0 16px 10px",
+                  borderRadius:18,overflow:"hidden",background:"#000",
+                  boxShadow:"0 8px 32px rgba(0,0,0,.8)",
+                  height:isMobile?140:undefined,
+                  aspectRatio:isMobile?undefined:"16/9",
+                  maxHeight:isMobile?140:"min(28vh,200px)"}}>
                   {ytVideoId
                     ? <div id="yt-player-root" style={{width:"100%",height:"100%"}}/>
                     : <div style={{width:"100%",height:"100%",display:"flex",alignItems:"center",
-                        justifyContent:"center",gap:8,background:"#111"}}>
-                        <div style={{width:14,height:14,border:"2px solid rgba(255,255,255,.1)",
+                        justifyContent:"center",gap:8,background:"#0a0a0a"}}>
+                        <div style={{width:12,height:12,border:"2px solid rgba(255,255,255,.1)",
                           borderTopColor:"#1DB954",borderRadius:"50%",animation:"spin .8s linear infinite"}}/>
-                        <span style={{fontSize:12,color:"rgba(255,255,255,.25)"}}>A procurar vídeo…</span>
+                        <span style={{fontSize:11,color:"rgba(255,255,255,.2)"}}>A procurar…</span>
                       </div>}
                 </div>
 
-                {/* Quiz score */}
-                {learnMode==="quiz"&&lines.length>0&&(
+                {/* Quiz score — só mostra em desktop (mobile fica no quiz area) */}
+                {!isMobile&&learnMode==="quiz"&&lines.length>0&&(
                   <div style={{flexShrink:0,margin:"0 16px 8px",display:"flex",alignItems:"center",
-                    gap:10,padding:"8px 14px",
-                    background:"rgba(124,58,237,.12)",border:"1px solid rgba(124,58,237,.25)",
+                    gap:10,padding:"7px 14px",
+                    background:"rgba(124,58,237,.1)",border:"1px solid rgba(124,58,237,.2)",
                     borderRadius:10}}>
-                    <span style={{fontSize:13,fontWeight:700,color:"#a78bfa"}}>📝 Quiz Mode</span>
+                    <span style={{fontSize:12,fontWeight:700,color:"#a78bfa"}}>📝 Quiz</span>
                     <div style={{flex:1}}/>
                     <span style={{fontSize:12,color:"#4ade80",fontWeight:700}}>✓ {score}</span>
-                    <span style={{fontSize:11,color:"rgba(255,255,255,.25)"}}>|</span>
+                    <span style={{fontSize:11,color:"rgba(255,255,255,.2)"}}>|</span>
                     <span style={{fontSize:12,color:"#f87171",fontWeight:700}}>✗ {misses}</span>
-                    <span style={{fontSize:11,color:"rgba(255,255,255,.3)",marginLeft:4}}>
-                      {activeLine+1}/{lines.length}
-                    </span>
                   </div>
                 )}
 
@@ -778,7 +788,7 @@ export function MusicPlayer() {
                           <div style={{display:"flex",gap:8,marginTop:4}}>
                             <button onClick={submitQuiz} disabled={!quizInput.trim()||quizStatus!=="idle"}
                               style={{background:"linear-gradient(135deg,#7c3aed,#6d28d9)",
-                                border:"none",borderRadius:20,padding:"8px 20px",fontSize:13,
+                                border:"none",borderRadius:50,padding:"9px 22px",fontSize:13,
                                 fontWeight:800,color:"#fff",cursor:"pointer",fontFamily:"inherit",
                                 opacity:(!quizInput.trim()||quizStatus!=="idle")?.4:1,
                                 boxShadow:"0 4px 14px rgba(124,58,237,.4)",transition:"all .2s"}}>

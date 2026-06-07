@@ -1472,45 +1472,112 @@ export function MoviesPlayer() {
 
           {/* ── Selecção de Nível ── */}
           {!selectedLevel && (
-            <div style={{maxWidth:600,margin:"0 auto",padding:"20px 16px 32px"}}>
-              <div style={{textAlign:"center",marginBottom:24}}>
-                <div style={{fontSize:48,marginBottom:10}}>🎬</div>
-                <h2 style={{margin:0,fontSize:"clamp(1.2rem,3vw,1.6rem)",fontWeight:900}}>
+            <div style={{maxWidth:620,margin:"0 auto",padding:"28px 16px 40px"}}>
+
+              {/* Header */}
+              <div style={{textAlign:"center",marginBottom:32}}>
+                <div style={{
+                  width:72,height:72,borderRadius:22,margin:"0 auto 18px",
+                  background:"linear-gradient(135deg,#a855f7 0%,#6d28d9 100%)",
+                  display:"flex",alignItems:"center",justifyContent:"center",
+                  boxShadow:"0 8px 32px rgba(168,85,247,.45), 0 0 0 1px rgba(168,85,247,.2)"}}>
+                  <Film size={34} color="#fff" strokeWidth={2}/>
+                </div>
+                <h2 style={{
+                  margin:0,fontSize:"clamp(1.4rem,4vw,1.9rem)",fontWeight:900,letterSpacing:"-.5px",
+                  background:"linear-gradient(135deg,#fff 30%,rgba(255,255,255,.55))",
+                  WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent",backgroundClip:"text"}}>
                   Aprende Inglês com Filmes
                 </h2>
-                <p style={{margin:"8px 0 0",fontSize:13,color:"rgba(255,255,255,.4)"}}>
-                  Filmes e séries reais com legendas em inglês
+                <p style={{margin:"10px 0 0",fontSize:13,color:"rgba(255,255,255,.32)",letterSpacing:".2px"}}>
+                  {CATALOG.length} títulos · 5 níveis CEFR · seleciona o teu nível
                 </p>
               </div>
+
+              {/* Cards */}
               <div style={{display:"flex",flexDirection:"column",gap:10}}>
                 {LEVEL_CFG.map(lv=>{
-                  const count = CATALOG.filter(c=>c.level===lv.id).length;
+                  const films  = CATALOG.filter(c=>c.level===lv.id && c.type==="movie").length;
+                  const series = CATALOG.filter(c=>c.level===lv.id && c.type==="series").length;
                   return (
                     <button key={lv.id} className="card-hover"
                       onClick={()=>{setSelectedLevel(lv);setSelectedContent(null);}}
-                      style={{background:lv.bg,border:`1.5px solid ${lv.accent}35`,
-                        borderRadius:20,padding:"14px 18px",cursor:"pointer",textAlign:"left",
-                        color:"#fff",fontFamily:"inherit",display:"flex",alignItems:"center",gap:14,
-                        boxShadow:"0 4px 16px rgba(0,0,0,.35)",transition:"all .22s"}}>
-                      <div style={{width:44,height:44,borderRadius:12,
-                        background:`${lv.accent}20`,border:`1.5px solid ${lv.accent}40`,
-                        display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,
-                        boxShadow:`0 2px 12px ${lv.accent}25`}}>
-                        <lv.Icon size={20} color={lv.accent} strokeWidth={2}/>
+                      style={{
+                        position:"relative",overflow:"hidden",
+                        background:"linear-gradient(135deg,rgba(255,255,255,.055) 0%,rgba(255,255,255,.018) 100%)",
+                        border:"1px solid rgba(255,255,255,.09)",
+                        borderRadius:22,padding:0,cursor:"pointer",textAlign:"left",
+                        color:"#fff",fontFamily:"inherit",
+                        boxShadow:"0 4px 24px rgba(0,0,0,.35)",transition:"all .22s",
+                        backdropFilter:"blur(8px)"}}>
+
+                      {/* barra lateral colorida */}
+                      <div style={{
+                        position:"absolute",left:0,top:0,bottom:0,width:3,
+                        background:`linear-gradient(180deg,${lv.accent} 0%,${lv.accent}44 100%)`,
+                        borderRadius:"22px 0 0 22px"}}/>
+
+                      {/* brilho de fundo */}
+                      <div style={{
+                        position:"absolute",top:-30,left:30,width:160,height:160,
+                        background:`radial-gradient(circle,${lv.accent}16 0%,transparent 70%)`,
+                        pointerEvents:"none"}}/>
+
+                      <div style={{display:"flex",alignItems:"center",padding:"18px 18px 18px 22px",gap:16}}>
+
+                        {/* ícone */}
+                        <div style={{
+                          width:54,height:54,borderRadius:16,flexShrink:0,
+                          background:`linear-gradient(135deg,${lv.accent}28 0%,${lv.accent}0a 100%)`,
+                          border:`1.5px solid ${lv.accent}45`,
+                          display:"flex",alignItems:"center",justifyContent:"center",
+                          boxShadow:`0 4px 18px ${lv.accent}28, inset 0 1px 0 rgba(255,255,255,.08)`}}>
+                          <lv.Icon size={23} color={lv.accent} strokeWidth={2}/>
+                        </div>
+
+                        {/* texto */}
+                        <div style={{flex:1,minWidth:0}}>
+                          <div style={{display:"flex",alignItems:"center",gap:7,marginBottom:4}}>
+                            <span style={{fontSize:15,fontWeight:900,letterSpacing:"-.3px"}}>{lv.name}</span>
+                            <span style={{
+                              fontSize:9,fontWeight:800,letterSpacing:".8px",
+                              color:lv.accent,background:`${lv.accent}18`,
+                              border:`1px solid ${lv.accent}35`,borderRadius:50,padding:"2px 8px"}}>
+                              {lv.cefr}
+                            </span>
+                          </div>
+                          <p style={{
+                            margin:"0 0 9px",fontSize:11,lineHeight:1.45,
+                            color:"rgba(255,255,255,.38)",
+                            overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>
+                            {lv.description}
+                          </p>
+                          <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
+                            <span style={{
+                              display:"inline-flex",alignItems:"center",gap:4,
+                              fontSize:10,fontWeight:700,
+                              color:lv.accent,background:`${lv.accent}14`,
+                              border:`1px solid ${lv.accent}25`,borderRadius:50,padding:"3px 9px"}}>
+                              <Film size={9} strokeWidth={2.5}/>{films} filmes
+                            </span>
+                            <span style={{
+                              display:"inline-flex",alignItems:"center",gap:4,
+                              fontSize:10,fontWeight:700,
+                              color:"rgba(255,255,255,.45)",background:"rgba(255,255,255,.07)",
+                              border:"1px solid rgba(255,255,255,.1)",borderRadius:50,padding:"3px 9px"}}>
+                              <Tv size={9} strokeWidth={2.5}/>{series} séries
+                            </span>
+                          </div>
+                        </div>
+
+                        {/* seta */}
+                        <div style={{
+                          width:32,height:32,borderRadius:50,flexShrink:0,
+                          background:`${lv.accent}14`,border:`1px solid ${lv.accent}28`,
+                          display:"flex",alignItems:"center",justifyContent:"center"}}>
+                          <ChevronRight size={15} color={lv.accent} strokeWidth={2.5}/>
+                        </div>
                       </div>
-                      <div style={{flex:1,minWidth:0}}>
-                        <p style={{margin:0,fontSize:15,fontWeight:900}}>
-                          {lv.name}
-                          <span style={{marginLeft:8,fontSize:10,fontWeight:700,
-                            color:lv.accent,background:`${lv.accent}18`,
-                            borderRadius:50,padding:"1px 7px"}}>{lv.cefr}</span>
-                        </p>
-                        <p style={{margin:"3px 0 0",fontSize:11,color:"rgba(255,255,255,.5)"}}>{lv.description}</p>
-                        <p style={{margin:"4px 0 0",fontSize:10,color:lv.accent}}>
-                          {count} títulos disponíveis
-                        </p>
-                      </div>
-                      <ChevronRight size={18} color={lv.accent} strokeWidth={2.5} style={{flexShrink:0,opacity:.6}}/>
                     </button>
                   );
                 })}

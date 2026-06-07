@@ -119,10 +119,11 @@ async function searchVideos({ q, type = "music", maxResults = 12 }) {
       relevanceLanguage: "en",
       safeSearch:        "moderate",
     });
+    /* Apenas vídeos com legendas fechadas — música e filmes */
+    params.set("videoCaption", "closedCaption");
     if (type === "movies") {
       params.set("videoDuration", "short");
       params.set("order", "relevance");
-      params.set("videoCaption", "closedCaption");
     }
 
     const data = await apiFetch(`${BASE_URL}/search?${params}`);

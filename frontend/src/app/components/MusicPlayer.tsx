@@ -623,6 +623,22 @@ export function MusicPlayer() {
     else     { setVidError(true); setIsPlaying(false); }
   }, []);
 
+  /* ── Remove música sem legenda e avança automaticamente ─────────── */
+  const skipNoCaptionRef = useRef(false);
+  const skipNoCaption = useCallback(() => {
+    if (skipNoCaptionRef.current) return;
+    skipNoCaptionRef.current = true;
+    const curId = selectedRef.current?.id;
+    if (!curId) return;
+    setResults(prev => {
+      const filtered = prev.filter(v => v.id !== curId);
+      resultsRef.current = filtered;
+      const next = filtered[0];
+      if (next) { setSelected(next); setIsPlaying(false); setVidError(false); }
+      return filtered;
+    });
+  }, []);
+
   /* ── Parse de letras quando muda o raw text ────────────────────── */
   useEffect(() => {
     if (rawEn || rawPt) {
@@ -750,14 +766,14 @@ export function MusicPlayer() {
 
             /* Estratégia 2: getPlayerResponse + proxy (polling) */
             const safetyTimer = setTimeout(() => {
-              if (!transcriptLoadedRef.current) setTransLoading(false);
+              if (!transcriptLoadedRef.current) skipNoCaption();
             }, 10000);
 
             let attempts = 0;
             const poll = setInterval(async () => {
               if (transcriptLoadedRef.current) { clearInterval(poll); clearTimeout(safetyTimer); return; }
               attempts++;
-              if (attempts > 20) { clearInterval(poll); clearTimeout(safetyTimer); setTransLoading(false); return; }
+              if (attempts > 20) { clearInterval(poll); clearTimeout(safetyTimer); skipNoCaption(); return; }
 
               /* LER primeiro, desactivar CC depois — ordem importa */
               const resp = e.target.getPlayerResponse?.();
@@ -789,7 +805,8 @@ export function MusicPlayer() {
                 }
               } catch { /* */ }
 
-              setTransLoading(false);
+              /* Sem legenda — remover e avançar */
+              skipNoCaption();
             }, 500);
           },
           onStateChange: (e: any) => {
@@ -864,10 +881,11 @@ export function MusicPlayer() {
     if (!selected) {
       setTranscript([]); setLiveSubIdx(-1);
       liveSubIdxRef.current = -1; transcriptLoadedRef.current = false;
-      return;
+      skipNoCaptionRef.current = false; return;
     }
     setTranscript([]); setLiveSubIdx(-1);
     liveSubIdxRef.current = -1; transcriptLoadedRef.current = false;
+    skipNoCaptionRef.current = false;
     setTransLoading(true);
     fetch(`${BACKEND}/api/youtube/transcript/${selected.id}`)
       .then(r => r.json())

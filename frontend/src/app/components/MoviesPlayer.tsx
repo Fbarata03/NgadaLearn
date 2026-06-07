@@ -741,6 +741,23 @@ export function MoviesPlayer() {
     else     { setVidError(true); setIsPlaying(false); }
   }, []);
 
+  /* ── Remove clip sem legenda e avança automaticamente ─────────── */
+  const skipNoCaptionRef = useRef(false);
+  const skipNoCaption = useCallback(() => {
+    if (skipNoCaptionRef.current) return; // evitar chamadas duplas
+    skipNoCaptionRef.current = true;
+    const curId = selectedRef.current?.id;
+    if (!curId) return;
+    /* Remove da lista e avança */
+    setResults(prev => {
+      const filtered = prev.filter(v => v.id !== curId);
+      resultsRef.current = filtered;
+      const next = filtered[0];
+      if (next) { setSelected(next); setIsPlaying(false); setVidError(false); }
+      return filtered;
+    });
+  }, []);
+
   /* ── Carregar YT API ─────────────────────────────────────────── */
   useEffect(() => {
     if (document.getElementById("yt-api-script-mv")) return;
@@ -825,14 +842,14 @@ export function MoviesPlayer() {
 
             /* Estratégia 2: getPlayerResponse + directo/proxy (polling) */
             const safetyTimer = setTimeout(() => {
-              if (!transcriptLoadedRef.current) setTransLoading(false);
+              if (!transcriptLoadedRef.current) skipNoCaption();
             }, 10000);
 
             let attempts = 0;
             const poll = setInterval(async () => {
               if (transcriptLoadedRef.current) { clearInterval(poll); clearTimeout(safetyTimer); return; }
               attempts++;
-              if (attempts > 20) { clearInterval(poll); clearTimeout(safetyTimer); setTransLoading(false); return; }
+              if (attempts > 20) { clearInterval(poll); clearTimeout(safetyTimer); skipNoCaption(); return; }
 
               /* LER primeiro, desactivar CC depois — ordem importa */
               const resp = e.target.getPlayerResponse?.();
@@ -866,7 +883,8 @@ export function MoviesPlayer() {
                 }
               } catch { /* */ }
 
-              setTransLoading(false);
+              /* Todas as estratégias falharam — sem legenda, remover e avançar */
+              skipNoCaption();
             }, 500);
           },
           onStateChange: (e:any) => {
@@ -909,10 +927,12 @@ export function MoviesPlayer() {
   useEffect(() => {
     if (!selected) {
       setTranscript([]); setLiveSubIdx(-1);
-      liveSubIdxRef.current = -1; transcriptLoadedRef.current = false; return;
+      liveSubIdxRef.current = -1; transcriptLoadedRef.current = false;
+      skipNoCaptionRef.current = false; return;
     }
     setTranscript([]); setLiveSubIdx(-1);
     liveSubIdxRef.current = -1; transcriptLoadedRef.current = false;
+    skipNoCaptionRef.current = false;
     setTransLoading(true);
     fetch(`${BACKEND}/api/youtube/transcript/${selected.id}`)
       .then(r => r.json())

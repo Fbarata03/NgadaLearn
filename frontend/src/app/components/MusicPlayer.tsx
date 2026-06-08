@@ -375,8 +375,10 @@ export function MusicPlayer() {
   const [score,  setScore]  = useState(0);
   const [misses, setMisses] = useState(0);
 
-  const [mobileTab, setMobileTab] = useState<"list"|"player">("player");
+  const [mobileTab, setMobileTab] = useState<"list"|"player">("list");
   const [isMobile,  setIsMobile]  = useState(()=>window.innerWidth<1024);
+  const [ytLoadError, setYtLoadError] = useState(false);
+  const ytSearchTimer = useRef<ReturnType<typeof setTimeout>|null>(null);
   useEffect(()=>{
     const h=()=>setIsMobile(window.innerWidth<1024);
     window.addEventListener("resize",h); return ()=>window.removeEventListener("resize",h);
@@ -486,19 +488,25 @@ export function MusicPlayer() {
 
   /* Buscar YouTube quando muda música */
   useEffect(()=>{
-    if (!selected){setYtVideoId(null);return;}
+    if (!selected){setYtVideoId(null);setYtLoadError(false);return;}
     let cancelled=false;
+    setYtLoadError(false);
+    // timeout de 12s — backend Render pode demorar a acordar
+    if (ytSearchTimer.current) clearTimeout(ytSearchTimer.current);
+    ytSearchTimer.current = setTimeout(()=>{ if(!cancelled) setYtLoadError(true); }, 12000);
     (async()=>{
       try{
         const q=`${selected.title} ${selected.artist} official audio`;
         const r=await fetch(`${BACKEND}/api/youtube/search?q=${encodeURIComponent(q)}&max=1`);
-        if (!r.ok||cancelled) return;
+        if (!r.ok||cancelled) { if(!cancelled) setYtLoadError(true); return; }
         const d=await r.json();
         const vid=d.videos?.[0]?.id;
-        if (vid&&!cancelled) setYtVideoId(vid);
-      }catch{}
+        if (vid&&!cancelled){ setYtVideoId(vid); setYtLoadError(false); }
+        else if (!cancelled) setYtLoadError(true);
+      }catch{ if(!cancelled) setYtLoadError(true); }
+      finally{ if(ytSearchTimer.current){clearTimeout(ytSearchTimer.current);ytSearchTimer.current=null;} }
     })();
-    return()=>{cancelled=true;};
+    return()=>{ cancelled=true; if(ytSearchTimer.current){clearTimeout(ytSearchTimer.current);ytSearchTimer.current=null;} };
   },[selected?.id]);
 
   /* Verifica se uma música tem letras disponíveis (timeout 3s) */
@@ -710,17 +718,44 @@ export function MusicPlayer() {
                 <div style={{flexShrink:0,margin:isMobile?"0 10px 8px":"0 16px 10px",
                   borderRadius:18,overflow:"hidden",background:"#000",
                   boxShadow:"0 8px 32px rgba(0,0,0,.8)",
-                  height:isMobile?140:undefined,
+                  height:isMobile?190:undefined,
                   aspectRatio:isMobile?undefined:"16/9",
-                  maxHeight:isMobile?140:"min(28vh,200px)"}}>
+                  maxHeight:isMobile?190:"min(28vh,200px)"}}>
                   {ytVideoId
-                    ? <div id="yt-player-root" style={{width:"100%",height:"100%"}}/>
-                    : <div style={{width:"100%",height:"100%",display:"flex",alignItems:"center",
-                        justifyContent:"center",gap:8,background:"#0a0a0a"}}>
-                        <div style={{width:12,height:12,border:"2px solid rgba(255,255,255,.1)",
-                          borderTopColor:"#1DB954",borderRadius:"50%",animation:"spin .8s linear infinite"}}/>
-                        <span style={{fontSize:11,color:"rgba(255,255,255,.2)"}}>A procurar…</span>
-                      </div>}
+                    ? (isMobile
+                        /* iframe direto no mobile — mais compatível com iOS/Android PWA */
+                        ? <iframe
+                            src={`https://www.youtube.com/embed/${ytVideoId}?playsinline=1&rel=0&modestbranding=1&enablejsapi=1`}
+                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                            allowFullScreen
+                            style={{width:"100%",height:"100%",border:"none",display:"block"}}
+                            title="YouTube Music Player"
+                          />
+                        /* IFrame API no desktop — mantém sync de letras */
+                        : <div id="yt-player-root" style={{width:"100%",height:"100%"}}/>)
+                    : ytLoadError
+                      ? <div style={{width:"100%",height:"100%",display:"flex",flexDirection:"column",
+                          alignItems:"center",justifyContent:"center",gap:10,background:"#0a0a0a",padding:"0 16px"}}>
+                          <span style={{fontSize:22}}>📡</span>
+                          <span style={{fontSize:11,color:"rgba(255,255,255,.35)",textAlign:"center"}}>
+                            Servidor a acordar… tenta novamente em 30s
+                          </span>
+                          {selected&&(
+                            <a href={`https://www.youtube.com/results?search_query=${encodeURIComponent(selected.title+' '+selected.artist)}`}
+                              target="_blank" rel="noopener noreferrer"
+                              style={{fontSize:11,color:"#1DB954",fontWeight:700,
+                                padding:"6px 14px",border:"1px solid #1DB954",borderRadius:50,
+                                textDecoration:"none",marginTop:4}}>
+                              ▶ Abrir no YouTube
+                            </a>
+                          )}
+                        </div>
+                      : <div style={{width:"100%",height:"100%",display:"flex",flexDirection:"column",
+                          alignItems:"center",justifyContent:"center",gap:8,background:"#0a0a0a"}}>
+                          <div style={{width:14,height:14,border:"2px solid rgba(255,255,255,.08)",
+                            borderTopColor:"#1DB954",borderRadius:"50%",animation:"spin .8s linear infinite"}}/>
+                          <span style={{fontSize:11,color:"rgba(255,255,255,.18)"}}>A procurar áudio…</span>
+                        </div>}
                 </div>
 
                 {/* Quiz score — só mostra em desktop (mobile fica no quiz area) */}

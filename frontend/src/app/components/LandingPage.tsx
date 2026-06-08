@@ -302,13 +302,15 @@ export function LandingPage() {
           {/* ── DIREITA — Foto realista + cards flutuantes ── */}
           <div className="hero-photo-col lp-photo" style={{ position: "relative" }}>
 
-            {/* Foto principal */}
-            <div style={{ position: "relative", borderRadius: 28, overflow: "hidden", boxShadow: "0 40px 100px rgba(0,0,0,.6)", border: "1px solid rgba(255,255,255,.08)", aspectRatio: "3/4", maxHeight: 580 }}>
-              <img
-                src={HERO_PHOTO}
-                alt="Estudante de inglês"
+            {/* Vídeo de demonstração */}
+            <div style={{ position: "relative", borderRadius: 28, overflow: "hidden", boxShadow: "0 40px 100px rgba(0,0,0,.6)", border: "1px solid rgba(255,255,255,.08)", aspectRatio: "9/16", maxHeight: 580 }}>
+              <video
+                src="/demo.mp4"
+                autoPlay
+                muted
+                loop
+                playsInline
                 style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }}
-                onError={e => { (e.target as HTMLImageElement).style.display = "none"; }}
               />
               {/* Overlay gradiente base */}
               <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to top,rgba(7,7,15,.7) 0%,rgba(7,7,15,.1) 50%,transparent 100%)" }} />

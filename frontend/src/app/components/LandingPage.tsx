@@ -690,7 +690,7 @@ export function LandingPage() {
                   { to: "/", label: "Início" },
                   { to: "/lessons", label: "Conteúdo do Curso" },
                   { to: "/music", label: "Música" },
-                  { to: "/movies", label: "Filmes" },
+                  { to: "/netflix", label: "Netflix do Inglês" },
                   { to: "/dashboard", label: "Meu Progresso" },
                 ].map(({ to, label }) => (
                   <Link key={to} to={to} style={{ fontSize: 13, color: "rgba(255,255,255,.45)", textDecoration: "none" }}

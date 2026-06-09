@@ -13,7 +13,7 @@ import {
   ChevronDown,
   ShieldCheck,
   Music,
-  Film,
+  Tv,
   Globe,
   Lock,
   Home,
@@ -53,7 +53,7 @@ export function RootLayout() {
         { to: "/", label: "Início", icon: Home },
         { to: "/lessons", label: "Conteúdo do Curso", icon: BookOpen },
         { to: "/music", label: "Música", icon: Music },
-        { to: "/movies", label: "Filmes", icon: Film },
+        { to: "/netflix", label: "Netflix do Inglês", icon: Tv },
         { to: "/dashboard", label: "Meu Progresso", icon: LayoutDashboard },
       ]
     : [];
@@ -63,12 +63,12 @@ export function RootLayout() {
     { to: "/dashboard", label: "Progresso", icon: LayoutDashboard },
     { to: "/lessons",   label: "Aulas",     icon: BookOpen },
     { to: "/music",     label: "Música",    icon: Music },
-    { to: "/movies",    label: "Filmes",    icon: Film },
+    { to: "/netflix",   label: "Netflix",   icon: Tv },
     { to: "/",          label: "Início",    icon: Home },
   ];
 
   /* Páginas onde o bottom nav NÃO deve aparecer (full-screen players) */
-  const hideBottomNav = ["/music", "/movies"].includes(location.pathname);
+  const hideBottomNav = ["/music", "/netflix"].includes(location.pathname);
 
   return (
     <div className="min-h-screen flex flex-col bg-white">
@@ -338,7 +338,7 @@ export function RootLayout() {
       </main>
 
       {/* ── FOOTER — oculto em páginas full-screen e quando o user está autenticado ── */}
-      {!user && !["/", "/music", "/movies"].includes(location.pathname) && (
+      {!user && !["/", "/music", "/netflix"].includes(location.pathname) && (
       <footer className="bg-gray-900 text-white mt-auto">
         <div className="container mx-auto px-4 py-8 sm:py-12">
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6 sm:gap-8 mb-8">

@@ -439,7 +439,7 @@ export function Lessons() {
     setOnboardingDismissed(true);
   }
 
-  const lessons = (tab !== "conversacoes" && tab !== "textos" && tab !== "gramatica" && tab !== "frases" && tab !== "vocabulario" && tab !== "musica" && tab !== "filmes")
+  const lessons = (tab !== "conversacoes" && tab !== "textos" && tab !== "gramatica" && tab !== "frases" && tab !== "vocabulario" && tab !== "musica")
     ? LESSONS_MAP[tab as "assimil" | "pimsleur" | "leituras"]
     : [];
 

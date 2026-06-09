@@ -1,143 +1,146 @@
-# 🌍 NgadaLearn
+# NgadaLearn — Aprende Inglês com Música, Netflix e Conversação
 
-> **Fluência em Inglês Acessível com Alma, Ritmo e Tecnologia.**
+> Plataforma web progressiva (PWA) para aprender inglês de forma natural — música, vídeos YouTube curados e exercícios reais.
 
-![Status](https://img.shields.io/badge/Status-Em_Desenvolvimento-blue)
-![Pricing](https://img.shields.io/badge/Preço-US$_5/mês-success)
-![License](https://img.shields.io/badge/Licença-Proprietária-red)
-
----
-
-## 📖 Sobre o Projecto
-
-O **NgadaLearn** é uma plataforma web de aprendizagem de inglês completa e acessível.  
-Combina metodologias comprovadas (Assimil, Pimsleur) com tecnologia moderna — áudio TTS, música do YouTube, conversações reais e muito mais.
+![Deploy](https://img.shields.io/badge/Deploy-GitHub_Pages-blue)
+![Stack](https://img.shields.io/badge/Stack-React_19_+_TypeScript-purple)
+![PWA](https://img.shields.io/badge/PWA-iOS_%2F_Android-green)
 
 ---
 
-## 🏗️ Estrutura do Projecto
+## Stack
+
+| Camada | Tecnologia |
+|---|---|
+| Frontend | React 19 · TypeScript · Vite · TailwindCSS v4 |
+| Routing | React Router v7 |
+| UI | Radix UI · Lucide Icons · Framer Motion |
+| PWA | Vite PWA (Workbox) — instalável em iOS/Android |
+| Backend | Node.js + Express — `ngadalearn-api.onrender.com` |
+| Auth | JWT via backend |
+| Deploy | GitHub Pages — CI/CD automático via GitHub Actions |
+
+---
+
+## Funcionalidades
+
+### 🎵 Music Player (`/music`)
+- Pesquisa músicas no YouTube
+- Karaoke sincronizado com tradução PT por baixo de cada linha
+- Modo Quiz — preenche a palavra em falta
+- Iframe direto no mobile (compatível iOS/Android PWA)
+- Timeout + fallback para quando o backend demora a arrancar
+
+### 🎬 Netflix do Inglês (`/netflix`)
+6 canais curados por nível CEFR com player integrado:
+
+| Canal | Nível |
+|---|---|
+| 🟢 English Easy Practice | A1–A2 |
+| 🔵 English with Lucy | A2–B1 |
+| 🔴 BBC Learning English | A2–B2 |
+| 🟠 Learn English with TV Series | B1–B2 |
+| 🟣 VOA Learning English | B1–C1 |
+| 🟡 English Addict — Mr. Duncan | B2–C1 |
+
+### 📚 Conteúdo do Curso (`/lessons`)
+
+| Módulo | Conteúdo |
+|---|---|
+| Assimil | 146 lições áudio com progressão gradual |
+| Pimsleur | 30 lições de fala e compreensão oral |
+| Leituras | 18 textos com vocabulário em contexto |
+| Conversações | 30 diálogos reais com áudio TTS |
+| Textos | 14 textos do iniciante ao avançado |
+| Gramática | 10 lições estruturadas |
+| Frases | 1000+ frases em 17 categorias |
+| Vocabulário | Adjetivos, verbos, expressões idiomáticas |
+
+### 📊 Dashboard (`/dashboard`)
+- Progresso por módulo com barras visuais
+- Streak de dias consecutivos
+
+### 🏆 Certificado (`/certificate`)
+- Geração de certificado PDF personalizável
+
+---
+
+## Estrutura
 
 ```
 NgadaLearn/
-├── frontend/                     ← App React (pasta: "Create README for NgadaLearn")
+├── frontend/
 │   ├── src/app/
-│   │   ├── components/           ← Todos os ecrãs e players
-│   │   │   ├── LandingPage.tsx
-│   │   │   ├── Dashboard.tsx
-│   │   │   ├── Lessons.tsx
+│   │   ├── components/
+│   │   │   ├── RootLayout.tsx          ← Header + bottom nav + footer
+│   │   │   ├── LandingPage.tsx         ← Página pública
+│   │   │   ├── Lessons.tsx             ← Hub de conteúdo
+│   │   │   ├── MusicPlayer.tsx         ← Player YouTube + karaoke
+│   │   │   ├── NetflixEnglish.tsx      ← Netflix do Inglês
+│   │   │   ├── Dashboard.tsx           ← Progresso
 │   │   │   ├── LessonPlayer.tsx
 │   │   │   ├── ConversationPlayer.tsx
-│   │   │   ├── TextPlayer.tsx
 │   │   │   ├── GrammarPlayer.tsx
 │   │   │   ├── PhrasesViewer.tsx
 │   │   │   ├── VocabularyViewer.tsx
-│   │   │   ├── MusicPlayer.tsx   ← YouTube API v3 + player
+│   │   │   ├── Certificate.tsx
 │   │   │   └── Admin.tsx
-│   │   ├── data/                 ← Conteúdo estático
-│   │   │   ├── lessonsData.ts    ← 146+ lições Assimil/Pimsleur
-│   │   │   ├── conversationsData.ts ← 30 conversações
-│   │   │   ├── textsData.ts      ← 14 textos
-│   │   │   ├── grammarData.ts    ← 10 lições gramática
-│   │   │   ├── phrasesData.ts    ← 700+ frases / 17 categorias
-│   │   │   └── vocabularyData.ts
+│   │   ├── data/                       ← Conteúdo estático
 │   │   ├── context/AuthContext.tsx
 │   │   ├── hooks/useProgress.ts
 │   │   └── routes.tsx
-│   ├── package.json
-│   └── vite.config.ts
+│   ├── public/audio/assimil/           ← Áudio MP3 das lições
+│   └── vite.config.ts                  ← PWA + Tailwind + base "/"
 │
-├── backend/                      ← API REST (Node.js + Express)
-│   ├── src/
-│   │   ├── server.js             ← Ponto de entrada
-│   │   ├── routes/
-│   │   │   ├── auth.js           ← POST /api/auth/login, register, me
-│   │   │   └── users.js          ← GET/POST/PATCH/DELETE /api/users (admin)
-│   │   ├── middleware/
-│   │   │   └── authMiddleware.js ← Verificação JWT
-│   │   ├── utils/
-│   │   │   └── dataStore.js      ← Persistência JSON
-│   │   └── scripts/
-│   │       └── seed.js           ← Criar admin inicial
-│   ├── .env.example
-│   └── package.json
-│
-├── assets/                       ← Build do frontend (deploy Live Server)
-├── index.html                    ← Entrada do deploy
-└── README.md
+└── .github/workflows/deploy.yml        ← Deploy automático GitHub Pages
 ```
 
 ---
 
-## ✨ Funcionalidades
+## Rotas
 
-| Módulo | Descrição |
-|--------|-----------|
-| 🏠 Landing Page | Apresentação e subscrição |
-| 📚 Assimil | 146 lições — método natural |
-| 🎧 Pimsleur | 30 lições de áudio |
-| 📖 Leituras | 18 leituras em áudio |
-| 💬 Conversações | 30 diálogos com áudio TTS |
-| 📝 Textos | 14 textos com tradução |
-| 📐 Gramática | 10 lições de gramática |
-| 🗣️ Frases | **700+ frases em 17 categorias** |
-| 📦 Vocabulário | Adjectivos, verbos, expressões |
-| 🎵 Música | Player YouTube + velocidade + letras + notas |
-| 👤 Admin | Gestão de utilizadores e acessos |
-
----
-
-## 🛠️ Tecnologias
-
-**Frontend:** React 19 · TypeScript · Vite · TailwindCSS · shadcn/ui · React Router v7  
-**Backend:** Node.js · Express · bcryptjs · jsonwebtoken · UUID  
-**APIs:** YouTube Data API v3 · Web Speech API (TTS)
+| Rota | Componente | Acesso |
+|---|---|---|
+| `/` | LandingPage | Público |
+| `/demo` | Demo | Público |
+| `/subscribe` | Subscribe | Público |
+| `/login` | Login | Público |
+| `/lessons` | Lessons | Auth + Plano |
+| `/music` | MusicPlayer | Auth + Plano |
+| `/netflix` | NetflixEnglish | Auth + Plano |
+| `/dashboard` | Dashboard | Auth + Plano |
+| `/grammar/:id` | GrammarPlayer | Auth + Plano |
+| `/conversations/:id` | ConversationPlayer | Auth + Plano |
+| `/texts/:id` | TextPlayer | Auth + Plano |
+| `/phrases` | PhrasesViewer | Auth + Plano |
+| `/vocabulary` | VocabularyViewer | Auth + Plano |
+| `/certificate` | Certificate | Auth + Plano |
+| `/admin` | Admin | Auth + Admin |
 
 ---
 
-## 🚀 Desenvolvimento Local
-
-### Frontend
+## Desenvolvimento local
 
 ```bash
-cd "Create README for NgadaLearn"
+cd frontend
 npm install
-npm run dev     # http://localhost:5173
+npm run dev        # http://localhost:5173
+npm run build      # Build de produção
 ```
 
-### Backend
+### Variáveis de ambiente (`frontend/.env.local`)
 
-```bash
-cd backend
-npm install
-cp .env.example .env   # Editar com os teus valores
-npm run seed            # Criar utilizador admin
-npm run dev             # http://localhost:3001
 ```
-
-### Build e Deploy
-
-```bash
-# Frontend
-cd "Create README for NgadaLearn"
-npm run build
-
-# Copiar para raiz (deploy Live Server)
-copy dist\index.html ..\index.html
-xcopy /E /Y dist\assets ..\assets\
+VITE_API_URL=https://ngadalearn-api.onrender.com
+VITE_STRIPE_PUBLIC_KEY=pk_live_...
 ```
 
 ---
 
-## 💸 Modelo de Negócio
+## Deploy
 
-- **US$ 5/mês** — acesso completo à plataforma
-- Sem anúncios · Sem venda de dados
-- Pagamento simples, cancelamento a qualquer momento
+Push para `main` → GitHub Actions faz build automático → publica em GitHub Pages.
 
 ---
 
-## 🔐 Acesso de Administrador
-
-As credenciais de administrador são definidas através das variáveis de ambiente do servidor (`ADMIN_EMAIL` e `ADMIN_PASSWORD` no ficheiro `.env`).
-
-> ⚠️ Nunca expor credenciais reais num repositório público. Configurar o `.env` localmente ou nas variáveis de ambiente do Render.
+© 2026 NgadaLearn · Todos os direitos reservados

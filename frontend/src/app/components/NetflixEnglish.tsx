@@ -25,7 +25,7 @@ interface Channel {
   videos: Video[];
 }
 
-/* ── Catálogo curado ────────────────────────────────────────────────── */
+/* ── Catálogo — preencher com os vídeos fornecidos ─────────────────── */
 const CHANNELS: Channel[] = [
   {
     id: "easy-practice",
@@ -36,16 +36,7 @@ const CHANNELS: Channel[] = [
     accent: "#4ade80",
     emoji: "🟢",
     description: "Histórias curtas para ouvir e responder — perfeito para iniciantes",
-    videos: [
-      { id: "kHyGS3Cv1WE", title: "Daily English Conversations", duration: "8:12" },
-      { id: "M6ij2dlZbAU", title: "English for Beginners — Story 1", duration: "6:34" },
-      { id: "Q2DP5hbO7BE", title: "Simple English Dialogues", duration: "7:45" },
-      { id: "4Bk3d1RNKMU", title: "Learn English Through Stories", duration: "9:20" },
-      { id: "Xm4PkM7PJBQ", title: "Easy English Listening Practice", duration: "5:55" },
-      { id: "dqmGatXHqFU", title: "Everyday English Phrases", duration: "6:10" },
-      { id: "9bZkp7q19f0", title: "English Conversation for Beginners", duration: "8:00" },
-      { id: "OTR9miGMSAw", title: "Short English Stories A1", duration: "7:30" },
-    ],
+    videos: [],
   },
   {
     id: "english-lucy",
@@ -56,16 +47,7 @@ const CHANNELS: Channel[] = [
     accent: "#60a5fa",
     emoji: "🔵",
     description: "Pronúncia britânica, gramática e vocabulário com Lucy",
-    videos: [
-      { id: "rksdQABknQA", title: "25 Phrases Native Speakers Use", duration: "14:22" },
-      { id: "VnmNRLxHlgw", title: "British vs American English — 100 Differences", duration: "18:45" },
-      { id: "gHkKBQnBxXc", title: "Stop Saying 'Very' — Use These Instead", duration: "12:03" },
-      { id: "t-fcrQmKbOg", title: "Fix Your English Pronunciation", duration: "16:30" },
-      { id: "HrqX0N5OboQ", title: "10 English Words You're Saying Wrong", duration: "11:18" },
-      { id: "F4JDZ7LpbBY", title: "How to Sound More British", duration: "13:55" },
-      { id: "s-gCN9SRhTA", title: "English Grammar — Present Perfect", duration: "15:40" },
-      { id: "hkOBXvDoApI", title: "Advanced English Vocabulary", duration: "17:00" },
-    ],
+    videos: [],
   },
   {
     id: "bbc-english",
@@ -76,16 +58,7 @@ const CHANNELS: Channel[] = [
     accent: "#f87171",
     emoji: "🔴",
     description: "6 Minutos de inglês com a BBC — tópicos reais do mundo",
-    videos: [
-      { id: "ArnBuAuiLcI", title: "6 Minute English — The Future of Food", duration: "6:00" },
-      { id: "7VyXBHmwfOE", title: "6 Minute English — Social Media", duration: "6:00" },
-      { id: "K61ZtEfmPys", title: "6 Minute English — Climate Change", duration: "6:00" },
-      { id: "O4N7-vHSHuU", title: "BBC English — News Words 2024", duration: "5:30" },
-      { id: "jNQXAC9IVRw", title: "The English We Speak — New Words", duration: "3:00" },
-      { id: "WRmBChQjZDs", title: "6 Minute Grammar — Conditionals", duration: "6:00" },
-      { id: "BmknASGrBXM", title: "English in a Minute — So vs Such", duration: "1:00" },
-      { id: "w6gBT7tYsEE", title: "BBC Pronunciation — Silent Letters", duration: "5:00" },
-    ],
+    videos: [],
   },
   {
     id: "tv-series",
@@ -96,16 +69,7 @@ const CHANNELS: Channel[] = [
     accent: "#fb923c",
     emoji: "🟠",
     description: "Aprende inglês real com Friends, The Office e outras séries",
-    videos: [
-      { id: "hzMMHhNqrIE", title: "Learn English with FRIENDS — The One Where…", duration: "12:30" },
-      { id: "RIlHFxDoHMk", title: "The Office — Real English Expressions", duration: "10:45" },
-      { id: "BRzK2fqR_dI", title: "Breaking Bad — Advanced Vocabulary", duration: "11:20" },
-      { id: "5JJQ2yMkJG4", title: "Game of Thrones — Medieval English", duration: "9:55" },
-      { id: "NlgmH5q9uNk", title: "Friends — Sarcasm and Humor in English", duration: "13:10" },
-      { id: "7EDjQWNFU6c", title: "How I Met Your Mother — Slang Explained", duration: "8:30" },
-      { id: "XE_8sENPxiQ", title: "The Crown — Formal British English", duration: "10:00" },
-      { id: "OPDJBklADiM", title: "Stranger Things — American English 80s", duration: "9:15" },
-    ],
+    videos: [],
   },
   {
     id: "voa-english",
@@ -116,16 +80,7 @@ const CHANNELS: Channel[] = [
     accent: "#a78bfa",
     emoji: "🟣",
     description: "Inglês americano através de notícias reais e programas VOA",
-    videos: [
-      { id: "p_BpCEsEi0k", title: "VOA — English in a Minute: Idioms", duration: "1:30" },
-      { id: "5Xd_zkMSPBQ", title: "Everyday Grammar — Phrasal Verbs", duration: "4:20" },
-      { id: "6iRV8liah5A", title: "VOA Learning English — Level 2 Lesson 1", duration: "5:00" },
-      { id: "TG6BuIEjxZE", title: "American English Pronunciation Tips", duration: "6:15" },
-      { id: "KjfaMjcJFqs", title: "VOA — Words and Their Stories", duration: "3:45" },
-      { id: "n6rdBWGgBhc", title: "Learning English TV — Episode 1", duration: "24:00" },
-      { id: "O9G3Bq24YBo", title: "Everyday Grammar — Passive Voice", duration: "4:30" },
-      { id: "3gOHx4Rfy4Y", title: "VOA Science Report — English Vocab", duration: "5:00" },
-    ],
+    videos: [],
   },
   {
     id: "mr-duncan",
@@ -136,16 +91,7 @@ const CHANNELS: Channel[] = [
     accent: "#fbbf24",
     emoji: "🟡",
     description: "Mr. Duncan ensina inglês britânico há 19 anos no YouTube",
-    videos: [
-      { id: "ZLkbWUNQbgk", title: "Mr Duncan — Lesson 1: Hello", duration: "12:00" },
-      { id: "HEGpGHpZr4E", title: "Expressions and Idioms in English", duration: "15:30" },
-      { id: "V7CNPxpEDkc", title: "English Vocabulary — Emotions", duration: "14:20" },
-      { id: "fJ9rUzIMcZQ", title: "Full English — Live Stream Highlights", duration: "22:00" },
-      { id: "CevxZvSJLk8", title: "Mr Duncan — Advanced English Lesson", duration: "18:45" },
-      { id: "9bxBnpXLMF4", title: "English Pronunciation — Tricky Sounds", duration: "11:30" },
-      { id: "pS-gbqbVd8Q", title: "English in a Global World", duration: "16:00" },
-      { id: "xRJ5Fm4pTAo", title: "Learn English While You Sleep", duration: "8:00" },
-    ],
+    videos: [],
   },
 ];
 

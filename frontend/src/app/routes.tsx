@@ -10,7 +10,6 @@ import { GrammarPlayer } from "./components/GrammarPlayer";
 import { PhrasesViewer } from "./components/PhrasesViewer";
 import { VocabularyViewer } from "./components/VocabularyViewer";
 import { MusicPlayer } from "./components/MusicPlayer";
-import { MoviesPlayer } from "./components/MoviesPlayer";
 import { Subscribe } from "./components/Subscribe";
 import { Login } from "./components/Login";
 import { ResetPassword } from "./components/ResetPassword";
@@ -123,16 +122,6 @@ export const router = createBrowserRouter([
         element: (
           <ProtectedRoute>
             <MusicPlayer />
-          </ProtectedRoute>
-        ),
-      },
-
-      // ── Filmes ──
-      {
-        path: "movies",
-        element: (
-          <ProtectedRoute>
-            <MoviesPlayer />
           </ProtectedRoute>
         ),
       },

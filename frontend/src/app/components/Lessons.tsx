@@ -16,7 +16,7 @@ import { VOCABULARY } from "../data/vocabularyData";
 import {
   BookOpen, Headphones, Search, Play, CheckCircle2, Clock,
   ChevronDown, ChevronUp, MessageCircle, FileText,
-  BookMarked, MessageSquare, List, Music, Film, LayoutDashboard,
+  BookMarked, MessageSquare, List, Music, LayoutDashboard,
 } from "lucide-react";
 
 const TABS = [
@@ -29,10 +29,9 @@ const TABS = [
   { id: "frases",       label: "Frases",       icon: MessageSquare,  color: "bg-pink-500",   desc: `${TOTAL_PHRASES}+ frases do dia a dia · 17 categorias` },
   { id: "vocabulario",  label: "Vocabulário",  icon: List,           color: "bg-rose-600",   desc: "Adjectivos, verbos, expressões idiomáticas" },
   { id: "musica",       label: "Música",       icon: Music,          color: "bg-violet-600", desc: "Aprende inglês através de música · YouTube · Controlo de velocidade" },
-  { id: "filmes",       label: "Filmes",       icon: Film,           color: "bg-amber-600",  desc: "Trechos de filmes oficiais · Legendas · Vocabulário e anotações" },
 ] as const;
 
-type TabId = "assimil" | "pimsleur" | "leituras" | "conversacoes" | "textos" | "gramatica" | "frases" | "vocabulario" | "musica" | "filmes";
+type TabId = "assimil" | "pimsleur" | "leituras" | "conversacoes" | "textos" | "gramatica" | "frases" | "vocabulario" | "musica";
 
 const LEVEL_COLOR: Record<LessonLevel, string> = {
   "Iniciante":     "bg-green-100 text-green-700",
@@ -575,8 +574,8 @@ export function Lessons() {
           ))}
         </div>
 
-        {/* ── Cards grandes: Música e Filmes ── */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+        {/* ── Card Música ── */}
+        <div className="mb-6">
           <Link to="/music">
             <div className={`relative overflow-hidden rounded-2xl shadow-xl cursor-pointer h-36 sm:h-44 transition-all duration-300 hover:scale-[1.02] hover:shadow-2xl ${tab==="musica"?"ring-4 ring-violet-300":""}`}>
               <img src="https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?auto=format&fit=crop&w=800&q=75"
@@ -593,25 +592,6 @@ export function Lessons() {
                   </div>
                 </div>
                 <Music className="w-8 h-8 text-white/30 flex-shrink-0" />
-              </div>
-            </div>
-          </Link>
-          <Link to="/movies">
-            <div className={`relative overflow-hidden rounded-2xl shadow-xl cursor-pointer h-36 sm:h-44 transition-all duration-300 hover:scale-[1.02] hover:shadow-2xl ${tab==="filmes"?"ring-4 ring-amber-300":""}`}>
-              <img src="https://images.unsplash.com/photo-1440404653325-ab127d49abc1?auto=format&fit=crop&w=800&q=75"
-                alt="Filmes" className="absolute inset-0 w-full h-full object-cover" loading="lazy" />
-              <div className="absolute inset-0 bg-gradient-to-r from-amber-950/95 via-orange-900/75 to-orange-700/30" />
-              <div className="absolute inset-0 flex items-center px-6 gap-4">
-                <div className="w-14 h-14 bg-white/15 backdrop-blur-sm rounded-2xl flex items-center justify-center text-3xl flex-shrink-0 border border-white/20">🎬</div>
-                <div className="flex-1">
-                  <p className="font-black text-xl sm:text-2xl text-white">Filmes em Inglês</p>
-                  <p className="text-amber-200 text-xs sm:text-sm mt-1 leading-relaxed">Trechos oficiais · Legendas CC · Vocabulário</p>
-                  <div className="flex gap-2 mt-2 flex-wrap">
-                    <span className="text-[10px] bg-white/15 text-white px-2 py-0.5 rounded-full">🎭 12 filmes</span>
-                    <span className="text-[10px] bg-white/15 text-white px-2 py-0.5 rounded-full">📺 Legendas tempo real</span>
-                  </div>
-                </div>
-                <Film className="w-8 h-8 text-white/30 flex-shrink-0" />
               </div>
             </div>
           </Link>
@@ -641,8 +621,8 @@ export function Lessons() {
           <p className="text-sm text-gray-500">{TABS.find(t => t.id === tab)?.desc}</p>
         </div>
 
-        {/* Pesquisa (apenas quando não é Música nem Filmes) */}
-        {tab !== "musica" && tab !== "filmes" && (
+        {/* Pesquisa (apenas quando não é Música) */}
+        {tab !== "musica" && (
           <div className="relative mb-5">
             <Search className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
             <Input
@@ -679,27 +659,6 @@ export function Lessons() {
               <div className="inline-flex items-center gap-2 bg-white text-violet-700 font-black px-8 py-3 rounded-xl text-base hover:bg-violet-100 transition-colors">
                 <Music className="w-5 h-5" />
                 Ir para o Player de Música
-              </div>
-            </div>
-          </Link>
-        ) : tab === "filmes" ? (
-          <Link to="/movies">
-            <div className="bg-gradient-to-br from-amber-600 to-orange-800 rounded-2xl p-8 text-white text-center hover:from-amber-700 hover:to-orange-900 transition-all shadow-xl cursor-pointer">
-              <div className="text-7xl mb-4">🎬</div>
-              <h2 className="text-2xl font-black mb-2">Abrir Player de Filmes</h2>
-              <p className="text-amber-100 text-sm mb-6 max-w-md mx-auto">
-                Vê trechos de filmes oficiais em inglês, ativa as legendas CC,
-                guarda vocabulário novo e faz anotações enquanto vês.
-              </p>
-              <div className="flex justify-center gap-4 flex-wrap text-sm mb-6">
-                <span className="bg-white/20 px-3 py-1.5 rounded-full">🎭 12 Sugestões de Filmes</span>
-                <span className="bg-white/20 px-3 py-1.5 rounded-full">📺 Legendas CC em Inglês</span>
-                <span className="bg-white/20 px-3 py-1.5 rounded-full">📚 Guardar Vocabulário</span>
-                <span className="bg-white/20 px-3 py-1.5 rounded-full">🗒️ Frases Memoráveis</span>
-              </div>
-              <div className="inline-flex items-center gap-2 bg-white text-amber-700 font-black px-8 py-3 rounded-xl text-base hover:bg-amber-50 transition-colors">
-                <Film className="w-5 h-5" />
-                Ir para o Player de Filmes
               </div>
             </div>
           </Link>

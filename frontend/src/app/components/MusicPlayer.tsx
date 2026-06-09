@@ -145,12 +145,11 @@ function QuizLine({line,quizWord,input,onInput,onSubmit,status,answer}:QuizLineP
 /* ════════════════════════════════════════════════════════════════════
    LYRICS RISER — karaoke
    ════════════════════════════════════════════════════════════════════ */
-const LINE_H = 56;
+const LINE_H = 72;
 function LyricsRiser({lines,active,isPlaying,onNext,onPrev}:{
   lines:{en:string;pt?:string}[]; active:number; isPlaying:boolean;
   onNext?:()=>void; onPrev?:()=>void;
 }) {
-  const [transl, setTransl] = useState<string|null>(null);
   const wrapRef = useRef<HTMLDivElement>(null);
   const [wrapH, setWrapH] = useState(320);
 
@@ -161,8 +160,8 @@ function LyricsRiser({lines,active,isPlaying,onNext,onPrev}:{
   },[]);
 
   if (!lines.length) return null;
-  const PROG=2,BADGE=30,NAV=(onNext||onPrev)?44:0,HINT=(lines.some(l=>l.pt)&&!transl)?16:0,TRANSL=transl?50:0;
-  const clipH=Math.max(LINE_H*3,wrapH-PROG-BADGE-NAV-HINT-TRANSL);
+  const PROG=2,BADGE=30,NAV=(onNext||onPrev)?44:0;
+  const clipH=Math.max(LINE_H*3,wrapH-PROG-BADGE-NAV);
   const padV=Math.max(0,(clipH-LINE_H)/2);
 
   return (
@@ -184,22 +183,24 @@ function LyricsRiser({lines,active,isPlaying,onNext,onPrev}:{
         </span>
       </div>
       <div style={{height:clipH,overflow:"hidden",position:"relative",flexShrink:0}}>
-        <div style={{position:"absolute",top:0,left:0,right:0,height:clipH*.3,zIndex:10,pointerEvents:"none",
-          background:"linear-gradient(to bottom,rgba(0,0,0,.6),transparent)"}}/>
+        <div style={{position:"absolute",top:0,left:0,right:0,height:clipH*.25,zIndex:10,pointerEvents:"none",
+          background:"linear-gradient(to bottom,rgba(0,0,0,.7),transparent)"}}/>
         <div style={{position:"absolute",left:0,top:"50%",transform:"translateY(-50%)",
           width:3,height:LINE_H,background:"#1DB954",borderRadius:2,zIndex:15,pointerEvents:"none"}}/>
         <div style={{transform:`translateY(${-active*LINE_H}px)`,transition:"transform .5s cubic-bezier(.4,0,.2,1)",
           paddingTop:padV,paddingBottom:padV}}>
           {lines.map((line,i)=>{
             const dist=Math.abs(i-active),isAct=i===active;
-            const opacity=dist===0?1:dist===1?.38:dist===2?.18:.07;
+            const opacity=dist===0?1:dist===1?.4:dist===2?.18:.06;
             return (
-              <div key={i} onClick={()=>line.pt?setTransl(transl===line.pt?null:(line.pt??null)):undefined}
-                style={{height:LINE_H,display:"flex",alignItems:"center",justifyContent:"center",
+              <div key={i}
+                style={{height:LINE_H,display:"flex",flexDirection:"column",
+                  alignItems:"center",justifyContent:"center",gap:3,
                   padding:"0 32px",opacity,transform:`scale(${dist===0?1:dist===1?.92:.84})`,
-                  transition:"all .4s",cursor:line.pt?"pointer":"default"}}>
-                <p style={{textAlign:"center",margin:0,lineHeight:1.3,
-                  fontSize:isAct?"clamp(1.2rem,2.8vw,1.6rem)":"clamp(.8rem,1.8vw,1rem)",
+                  transition:"all .4s"}}>
+                {/* Linha em inglês */}
+                <p style={{textAlign:"center",margin:0,lineHeight:1.2,
+                  fontSize:isAct?"clamp(1.1rem,2.5vw,1.45rem)":"clamp(.75rem,1.7vw,.95rem)",
                   fontWeight:isAct?900:400,
                   ...(isAct?{
                     background:"linear-gradient(90deg,#fff 0%,#d1fae5 40%,#fff 70%,#d1fae5 100%)",
@@ -208,30 +209,22 @@ function LyricsRiser({lines,active,isPlaying,onNext,onPrev}:{
                     WebkitBackgroundClip:"text",backgroundClip:"text",color:"transparent",
                   }:{color:"rgba(255,255,255,.35)"}),
                 }}>{line.en||"♪"}</p>
+                {/* Tradução PT — sempre visível quando existe */}
+                {line.pt && (
+                  <p style={{textAlign:"center",margin:0,lineHeight:1.2,
+                    fontSize:isAct?"clamp(.7rem,1.5vw,.82rem)":"clamp(.6rem,1.2vw,.7rem)",
+                    fontWeight:isAct?600:400,fontStyle:"italic",
+                    color:isAct?"rgba(167,243,208,.75)":"rgba(255,255,255,.18)"}}>
+                    🇵🇹 {line.pt}
+                  </p>
+                )}
               </div>
             );
           })}
         </div>
-        <div style={{position:"absolute",bottom:0,left:0,right:0,height:clipH*.28,zIndex:10,pointerEvents:"none",
-          background:"linear-gradient(to top,rgba(0,0,0,.6),transparent)"}}/>
+        <div style={{position:"absolute",bottom:0,left:0,right:0,height:clipH*.25,zIndex:10,pointerEvents:"none",
+          background:"linear-gradient(to top,rgba(0,0,0,.7),transparent)"}}/>
       </div>
-      {transl && (
-        <div style={{flexShrink:0,height:TRANSL,background:"rgba(29,185,84,.9)",
-          padding:"0 14px",display:"flex",alignItems:"center",gap:10}}>
-          <span style={{fontSize:13,flexShrink:0}}>🇵🇹</span>
-          <p style={{flex:1,margin:0,fontSize:"clamp(.82rem,1.6vw,.92rem)",fontWeight:600,
-            color:"#000",fontStyle:"italic",lineHeight:1.3}}>{transl}</p>
-          <button onClick={()=>setTransl(null)}
-            style={{background:"rgba(0,0,0,.2)",border:"none",borderRadius:"50%",width:22,height:22,
-              color:"#000",cursor:"pointer",fontSize:12,fontWeight:700,flexShrink:0}}>✕</button>
-        </div>
-      )}
-      {HINT>0&&(
-        <p style={{flexShrink:0,height:HINT,display:"flex",alignItems:"center",
-          justifyContent:"center",fontSize:10,color:"rgba(255,255,255,.2)",margin:0}}>
-          Clica numa linha para ver a tradução 🇵🇹
-        </p>
-      )}
       {(onPrev||onNext)&&(
         <div style={{flexShrink:0,height:NAV,display:"flex",alignItems:"center",
           justifyContent:"space-between",padding:"0 14px",borderTop:"1px solid rgba(255,255,255,.05)"}}>

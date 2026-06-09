@@ -574,8 +574,26 @@ export function Lessons() {
           ))}
         </div>
 
-        {/* ── Card Música ── */}
-        <div className="mb-6">
+        {/* ── Cards Música + Netflix ── */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+          <Link to="/netflix">
+            <div className="relative overflow-hidden rounded-2xl shadow-xl cursor-pointer h-36 sm:h-44 transition-all duration-300 hover:scale-[1.02] hover:shadow-2xl">
+              <img src="https://images.unsplash.com/photo-1522869635100-9f4c5e86aa37?auto=format&fit=crop&w=800&q=75"
+                alt="Netflix do Inglês" className="absolute inset-0 w-full h-full object-cover" loading="lazy" />
+              <div className="absolute inset-0 bg-gradient-to-r from-red-950/95 via-red-900/75 to-red-700/30" />
+              <div className="absolute inset-0 flex items-center px-6 gap-4">
+                <div className="w-14 h-14 bg-white/15 backdrop-blur-sm rounded-2xl flex items-center justify-center text-3xl flex-shrink-0 border border-white/20">🎬</div>
+                <div className="flex-1">
+                  <p className="font-black text-xl sm:text-2xl text-white">Netflix do Inglês</p>
+                  <p className="text-red-200 text-xs sm:text-sm mt-1 leading-relaxed">6 canais curados · BBC · Lucy · TV Series · VOA</p>
+                  <div className="flex gap-2 mt-2 flex-wrap">
+                    <span className="text-[10px] bg-white/15 text-white px-2 py-0.5 rounded-full">🟢 A1 ao C1</span>
+                    <span className="text-[10px] bg-white/15 text-white px-2 py-0.5 rounded-full">📺 Player integrado</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </Link>
           <Link to="/music">
             <div className={`relative overflow-hidden rounded-2xl shadow-xl cursor-pointer h-36 sm:h-44 transition-all duration-300 hover:scale-[1.02] hover:shadow-2xl ${tab==="musica"?"ring-4 ring-violet-300":""}`}>
               <img src="https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?auto=format&fit=crop&w=800&q=75"
@@ -595,7 +613,7 @@ export function Lessons() {
               </div>
             </div>
           </Link>
-        </div>
+        </div> {/* fim grid */}
 
         {/* Tabs */}
         <div id="lessons-tabs" className="flex gap-2 mb-5 overflow-x-auto pb-1.5 flex-nowrap scrollbar-hide overscroll-x-contain -mx-1 px-1">

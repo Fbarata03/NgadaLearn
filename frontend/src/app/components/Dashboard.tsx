@@ -73,13 +73,14 @@ function StatIcon({ type }: { type: "lessons" | "streak" | "minutes" | "level" }
 }
 
 function CertificateSection({
-  name, level, totalCompleted, totalAll, totalMinutes,
+  name, level, totalCompleted, totalAll, totalMinutes, unlockAt = CERT_UNLOCK_AT,
 }: {
   name: string; level: string; totalCompleted: number;
-  totalAll: number; totalMinutes: number;
+  totalAll: number; totalMinutes: number; unlockAt?: number;
 }) {
-  const unlocked = totalCompleted >= CERT_UNLOCK_AT;
-  const pctToUnlock = Math.min(Math.round((totalCompleted / CERT_UNLOCK_AT) * 100), 100);
+  const unlocked = unlockAt === 0 || totalCompleted >= unlockAt;
+  const threshold = unlockAt === 0 ? 1 : unlockAt;
+  const pctToUnlock = Math.min(Math.round((totalCompleted / threshold) * 100), 100);
 
   const handleDownload = () => {
     downloadCertificate({ name, level, totalCompleted, totalAll, totalMinutes });
@@ -99,7 +100,7 @@ function CertificateSection({
             {unlocked ? "🎓 Certificado Disponível!" : "Certificado de Conclusão"}
           </p>
           <p style={{ fontSize: 12, color: unlocked ? "#92400e" : "#6b7280", margin: 0 }}>
-            {unlocked ? `Parabéns! Concluíste ${totalCompleted} lições — Nível ${level}` : `Completa ${CERT_UNLOCK_AT} lições para desbloquear`}
+            {unlocked ? `Parabéns! Concluíste ${totalCompleted} lições — Nível ${level}` : `Completa ${threshold} lições para desbloquear`}
           </p>
         </div>
         {unlocked && (
@@ -163,11 +164,11 @@ function CertificateSection({
           ) : (
             <>
               <p style={{ fontSize: 13, color: "#6b7280", marginBottom: 14 }}>
-                Faltam <strong style={{ color: "#111" }}>{CERT_UNLOCK_AT - totalCompleted} lições</strong> para o teu certificado.
+                Faltam <strong style={{ color: "#111" }}>{threshold - totalCompleted} lições</strong> para o teu certificado.
               </p>
               <div style={{ marginBottom: 14 }}>
                 <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11, color: "#9ca3af", marginBottom: 6 }}>
-                  <span>{totalCompleted} concluídas</span><span>{CERT_UNLOCK_AT} necessárias</span>
+                  <span>{totalCompleted} concluídas</span><span>{threshold} necessárias</span>
                 </div>
                 <Progress value={pctToUnlock} className="h-3" />
                 <p style={{ fontSize: 11, color: "#9ca3af", marginTop: 4 }}>{pctToUnlock}% do caminho para o certificado</p>
@@ -189,8 +190,11 @@ function CertificateSection({
    DASHBOARD PRINCIPAL
 ══════════════════════════════════════════ */
 export function Dashboard() {
-  const { user } = useAuth();
+  const { user, isAdmin } = useAuth();
   const { totalCompleted, totalMinutes, streak, lastOpened, isCompleted } = useProgress();
+
+  // Admin vê o certificado sempre desbloqueado (para prévia/teste)
+  const certUnlockAt = isAdmin ? 0 : CERT_UNLOCK_AT;
 
   const totalAll = ALL_LESSONS.length;
   const pct = Math.round((totalCompleted / totalAll) * 100);
@@ -400,6 +404,7 @@ export function Dashboard() {
             totalCompleted={totalCompleted}
             totalAll={totalAll}
             totalMinutes={totalMinutes}
+            unlockAt={certUnlockAt}
           />
         </div>
 

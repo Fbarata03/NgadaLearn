@@ -195,6 +195,35 @@ const CHANNELS: Channel[] = [
       { id: "qWgjx-Q9iwY", title: "Daily English Conversations for Speaking Practice" },
     ],
   },
+
+  /* ── English Life Stories ────────────────────────────────────────── */
+  {
+    id: "english-life-stories",
+    name: "English Life Stories",
+    handle: "@Englishlifestories1",
+    badge: "A1–B1",
+    badgeColor: "#fb923c",
+    accent: "#fb923c",
+    emoji: "📖",
+    description: "Histórias animadas em inglês para aprender vocabulário e gramática de forma natural",
+    videos: [
+      { id: "eUISfjlUv80", title: "Mother's Love Full Story | English Learning Stories" },
+      { id: "oOf2wBJ1lQU", title: "Pizza Boy Story | English Learning Stories" },
+      { id: "CNZ6waDdLzg", title: "Hungry Mom and Daughter | Motivational Story | Learn English" },
+      { id: "ocsp6svMljQ", title: "Stepdad Part 11 | English Learning Stories | Animated Stories" },
+      { id: "LoPCAoI3ShA", title: "Stepdad Part 10 | English Learning Stories | Animated Stories" },
+      { id: "4a9099gs3JA", title: "Stepdad Part 9 | English Learning Stories | Animated Stories" },
+      { id: "15nqxZe9CKM", title: "Stepdad Part 8 | English Learning Stories | Animated Stories" },
+      { id: "jPaqap-sAxI", title: "Stepdad Part 7 | English Learning Stories | Animated Stories" },
+      { id: "o0vyxB3QGKw", title: "Stepdad Part 12 | English Learning Stories | Animated Stories" },
+      { id: "3zXQxSLOJ44", title: "Stepdad Part 13 | English Learning Stories | Animated Stories" },
+      { id: "Ld0UslkKmUU", title: "Stepdad Part 14 | Animated Stories | Learn English" },
+      { id: "XQVO2eNWpbQ", title: "Stepdad Part 15 | English Story | Animated Stories" },
+      { id: "sZZhJKjsEKw", title: "Real Fasting Ramadan Story | English Story | Animated Stories" },
+      { id: "8b4pjXs-wbM", title: "Hungry Neighbors Story | Animated Stories | Learn English" },
+      { id: "XQHIONLQ1t4", title: "Poor in Ramadan | English Story | Animated Stories" },
+    ],
+  },
 ];
 
 const FEATURED = CHANNELS[0].videos[0];

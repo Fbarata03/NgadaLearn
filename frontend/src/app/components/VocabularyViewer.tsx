@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { Link } from "react-router";
 import { Card } from "./ui/card";
 import { Input } from "./ui/input";
@@ -178,6 +178,11 @@ function IdiomsList({ search }: { search: string }) {
 export function VocabularyViewer() {
   const [tab, setTab] = useState<TabId>("adjectives");
   const [search, setSearch] = useState("");
+
+  // Cleanup: para TTS ao sair da página
+  useEffect(() => {
+    return () => { window.speechSynthesis?.cancel(); };
+  }, []);
 
   const activeTab = TABS.find((t) => t.id === tab)!;
   const totalWords =

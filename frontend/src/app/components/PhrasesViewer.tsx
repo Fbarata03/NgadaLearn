@@ -1,16 +1,39 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { Link } from "react-router";
 import { Card } from "./ui/card";
 import { Input } from "./ui/input";
 import { PHRASE_CATEGORIES, TOTAL_PHRASES, type PhraseCategory } from "../data/phrasesData";
 import { Volume2, Search, ChevronDown, ChevronUp, ArrowLeft } from "lucide-react";
 
+/* Nível aproximado de cada categoria */
+const CATEGORY_LEVEL: Record<string, { label: string; color: string }> = {
+  common:         { label: "A1", color: "bg-green-100 text-green-700" },
+  greetings:      { label: "A1", color: "bg-green-100 text-green-700" },
+  farewells:      { label: "A1", color: "bg-green-100 text-green-700" },
+  gratitude:      { label: "A1", color: "bg-green-100 text-green-700" },
+  apologies:      { label: "A1", color: "bg-green-100 text-green-700" },
+  questions:      { label: "A2", color: "bg-blue-100 text-blue-700" },
+  emotions:       { label: "A2", color: "bg-blue-100 text-blue-700" },
+  congratulations:{ label: "A2", color: "bg-blue-100 text-blue-700" },
+  shopping:       { label: "A2", color: "bg-blue-100 text-blue-700" },
+  travel:         { label: "A2", color: "bg-blue-100 text-blue-700" },
+  health:         { label: "B1", color: "bg-purple-100 text-purple-700" },
+  work:           { label: "B1", color: "bg-purple-100 text-purple-700" },
+  opinions:       { label: "B1", color: "bg-purple-100 text-purple-700" },
+  advice:         { label: "B1", color: "bg-purple-100 text-purple-700" },
+  business:       { label: "B2", color: "bg-orange-100 text-orange-700" },
+  academic:       { label: "B2", color: "bg-orange-100 text-orange-700" },
+};
+
 function speak(text: string) {
   if (!("speechSynthesis" in window)) return;
   window.speechSynthesis.cancel();
   const utterance = new SpeechSynthesisUtterance(text);
-  utterance.lang = "en-GB";
-  utterance.rate = 0.9;
+  utterance.lang = "en-US";
+  utterance.rate = 0.88;
+  const voices = window.speechSynthesis.getVoices();
+  const preferred = voices.find(v => v.lang.startsWith("en") && (v.name.includes("Google") || v.name.includes("Samantha")));
+  if (preferred) utterance.voice = preferred;
   window.speechSynthesis.speak(utterance);
 }
 
@@ -47,7 +70,14 @@ function CategoryCard({
             {category.icon}
           </div>
           <div>
-            <p className="font-bold text-gray-900 text-sm">{category.title}</p>
+            <div className="flex items-center gap-1.5 flex-wrap">
+              <p className="font-bold text-gray-900 text-sm">{category.title}</p>
+              {CATEGORY_LEVEL[category.id] && (
+                <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full ${CATEGORY_LEVEL[category.id].color}`}>
+                  {CATEGORY_LEVEL[category.id].label}
+                </span>
+              )}
+            </div>
             <p className="text-xs text-gray-500">{category.titlePt} · {filteredPhrases.length} frases</p>
           </div>
         </div>
@@ -89,6 +119,11 @@ export function PhrasesViewer() {
   const [activeCategory, setActiveCategory] = useState<string | null>("greetings");
   const [search, setSearch] = useState("");
   const [activeTab, setActiveTab] = useState<string>("all");
+
+  // Cleanup: para TTS ao sair da página
+  useEffect(() => {
+    return () => { window.speechSynthesis?.cancel(); };
+  }, []);
 
   const isSearching = search.trim().length > 0;
 

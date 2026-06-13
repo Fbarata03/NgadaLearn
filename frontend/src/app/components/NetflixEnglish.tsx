@@ -5,7 +5,7 @@
 
 import React, { useState } from "react";
 import { Link } from "react-router";
-import { ChevronLeft, ChevronRight, Play, X, ExternalLink } from "lucide-react";
+import { ChevronLeft, ChevronRight, Play, X } from "lucide-react";
 
 /* ── Tipos ─────────────────────────────────────────────────────────── */
 interface Video {
@@ -320,18 +320,16 @@ export function NetflixEnglish() {
                   {ch.description}
                 </p>
               </div>
-              <a
-                href={`https://www.youtube.com/${ch.handle}`}
-                target="_blank" rel="noopener noreferrer"
+              <span
                 style={{
                   display: "flex", alignItems: "center", gap: 5,
                   fontSize: 11, fontWeight: 700, color: ch.accent,
-                  textDecoration: "none", flexShrink: 0,
+                  flexShrink: 0,
                   padding: "5px 12px", borderRadius: 50,
                   background: `${ch.accent}14`, border: `1px solid ${ch.accent}30`,
                 }}>
-                <ExternalLink size={11} /> Canal
-              </a>
+                {ch.videos.length} vídeos
+              </span>
             </div>
 
             {/* Cards com scroll */}
@@ -495,45 +493,53 @@ function VideoModal({ video, onClose }: { video: { id: string; title: string }; 
           border: "1px solid rgba(255,255,255,.1)",
           boxShadow: "0 40px 100px rgba(0,0,0,.8)",
         }}>
-        {/* Barra superior */}
+        {/* Barra superior — SEM link para YouTube */}
         <div style={{
           display: "flex", alignItems: "center", gap: 10,
           padding: "12px 16px",
           background: "rgba(255,255,255,.04)",
           borderBottom: "1px solid rgba(255,255,255,.07)",
         }}>
-          <span style={{ flex: 1, fontSize: 13, fontWeight: 700, color: "rgba(255,255,255,.85)" }}>
+          <span style={{ fontSize: 14 }}>🎬</span>
+          <span style={{ flex: 1, fontSize: 13, fontWeight: 700, color: "rgba(255,255,255,.85)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
             {video.title}
           </span>
-          <a
-            href={`https://www.youtube.com/watch?v=${video.id}`}
-            target="_blank" rel="noopener noreferrer"
-            style={{
-              display: "flex", alignItems: "center", gap: 5,
-              fontSize: 11, fontWeight: 700, color: "#60a5fa",
-              textDecoration: "none",
-            }}>
-            <ExternalLink size={12} /> YouTube
-          </a>
+          <span style={{
+            fontSize: 10, fontWeight: 800, padding: "3px 8px", borderRadius: 50,
+            background: "rgba(74,222,128,.15)", color: "#4ade80",
+            border: "1px solid rgba(74,222,128,.25)", letterSpacing: ".3px",
+            flexShrink: 0,
+          }}>NgadaLearn</span>
           <button
             onClick={onClose}
             style={{
               background: "rgba(255,255,255,.08)", border: "1px solid rgba(255,255,255,.15)",
               borderRadius: "50%", width: 30, height: 30, cursor: "pointer",
               color: "#fff", display: "flex", alignItems: "center", justifyContent: "center",
+              flexShrink: 0,
             }}>
             <X size={14} />
           </button>
         </div>
-        {/* Player */}
-        <div style={{ aspectRatio: "16/9" }}>
+        {/* Player com overlays para bloquear cliques em links do YouTube */}
+        <div style={{ aspectRatio: "16/9", position: "relative" }}>
           <iframe
-            src={`https://www.youtube.com/embed/${video.id}?autoplay=1&rel=0&modestbranding=1&playsinline=1`}
-            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-            allowFullScreen
+            src={`https://www.youtube.com/embed/${video.id}?autoplay=1&rel=0&modestbranding=1&playsinline=1&iv_load_policy=3`}
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope"
             style={{ width: "100%", height: "100%", border: "none", display: "block" }}
             title={video.title}
+            sandbox="allow-scripts allow-same-origin allow-presentation"
           />
+          {/* Overlay: bloqueia o título clicável do YouTube (barra superior da iframe) */}
+          <div style={{
+            position: "absolute", top: 0, left: 0, right: 0,
+            height: "14%", zIndex: 10, cursor: "default",
+          }} />
+          {/* Overlay: bloqueia o logo/watermark do YouTube (canto inferior direito) */}
+          <div style={{
+            position: "absolute", bottom: "6%", right: 0,
+            width: "16%", height: "13%", zIndex: 10, cursor: "default",
+          }} />
         </div>
       </div>
     </div>

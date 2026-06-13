@@ -17,14 +17,22 @@ import {
   BookOpen, Headphones, Search, Play, CheckCircle2, Clock,
   ChevronDown, ChevronUp, MessageCircle, FileText,
   BookMarked, MessageSquare, List, Music, LayoutDashboard,
-  ArrowRight, Zap,
+  ArrowRight, Zap, Map,
 } from "lucide-react";
 
+/* Ordem dos níveis para ordenação */
+const NIVEL_SORT: Record<string, number> = {
+  "Iniciante": 0,
+  "Intermediário": 1,
+  "Avançado": 2,
+};
+
 const TABS = [
+  { id: "percurso",     label: "Percurso",     icon: Map,            color: "bg-gray-800",   desc: "Caminho de aprendizagem organizado por nível · A1 → B2 · Sabe por onde começar" },
   { id: "assimil",      label: "Assimil",      icon: BookOpen,       color: "bg-purple-600", desc: "146 lições · Método natural · Progressão gradual" },
   { id: "pimsleur",     label: "Pimsleur",     icon: Headphones,     color: "bg-blue-600",   desc: "30 lições de áudio · Fala e compreensão oral" },
   { id: "leituras",     label: "Leituras",     icon: BookOpen,       color: "bg-green-600",  desc: "18 leituras em áudio · Vocabulário em contexto" },
-  { id: "conversacoes", label: "Conversações", icon: MessageCircle,  color: "bg-orange-500", desc: "30 diálogos reais · Inglês do dia a dia com áudio TTS" },
+  { id: "conversacoes", label: "Conversações", icon: MessageCircle,  color: "bg-orange-500", desc: "30 diálogos reais · Ordenados por nível · A1 primeiro" },
   { id: "textos",       label: "Textos",       icon: FileText,       color: "bg-teal-600",   desc: "14 textos com tradução · Do iniciante ao avançado" },
   { id: "gramatica",    label: "Gramática",    icon: BookMarked,     color: "bg-indigo-600", desc: "10 lições de gramática · Do básico ao avançado" },
   { id: "frases",       label: "Frases",       icon: MessageSquare,  color: "bg-pink-500",   desc: `${TOTAL_PHRASES}+ frases do dia a dia · 17 categorias` },
@@ -32,7 +40,7 @@ const TABS = [
   { id: "musica",       label: "Música",       icon: Music,          color: "bg-violet-600", desc: "Aprende inglês através de música · YouTube · Controlo de velocidade" },
 ] as const;
 
-type TabId = "assimil" | "pimsleur" | "leituras" | "conversacoes" | "textos" | "gramatica" | "frases" | "vocabulario" | "musica";
+type TabId = "percurso" | "assimil" | "pimsleur" | "leituras" | "conversacoes" | "textos" | "gramatica" | "frases" | "vocabulario" | "musica";
 
 const LEVEL_COLOR: Record<LessonLevel, string> = {
   "Iniciante":     "bg-green-100 text-green-700",
@@ -171,9 +179,9 @@ function FlatList({ lessons, search }: { lessons: Lesson[]; search: string }) {
   );
 }
 
-/* ── Lista de Textos ── */
+/* ── Lista de Textos (ordenada por nível) ── */
 function TextsList({ search }: { search: string }) {
-  const filtered = search
+  const base = search
     ? TEXTS.filter(
         t =>
           t.title.toLowerCase().includes(search) ||
@@ -182,6 +190,10 @@ function TextsList({ search }: { search: string }) {
           t.level.toLowerCase().includes(search)
       )
     : TEXTS;
+
+  const filtered = [...base].sort(
+    (a, b) => NIVEL_SORT[a.level] - NIVEL_SORT[b.level] || a.number - b.number
+  );
 
   const LEVEL_STYLE: Record<string, string> = {
     "Iniciante":     "bg-green-100 text-green-700",
@@ -224,9 +236,9 @@ function TextsList({ search }: { search: string }) {
   );
 }
 
-/* ── Lista de Conversações ── */
+/* ── Lista de Conversações (ordenada por nível) ── */
 function ConversationsList({ search }: { search: string }) {
-  const filtered = search
+  const base = search
     ? CONVERSATIONS.filter(
         c =>
           c.title.toLowerCase().includes(search) ||
@@ -235,42 +247,58 @@ function ConversationsList({ search }: { search: string }) {
       )
     : CONVERSATIONS;
 
+  const filtered = [...base].sort(
+    (a, b) => NIVEL_SORT[a.level] - NIVEL_SORT[b.level] || a.number - b.number
+  );
+
   if (filtered.length === 0) {
     return <p className="text-center text-gray-400 py-10">Nenhuma conversa encontrada.</p>;
   }
 
+  let lastLevel = "";
   return (
     <div className="space-y-2">
-      {filtered.map((conv) => (
-        <Link key={conv.id} to={`/conversations/${conv.id}`}>
-          <div className="flex items-center gap-4 p-4 bg-white border rounded-xl hover:border-orange-300 hover:shadow-md transition-all cursor-pointer group">
-            <div className="w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0 font-black text-sm bg-orange-50 text-orange-600 group-hover:bg-orange-100">
-              {conv.number}
-            </div>
-            <div className="flex-1 min-w-0">
-              <div className="flex flex-wrap items-center gap-2 mb-0.5">
-                <span className="font-bold text-gray-900 text-sm">{conv.title}</span>
-                <span className={`px-2 py-0.5 rounded-full text-xs font-semibold ${LEVEL_COLOR_CONV[conv.level]}`}>
-                  {conv.level}
+      {filtered.map((conv) => {
+        const showHeader = conv.level !== lastLevel;
+        lastLevel = conv.level;
+        return (
+          <div key={conv.id}>
+            {showHeader && (
+              <div className={`flex items-center gap-2 pt-3 pb-1 px-1 ${conv.level !== filtered[0].level ? "mt-2" : ""}`}>
+                <span className={`px-2.5 py-0.5 rounded-full text-xs font-black ${LEVEL_COLOR_CONV[conv.level]}`}>
+                  {conv.level === "Iniciante" ? "🟢 A1-A2" : conv.level === "Intermediário" ? "🔵 B1" : "🟣 B2"} — {conv.level}
                 </span>
-                <span className="px-2 py-0.5 rounded-full text-xs font-semibold bg-orange-100 text-orange-700">
-                  {conv.topic}
-                </span>
+                <div className="flex-1 h-px bg-gray-200" />
               </div>
-              <p className="text-xs text-gray-500 truncate">{conv.titlePt}</p>
-            </div>
-            <div className="flex items-center gap-1.5 text-xs text-gray-400 flex-shrink-0">
-              <MessageCircle className="w-3.5 h-3.5" />
-              {conv.lines.length} linhas
-            </div>
+            )}
+            <Link to={`/conversations/${conv.id}`}>
+              <div className="flex items-center gap-4 p-4 bg-white border rounded-xl hover:border-orange-300 hover:shadow-md transition-all cursor-pointer group">
+                <div className="w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0 font-black text-sm bg-orange-50 text-orange-600 group-hover:bg-orange-100">
+                  {conv.number}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="flex flex-wrap items-center gap-2 mb-0.5">
+                    <span className="font-bold text-gray-900 text-sm">{conv.title}</span>
+                    <span className="px-2 py-0.5 rounded-full text-xs font-semibold bg-orange-100 text-orange-700">
+                      {conv.topic}
+                    </span>
+                  </div>
+                  <p className="text-xs text-gray-500 truncate">{conv.titlePt}</p>
+                </div>
+                <div className="flex items-center gap-1.5 text-xs text-gray-400 flex-shrink-0">
+                  <MessageCircle className="w-3.5 h-3.5" />
+                  {conv.lines.length} linhas
+                </div>
+              </div>
+            </Link>
           </div>
-        </Link>
-      ))}
+        );
+      })}
     </div>
   );
 }
 
-/* ── Lista de Gramática ── */
+/* ── Lista de Gramática (ordenada por nível) ── */
 function GrammarList({ search }: { search: string }) {
   const LEVEL_STYLE: Record<string, string> = {
     "Iniciante":     "bg-green-100 text-green-700",
@@ -278,7 +306,7 @@ function GrammarList({ search }: { search: string }) {
     "Avançado":      "bg-purple-100 text-purple-700",
   };
 
-  const filtered = search
+  const base = search
     ? GRAMMAR_LESSONS.filter(
         g =>
           g.title.toLowerCase().includes(search) ||
@@ -286,6 +314,10 @@ function GrammarList({ search }: { search: string }) {
           g.topic.toLowerCase().includes(search)
       )
     : GRAMMAR_LESSONS;
+
+  const filtered = [...base].sort(
+    (a, b) => NIVEL_SORT[a.level] - NIVEL_SORT[b.level] || a.number - b.number
+  );
 
   if (filtered.length === 0) {
     return <p className="text-center text-gray-400 py-10">Nenhuma lição encontrada.</p>;
@@ -425,12 +457,149 @@ function VocabList({ search }: { search: string }) {
   );
 }
 
+/* ══════════════════════════════════════════
+   PERCURSO — Caminho por nível A1 → B2
+   ══════════════════════════════════════════ */
+function PercursoView({ onGoToTab }: { onGoToTab: (id: TabId) => void }) {
+  const { isCompleted } = useProgress();
+
+  const niveis = [
+    {
+      key: "Iniciante" as const,
+      cefr: "A1 — A2",
+      emoji: "🌱",
+      desc: "Começa aqui se estás a aprender do zero. Cumprimentos, números, cores, horas e frases essenciais do dia a dia.",
+      dica: "Ordem recomendada: Gramática → Assimil → Conversações → Textos",
+      gradient: "from-green-600 to-emerald-500",
+      badge: "bg-green-100 text-green-800",
+      btn: "bg-green-600 hover:bg-green-700 text-white",
+      border: "border-green-200",
+      bg: "bg-green-50/60",
+      barColor: "bg-green-500",
+    },
+    {
+      key: "Intermediário" as const,
+      cefr: "B1",
+      emoji: "📈",
+      desc: "Já sabes o básico? Expande vocabulário e gramática para situações reais: viagens, trabalho, saúde, negócios.",
+      dica: "Ordem recomendada: Assimil → Pimsleur → Conversações → Textos",
+      gradient: "from-blue-600 to-indigo-500",
+      badge: "bg-blue-100 text-blue-800",
+      btn: "bg-blue-600 hover:bg-blue-700 text-white",
+      border: "border-blue-200",
+      bg: "bg-blue-50/60",
+      barColor: "bg-blue-500",
+    },
+    {
+      key: "Avançado" as const,
+      cefr: "B2 — C1",
+      emoji: "🚀",
+      desc: "Inglês profissional e fluente. Entrevistas, reuniões, textos complexos e expressões idiomáticas avançadas.",
+      dica: "Ordem recomendada: Assimil → Conversações → Textos → Vocabulário",
+      gradient: "from-purple-600 to-violet-600",
+      badge: "bg-purple-100 text-purple-800",
+      btn: "bg-purple-600 hover:bg-purple-700 text-white",
+      border: "border-purple-200",
+      bg: "bg-purple-50/60",
+      barColor: "bg-purple-500",
+    },
+  ];
+
+  return (
+    <div className="space-y-5">
+      {niveis.map((nivel) => {
+        const assimilItems = ASSIMIL_LESSONS.filter(l => l.level === nivel.key);
+        const pimsleurItems = PIMSLEUR_LESSONS_LIST.filter(l => l.level === nivel.key);
+        const leituraItems = LEITURAS_LIST.filter(l => l.level === nivel.key);
+        const convItems = CONVERSATIONS.filter(c => c.level === nivel.key);
+        const textItems = TEXTS.filter(t => t.level === nivel.key);
+        const gramItems = GRAMMAR_LESSONS.filter(g => g.level === nivel.key);
+
+        const doneAssimil = assimilItems.filter(l => isCompleted(l.id)).length;
+        const nextLesson = assimilItems.find(l => !isCompleted(l.id)) || assimilItems[0];
+
+        const sections = [
+          { emoji: "📚", label: "Assimil",       count: assimilItems.length,  unit: "lições",   tab: "assimil" as TabId },
+          { emoji: "🎧", label: "Pimsleur",       count: pimsleurItems.length, unit: "lições",   tab: "pimsleur" as TabId },
+          { emoji: "📖", label: "Leituras",       count: leituraItems.length,  unit: "leituras", tab: "leituras" as TabId },
+          { emoji: "📝", label: "Gramática",      count: gramItems.length,     unit: "lições",   tab: "gramatica" as TabId },
+          { emoji: "💬", label: "Conversações",   count: convItems.length,     unit: "diálogos", tab: "conversacoes" as TabId },
+          { emoji: "📄", label: "Textos",         count: textItems.length,     unit: "textos",   tab: "textos" as TabId },
+        ].filter(s => s.count > 0);
+
+        return (
+          <div key={nivel.key} className={`rounded-2xl border ${nivel.border} overflow-hidden shadow-sm`}>
+            {/* Header com gradiente */}
+            <div className={`bg-gradient-to-r ${nivel.gradient} px-5 pt-5 pb-4 text-white`}>
+              <div className="flex items-start gap-3">
+                <span className="text-3xl mt-0.5">{nivel.emoji}</span>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 mb-1 flex-wrap">
+                    <span className="font-black text-xl leading-none">{nivel.key}</span>
+                    <span className="text-xs font-bold bg-white/25 px-2 py-0.5 rounded-full">{nivel.cefr}</span>
+                  </div>
+                  <p className="text-white/85 text-sm leading-snug">{nivel.desc}</p>
+                </div>
+              </div>
+            </div>
+
+            {/* Corpo */}
+            <div className={`${nivel.bg} px-4 pb-4 pt-3`}>
+              {/* Grid de secções */}
+              <div className="grid grid-cols-3 sm:grid-cols-6 gap-2 mb-4">
+                {sections.map(s => (
+                  <button
+                    key={s.tab}
+                    onClick={() => onGoToTab(s.tab)}
+                    className="flex flex-col items-center gap-1 p-2.5 bg-white rounded-xl border hover:shadow-md hover:border-gray-300 transition-all text-center"
+                  >
+                    <span className="text-xl">{s.emoji}</span>
+                    <p className="text-[10px] font-bold text-gray-800 leading-tight">{s.label}</p>
+                    <p className="text-[10px] text-gray-500">{s.count} {s.unit}</p>
+                  </button>
+                ))}
+              </div>
+
+              {/* Barra de progresso Assimil */}
+              {assimilItems.length > 0 && (
+                <div className="mb-3">
+                  <div className="flex justify-between text-xs text-gray-500 mb-1">
+                    <span className="font-medium">Progresso Assimil</span>
+                    <span>{doneAssimil}/{assimilItems.length} lições</span>
+                  </div>
+                  <div className="h-2 bg-white rounded-full overflow-hidden border border-gray-100">
+                    <div
+                      className={`h-full ${nivel.barColor} rounded-full transition-all duration-500`}
+                      style={{ width: assimilItems.length > 0 ? `${(doneAssimil / assimilItems.length) * 100}%` : "0%" }}
+                    />
+                  </div>
+                </div>
+              )}
+
+              {/* Botão de ação principal */}
+              {nextLesson && (
+                <Link to={`/lessons/${nextLesson.id}`}>
+                  <button className={`w-full py-3 rounded-xl font-bold text-sm ${nivel.btn} transition-all flex items-center justify-center gap-2 shadow-sm`}>
+                    {doneAssimil === 0 ? `Começar — ${nextLesson.title}` : `Continuar — ${nextLesson.title}`}
+                    <ArrowRight className="w-4 h-4" />
+                  </button>
+                </Link>
+              )}
+              <p className="text-xs text-gray-400 mt-2 text-center">{nivel.dica}</p>
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
 /* ══════════════════════════════
    PÁGINA PRINCIPAL
    ══════════════════════════════ */
 export function Lessons() {
   const navigate = useNavigate();
-  const [tab, setTab] = useState<TabId>("assimil");
+  const [tab, setTab] = useState<TabId>("percurso");
   const [search, setSearch] = useState("");
   const { totalCompleted, totalMinutes, isCompleted, lastOpened } = useProgress();
 
@@ -462,8 +631,8 @@ export function Lessons() {
     setOnboardingDismissed(true);
   }
 
-  const lessons = (tab !== "conversacoes" && tab !== "textos" && tab !== "gramatica" && tab !== "frases" && tab !== "vocabulario" && tab !== "musica")
-    ? LESSONS_MAP[tab as "assimil" | "pimsleur" | "leituras"]
+  const lessons = (tab === "assimil" || tab === "pimsleur" || tab === "leituras")
+    ? LESSONS_MAP[tab]
     : [];
 
   /* Navega para um tab e faz scroll suave até ele */
@@ -681,8 +850,8 @@ export function Lessons() {
           <p className="text-sm text-gray-500">{TABS.find(t => t.id === tab)?.desc}</p>
         </div>
 
-        {/* Pesquisa (apenas quando não é Música) */}
-        {tab !== "musica" && (
+        {/* Pesquisa (apenas quando não é Música nem Percurso) */}
+        {tab !== "musica" && tab !== "percurso" && (
           <div className="relative mb-5">
             <Search className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
             <Input
@@ -701,7 +870,9 @@ export function Lessons() {
         )}
 
         {/* Lista */}
-        {tab === "musica" ? (
+        {tab === "percurso" ? (
+          <PercursoView onGoToTab={goToTab} />
+        ) : tab === "musica" ? (
           <Link to="/music">
             <div className="bg-gradient-to-br from-violet-600 to-purple-800 rounded-2xl p-8 text-white text-center hover:from-violet-700 hover:to-purple-900 transition-all shadow-xl cursor-pointer">
               <div className="text-7xl mb-4">🎵</div>

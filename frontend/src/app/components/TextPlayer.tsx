@@ -3,6 +3,7 @@ import { useParams, Link, useNavigate } from "react-router";
 import { Button } from "./ui/button";
 import { Card } from "./ui/card";
 import { TEXTS } from "../data/textsData";
+import { useProgress } from "../hooks/useProgress";
 import {
   ChevronLeft, ChevronRight, Volume2, VolumeX, BookOpen,
   Lightbulb, CheckCircle2, HelpCircle, Trophy, RotateCcw,
@@ -32,6 +33,7 @@ const LEVEL_STYLE: Record<string, string> = {
 export function TextPlayer() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const { openLesson } = useProgress();
   const text = TEXTS.find(t => t.id === id);
 
   const [paraIdx, setParaIdx]         = useState(0);
@@ -43,6 +45,16 @@ export function TextPlayer() {
   const [quizDone, setQuizDone]       = useState<Set<number>>(new Set());
   const [showAnswer, setShowAnswer]   = useState(false);
   const [mode, setMode]               = useState<"read" | "quiz">("read");
+
+  // Regista abertura do texto para "Continuar onde paraste"
+  useEffect(() => {
+    if (text) openLesson(text.id);
+  }, [text?.id]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Cleanup: para TTS ao sair da página
+  useEffect(() => {
+    return () => { window.speechSynthesis.cancel(); };
+  }, []);
 
   useEffect(() => {
     window.speechSynthesis.getVoices();

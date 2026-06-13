@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useParams, Link, useNavigate } from "react-router";
 import { Card } from "./ui/card";
 import { GRAMMAR_LESSONS, getGrammarById } from "../data/grammarData";
@@ -156,6 +156,11 @@ export function GrammarPlayer() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const lesson = getGrammarById(id ?? "");
+
+  // Cleanup: para TTS ao sair da página
+  useEffect(() => {
+    return () => { window.speechSynthesis?.cancel(); };
+  }, []);
 
   if (!lesson) {
     return (

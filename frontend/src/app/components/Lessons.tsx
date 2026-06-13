@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Link } from "react-router";
+import { Link, useNavigate } from "react-router";
 import { Card } from "./ui/card";
 import { Progress } from "./ui/progress";
 import { Input } from "./ui/input";
@@ -17,6 +17,7 @@ import {
   BookOpen, Headphones, Search, Play, CheckCircle2, Clock,
   ChevronDown, ChevronUp, MessageCircle, FileText,
   BookMarked, MessageSquare, List, Music, LayoutDashboard,
+  ArrowRight, Zap,
 } from "lucide-react";
 
 const TABS = [
@@ -428,9 +429,31 @@ function VocabList({ search }: { search: string }) {
    PÁGINA PRINCIPAL
    ══════════════════════════════ */
 export function Lessons() {
+  const navigate = useNavigate();
   const [tab, setTab] = useState<TabId>("assimil");
   const [search, setSearch] = useState("");
-  const { totalCompleted, totalMinutes, isCompleted } = useProgress();
+  const { totalCompleted, totalMinutes, isCompleted, lastOpened } = useProgress();
+
+  // Encontra a lição/conversa/texto correspondente ao lastOpened para mostrar "Continuar"
+  const continueLesson = lastOpened
+    ? [...ASSIMIL_LESSONS, ...PIMSLEUR_LESSONS_LIST, ...LEITURAS_LIST].find(l => l.id === lastOpened)
+    : null;
+  const continueConv = lastOpened
+    ? CONVERSATIONS.find(c => c.id === lastOpened)
+    : null;
+  const continueText = lastOpened
+    ? TEXTS.find(t => t.id === lastOpened)
+    : null;
+
+  const continuePath = continueLesson
+    ? `/lessons/${continueLesson.id}`
+    : continueConv
+    ? `/conversations/${continueConv.id}`
+    : continueText
+    ? `/texts/${continueText.id}`
+    : null;
+
+  const continueTitle = continueLesson?.title ?? continueConv?.title ?? continueText?.title ?? null;
   const [onboardingDismissed, setOnboardingDismissed] = useState(
     () => localStorage.getItem("ngada_onboarding_done") === "1"
   );
@@ -474,6 +497,25 @@ export function Lessons() {
   return (
     <div className="bg-gray-50 min-h-screen">
       <div className="container mx-auto px-4 py-8 max-w-5xl">
+
+        {/* Banner "Continuar onde paraste" — para utilizadores com progresso */}
+        {continuePath && continueTitle && totalCompleted > 0 && (
+          <div className="mb-4 bg-white border border-purple-200 rounded-2xl p-4 flex items-center gap-4 shadow-sm">
+            <div className="w-10 h-10 bg-purple-100 rounded-xl flex items-center justify-center flex-shrink-0">
+              <Zap className="w-5 h-5 text-purple-600" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-xs text-gray-500 font-medium">Continuar onde paraste</p>
+              <p className="font-bold text-gray-900 text-sm truncate">{continueTitle}</p>
+            </div>
+            <button
+              onClick={() => navigate(continuePath)}
+              className="flex items-center gap-1.5 bg-purple-600 hover:bg-purple-700 text-white font-bold text-xs px-4 py-2.5 rounded-xl transition-colors flex-shrink-0"
+            >
+              Continuar <ArrowRight className="w-3.5 h-3.5" />
+            </button>
+          </div>
+        )}
 
         {/* Banner onboarding — apenas para novos utilizadores */}
         {totalCompleted === 0 && !onboardingDismissed && (

@@ -238,7 +238,7 @@ function FillStep({ ex, onNext }: { ex: FillExercise; onNext: () => void }) {
 export function LessonPlayer() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { completeLesson, isCompleted } = useProgress();
+  const { completeLesson, isCompleted, openLesson } = useProgress();
 
   const lesson = id ? getLessonById(id) : undefined;
 
@@ -307,6 +307,22 @@ export function LessonPlayer() {
     setAudioSources([...new Set(sources)]);
   }, [lesson]);
 
+  // Regista abertura da lição para "Continuar onde paraste"
+  useEffect(() => {
+    if (lesson) openLesson(lesson.id);
+  }, [lesson?.id]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Cleanup: para todo o áudio ao sair da página
+  useEffect(() => {
+    return () => {
+      if (audioRef.current) {
+        audioRef.current.pause();
+        audioRef.current.src = "";
+      }
+      window.speechSynthesis?.cancel();
+    };
+  }, []);
+
   // Tenta recarregar caso a fonte mude após um erro
   useEffect(() => {
     if (audioSources.length > 0 && audioRef.current) {
@@ -323,14 +339,21 @@ export function LessonPlayer() {
   const toggleAudio = () => {
     const a = audioRef.current;
     if (!a) return;
-    if (audioPlaying) { a.pause(); setAudioPlaying(false); }
-    else { 
+    if (audioPlaying) {
+      a.pause();
+      setAudioPlaying(false);
+    } else {
+      // Para TTS se estiver ativo
+      if (ttsPlaying) {
+        window.speechSynthesis?.cancel();
+        setTtsPlaying(false);
+      }
       if (audioError) {
         setAudioError(false);
         setCurrentSrcIdx(0);
       }
       setAudioPlaying(true);
-      a.play().catch(() => handleAudioError()); 
+      a.play().catch(() => handleAudioError());
     }
   };
 
@@ -361,6 +384,11 @@ export function LessonPlayer() {
   // TTS: lê o vocabulário da lição em inglês, um a um
   const speakVocab = useCallback(() => {
     if (!lesson?.vocab?.length || !window.speechSynthesis) return;
+    // Para o MP3 se estiver a tocar
+    if (audioRef.current) {
+      audioRef.current.pause();
+      setAudioPlaying(false);
+    }
     window.speechSynthesis.cancel();
     setTtsPlaying(true);
     setTtsProgress(0);
@@ -403,6 +431,9 @@ export function LessonPlayer() {
 
   const handleNext = () => {
     if (!lesson) return;
+    // Para TTS ao avançar (novo exercício vai gerir o próprio áudio)
+    window.speechSynthesis?.cancel();
+    setTtsPlaying(false);
     if (exerciseIdx < lesson.exercises.length - 1) {
       setExerciseIdx((i) => i + 1);
     } else {
@@ -638,13 +669,36 @@ export function LessonPlayer() {
         {/* ── EXERCÍCIOS ── */}
         <Card className="p-4 sm:p-6 border-0 shadow-sm rounded-2xl bg-white">
           <div className="flex items-center justify-between mb-5">
-            <h2 className="font-bold text-gray-800 flex items-center gap-2">
-              <BookOpen className="w-4 h-4 text-purple-600" />
-              Exercício {exerciseIdx + 1} de {lesson.exercises.length}
-            </h2>
+            <div>
+              <div className="flex items-center gap-2 mb-0.5">
+                {lesson.exercises[exerciseIdx].type === "mc" && (
+                  <span className="inline-flex items-center gap-1 px-2.5 py-0.5 bg-purple-100 text-purple-700 rounded-full text-xs font-bold">
+                    <BookOpen className="w-3 h-3" /> Escolha Múltipla
+                  </span>
+                )}
+                {lesson.exercises[exerciseIdx].type === "listen" && (
+                  <span className="inline-flex items-center gap-1 px-2.5 py-0.5 bg-blue-100 text-blue-700 rounded-full text-xs font-bold">
+                    <Headphones className="w-3 h-3" /> Ouvir & Repetir
+                  </span>
+                )}
+                {lesson.exercises[exerciseIdx].type === "fill" && (
+                  <span className="inline-flex items-center gap-1 px-2.5 py-0.5 bg-green-100 text-green-700 rounded-full text-xs font-bold">
+                    <Mic className="w-3 h-3" /> Preencher Lacuna
+                  </span>
+                )}
+                <span className="text-xs text-gray-400 font-medium">
+                  {exerciseIdx + 1}/{lesson.exercises.length}
+                </span>
+              </div>
+              <p className="text-xs text-gray-400 pl-0.5">
+                {lesson.exercises[exerciseIdx].type === "mc" && "Lê a pergunta e escolhe a melhor resposta"}
+                {lesson.exercises[exerciseIdx].type === "listen" && "Ouve com atenção e repete em voz alta"}
+                {lesson.exercises[exerciseIdx].type === "fill" && "Escolhe a palavra certa para completar"}
+              </p>
+            </div>
             <button
               onClick={handleNext}
-              className="text-xs text-gray-400 hover:text-gray-600 flex items-center gap-1"
+              className="text-xs text-gray-400 hover:text-gray-600 flex items-center gap-1 ml-3 flex-shrink-0"
             >
               Pular <SkipForward className="w-3.5 h-3.5" />
             </button>

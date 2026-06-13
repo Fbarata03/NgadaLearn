@@ -3,6 +3,7 @@ import { useParams, Link, useNavigate } from "react-router";
 import { Button } from "./ui/button";
 import { Card } from "./ui/card";
 import { CONVERSATIONS, type DialogueLine } from "../data/conversationsData";
+import { useProgress } from "../hooks/useProgress";
 import {
   ChevronLeft, ChevronRight, Volume2, VolumeX, Trophy,
   BookOpen, Lightbulb, MessageCircle, Star, CheckCircle2,
@@ -173,6 +174,7 @@ function CompletionScreen({
 export function ConversationPlayer() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const { openLesson } = useProgress();
   const conv = CONVERSATIONS.find((c) => c.id === id);
 
   const [currentLine, setCurrentLine] = useState(0);
@@ -180,6 +182,18 @@ export function ConversationPlayer() {
   const [autoRead, setAutoRead] = useState(true);
   const [done, setDone] = useState(false);
   const chatEndRef = useRef<HTMLDivElement>(null);
+
+  // Regista abertura da conversa para "Continuar onde paraste"
+  useEffect(() => {
+    if (conv) openLesson(conv.id);
+  }, [conv?.id]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Cleanup: para TTS ao sair da página
+  useEffect(() => {
+    return () => {
+      window.speechSynthesis.cancel();
+    };
+  }, []);
 
   // Auto-TTS quando muda de linha
   useEffect(() => {
@@ -191,10 +205,13 @@ export function ConversationPlayer() {
     chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [currentLine, autoRead, conv, done]);
 
-  // Carrega vozes
+  // Carrega vozes (com cleanup do event listener)
   useEffect(() => {
-    window.speechSynthesis.getVoices();
-    window.speechSynthesis.onvoiceschanged = () => window.speechSynthesis.getVoices();
+    const synth = window.speechSynthesis;
+    synth.getVoices();
+    const handler = () => synth.getVoices();
+    synth.onvoiceschanged = handler;
+    return () => { synth.onvoiceschanged = null; };
   }, []);
 
   if (!conv) {

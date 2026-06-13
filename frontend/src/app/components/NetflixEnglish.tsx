@@ -435,7 +435,7 @@ function VideoCard({ video, accent, onPlay }: {
       onMouseEnter={() => setHover(true)}
       onMouseLeave={() => setHover(false)}
       style={{
-        flexShrink: 0, width: "clamp(180px,28vw,260px)",
+        flexShrink: 0, width: "clamp(150px,40vw,260px)",
         borderRadius: 12, overflow: "hidden", cursor: "pointer",
         transform: hover ? "scale(1.05) translateY(-4px)" : "scale(1)",
         transition: "all .22s cubic-bezier(.34,1.56,.64,1)",
@@ -517,15 +517,15 @@ function VideoModal({ video, onClose }: { video: { id: string; title: string }; 
         onClick={e => e.stopPropagation()}
         style={{
           width: "100%", maxWidth: 860,
-          borderRadius: 18, overflow: "hidden",
+          borderRadius: "clamp(8px,3vw,18px)", overflow: "hidden",
           background: "#0f0f18",
           border: "1px solid rgba(255,255,255,.1)",
           boxShadow: "0 40px 100px rgba(0,0,0,.8)",
         }}>
         {/* Barra superior — SEM link para YouTube */}
         <div style={{
-          display: "flex", alignItems: "center", gap: 10,
-          padding: "12px 16px",
+          display: "flex", alignItems: "center", gap: 8,
+          padding: "10px 12px",
           background: "rgba(255,255,255,.04)",
           borderBottom: "1px solid rgba(255,255,255,.07)",
         }}>

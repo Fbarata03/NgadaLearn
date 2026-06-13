@@ -586,10 +586,10 @@ export function Subscribe() {
     <div className="min-h-screen" style={{ background: "#f4f3ff", fontFamily: "system-ui,-apple-system,sans-serif" }}>
 
       {/* ── Hero topo ── */}
-      <div style={{ background: "linear-gradient(135deg,#07070f 0%,#1e1b4b 60%,#312e81 100%)", padding: "36px 24px 32px", textAlign: "center", position: "relative", overflow: "hidden" }}>
-        {/* blobs */}
-        <div style={{ position:"absolute", top:"-30%", left:"-10%", width:380, height:380, borderRadius:"50%", background:"radial-gradient(circle,rgba(124,58,237,.35) 0%,transparent 65%)", filter:"blur(70px)", pointerEvents:"none" }} />
-        <div style={{ position:"absolute", bottom:"-20%", right:"-8%", width:300, height:300, borderRadius:"50%", background:"radial-gradient(circle,rgba(79,70,229,.25) 0%,transparent 65%)", filter:"blur(80px)", pointerEvents:"none" }} />
+      <div style={{ background: "linear-gradient(135deg,#07070f 0%,#1e1b4b 60%,#312e81 100%)", padding: "clamp(24px,5vw,36px) clamp(16px,4vw,24px) clamp(24px,5vw,32px)", textAlign: "center", position: "relative", overflow: "hidden" }}>
+        {/* blobs — usam vw para não causar scroll horizontal */}
+        <div style={{ position:"absolute", top:"-30%", left:"-10%", width:"clamp(200px,80vw,380px)", height:"clamp(200px,80vw,380px)", borderRadius:"50%", background:"radial-gradient(circle,rgba(124,58,237,.35) 0%,transparent 65%)", filter:"blur(70px)", pointerEvents:"none" }} />
+        <div style={{ position:"absolute", bottom:"-20%", right:"-8%", width:"clamp(160px,70vw,300px)", height:"clamp(160px,70vw,300px)", borderRadius:"50%", background:"radial-gradient(circle,rgba(79,70,229,.25) 0%,transparent 65%)", filter:"blur(80px)", pointerEvents:"none" }} />
         <div style={{ position:"relative", zIndex:1 }}>
           <div style={{ display:"inline-flex", alignItems:"center", gap:8, background:"rgba(167,139,250,.15)", border:"1px solid rgba(167,139,250,.3)", borderRadius:99, padding:"5px 16px", marginBottom:16 }}>
             <div style={{ width:6, height:6, borderRadius:"50%", background:"#a78bfa", animation:"lg-pulse 2s ease-in-out infinite" }} />

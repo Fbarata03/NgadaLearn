@@ -108,6 +108,51 @@ const ANIM = `
   .lp-photo  { animation: lp-photo-in .9s ease .3s both; }
   .lp-card   { transition: transform .25s ease, box-shadow .25s ease; cursor:default; }
   .lp-card:hover { transform:translateY(-5px); box-shadow:0 20px 60px rgba(0,0,0,.12); }
+
+  /* ── RESPONSIVIDADE MOBILE ── */
+
+  /* Secções: reduz padding vertical em mobile */
+  @media(max-width:640px){
+    .lp-section-lg  { padding-top: 52px !important; padding-bottom: 52px !important; }
+    .lp-section-pad { padding-left: 16px !important; padding-right: 16px !important; }
+  }
+  @media(max-width:400px){
+    .lp-section-lg  { padding-top: 40px !important; padding-bottom: 40px !important; }
+  }
+
+  /* Pricing grid: força 1 coluna em ecrãs muito pequenos */
+  @media(max-width:400px){
+    .lp-price-grid { grid-template-columns: 1fr !important; }
+    .lp-price-card { padding: 24px 20px !important; }
+    .lp-price-value { font-size: 32px !important; }
+  }
+
+  /* Trust bar: permite quebra de linha em mobile */
+  @media(max-width:480px){
+    .lp-trust-bar { gap: 10px 20px !important; }
+    .lp-trust-item { font-size: 12px !important; }
+  }
+
+  /* Stats floating cards: ocultar em ecrãs muito pequenos */
+  @media(max-width:360px){
+    .lp-float, .lp-float2, .lp-float3 { display: none !important; }
+  }
+
+  /* Rating section: empilhar em coluna em ecrãs pequenos */
+  @media(max-width:400px){
+    .lp-rating-inner { flex-direction: column !important; align-items: flex-start !important; gap: 12px !important; }
+  }
+
+  /* FAQ botões: reduz padding em mobile */
+  @media(max-width:400px){
+    .lp-faq-btn { padding: 14px 16px !important; }
+    .lp-faq-btn span { font-size: 14px !important; }
+  }
+
+  /* Feature cards: reduz padding em mobile */
+  @media(max-width:400px){
+    .lp-feat-card { padding: 20px 18px !important; }
+  }
 `;
 
 /* ─── Imagens ─── */
@@ -380,16 +425,16 @@ export function LandingPage() {
       {/* ════════════════════════════════════════
           TRUST BAR
       ════════════════════════════════════════ */}
-      <div style={{ background: "#fff", borderBottom: "1px solid #f0f0f5", padding: "16px 24px" }}>
-        <div style={{ maxWidth: 960, margin: "0 auto", display: "flex", flexWrap: "wrap", alignItems: "center", justifyContent: "center", gap: "14px 36px" }}>
+      <div style={{ background: "#fff", borderBottom: "1px solid #f0f0f5", padding: "12px 16px" }}>
+        <div className="lp-trust-bar" style={{ maxWidth: 960, margin: "0 auto", display: "flex", flexWrap: "wrap", alignItems: "center", justifyContent: "center", gap: "10px 24px" }}>
           {[
             { icon: Star,   color: "#d97706", text: "4.9/5 — 1.842 avaliações" },
             { icon: Users,  color: "#7c3aed", text: "2.300+ alunos" },
-            { icon: Shield, color: "#16a34a", text: "Pagamento seguro via Stripe" },
+            { icon: Shield, color: "#16a34a", text: "Stripe seguro" },
             { icon: Award,  color: "#0891b2", text: "Certificado incluído" },
             { icon: Globe,  color: "#6366f1", text: "PT · BR · AO" },
           ].map(({ icon: Icon, color, text }) => (
-            <div key={text} style={{ display: "flex", alignItems: "center", gap: 7, fontSize: 13, color: "#4b5563", fontWeight: 500, whiteSpace: "nowrap" }}>
+            <div key={text} className="lp-trust-item" style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 13, color: "#4b5563", fontWeight: 500, whiteSpace: "nowrap" }}>
               <Icon size={14} style={{ color, flexShrink: 0 }} />
               {text}
             </div>
@@ -400,16 +445,16 @@ export function LandingPage() {
       {/* ════════════════════════════════════════
           FEATURES
       ════════════════════════════════════════ */}
-      <section style={{ background: "#f8f7ff", padding: "88px 24px" }}>
+      <section className="lp-section-lg lp-section-pad" style={{ background: "#f8f7ff", padding: "88px 24px" }}>
         <div style={{ maxWidth: 1100, margin: "0 auto" }}>
           <div style={{ textAlign: "center", marginBottom: 52 }}>
             <span style={{ fontSize: 11, fontWeight: 800, letterSpacing: "0.15em", color: "#7c3aed", textTransform: "uppercase" }}>Porque funciona</span>
             <h2 style={{ fontSize: "clamp(26px,4vw,44px)", fontWeight: 900, margin: "10px 0 12px", color: "#111", letterSpacing: "-0.5px" }}>Tudo o que precisas num só lugar</h2>
             <p style={{ fontSize: 17, color: "#6b7280", maxWidth: 480, margin: "0 auto", lineHeight: 1.65 }}>Sem apps diferentes, sem confusão. Conversa e áudio — tudo integrado num único lugar.</p>
           </div>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(240px,1fr))", gap: 20 }}>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(min(240px,100%),1fr))", gap: 20 }}>
             {FEATURES.map(({ icon: Icon, color, title, desc }) => (
-              <div key={title} className="lp-card" style={{ background: "#fff", borderRadius: 22, padding: "28px 26px", border: "1px solid #ede9fe" }}>
+              <div key={title} className="lp-card lp-feat-card" style={{ background: "#fff", borderRadius: 22, padding: "28px 26px", border: "1px solid #ede9fe" }}>
                 <div style={{ width: 52, height: 52, borderRadius: 15, background: `${color}15`, display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 18 }}>
                   <Icon size={24} style={{ color }} />
                 </div>
@@ -424,7 +469,7 @@ export function LandingPage() {
       {/* ════════════════════════════════════════
           COMO FUNCIONA
       ════════════════════════════════════════ */}
-      <section style={{ background: "#fff", padding: "88px 24px" }}>
+      <section className="lp-section-lg lp-section-pad" style={{ background: "#fff", padding: "88px 24px" }}>
         <div style={{ maxWidth: 900, margin: "0 auto" }}>
           <div style={{ textAlign: "center", marginBottom: 52 }}>
             <span style={{ fontSize: 11, fontWeight: 800, letterSpacing: "0.15em", color: "#7c3aed", textTransform: "uppercase" }}>Como funciona</span>
@@ -462,7 +507,7 @@ export function LandingPage() {
       {/* ════════════════════════════════════════
           TESTEMUNHOS
       ════════════════════════════════════════ */}
-      <section style={{ background: "#f8f7ff", padding: "88px 24px" }}>
+      <section className="lp-section-lg lp-section-pad" style={{ background: "#f8f7ff", padding: "88px 24px" }}>
         <div style={{ maxWidth: 1100, margin: "0 auto" }}>
           <div style={{ textAlign: "center", marginBottom: 52 }}>
             <span style={{ fontSize: 11, fontWeight: 800, letterSpacing: "0.15em", color: "#7c3aed", textTransform: "uppercase" }}>Resultados reais</span>
@@ -520,7 +565,7 @@ export function LandingPage() {
 
           {/* Barras de rating */}
           <div style={{ maxWidth: 500, margin: "40px auto 0", background: "#fff", borderRadius: 20, padding: "24px 28px", border: "1px solid #ede9fe" }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 20 }}>
+            <div className="lp-rating-inner" style={{ display: "flex", alignItems: "center", gap: 20 }}>
               <div style={{ textAlign: "center", flexShrink: 0 }}>
                 <div style={{ fontSize: 48, fontWeight: 900, color: "#f59e0b", lineHeight: 1 }}>4.9</div>
                 <div style={{ display: "flex", gap: 2, marginTop: 4, justifyContent: "center" }}>{[...Array(5)].map((_,i) => <Star key={i} size={12} fill="#f59e0b" color="#f59e0b" />)}</div>
@@ -545,7 +590,7 @@ export function LandingPage() {
       {/* ════════════════════════════════════════
           PRICING
       ════════════════════════════════════════ */}
-      <section style={{ background: "#07070f", padding: "88px 24px", position: "relative", overflow: "hidden" }}>
+      <section className="lp-section-lg lp-section-pad" style={{ background: "#07070f", padding: "88px 24px", position: "relative", overflow: "hidden" }}>
         <div className="blob1" style={{ position: "absolute", top: "-20%", left: "-10%", width: "50vw", height: "50vw", maxWidth: 600, maxHeight: 600, borderRadius: "50%", background: "radial-gradient(circle,rgba(124,58,237,.22) 0%,transparent 65%)", filter: "blur(70px)", pointerEvents: "none" }} />
         <div style={{ maxWidth: 820, margin: "0 auto", position: "relative", zIndex: 1 }}>
           <div style={{ textAlign: "center", marginBottom: 48 }}>
@@ -554,13 +599,13 @@ export function LandingPage() {
             <p style={{ fontSize: 15, color: "rgba(255,255,255,.4)", margin: 0 }}>Sem truques. Sem taxas ocultas.</p>
           </div>
 
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(280px,1fr))", gap: 20, alignItems: "start" }}>
+          <div className="lp-price-grid" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(min(280px,100%),1fr))", gap: 20, alignItems: "start" }}>
 
             {/* Mensal */}
-            <div style={{ background: "rgba(255,255,255,.04)", border: "1px solid rgba(255,255,255,.09)", borderRadius: 24, padding: "32px 28px" }}>
+            <div className="lp-price-card" style={{ background: "rgba(255,255,255,.04)", border: "1px solid rgba(255,255,255,.09)", borderRadius: 24, padding: "32px 28px" }}>
               <div style={{ fontSize: 13, fontWeight: 700, color: "rgba(255,255,255,.45)", marginBottom: 14 }}>Plano Mensal</div>
               <div style={{ display: "flex", alignItems: "flex-end", gap: 4, marginBottom: 4 }}>
-                <span style={{ fontSize: 40, fontWeight: 900, color: "#fff", lineHeight: 1 }}>US$ 15</span>
+                <span className="lp-price-value" style={{ fontSize: 40, fontWeight: 900, color: "#fff", lineHeight: 1 }}>US$ 15</span>
                 <span style={{ fontSize: 13, color: "rgba(255,255,255,.35)", marginBottom: 6 }}>/mês</span>
               </div>
               <div style={{ fontSize: 12, color: "rgba(255,255,255,.25)", marginBottom: 6, textDecoration: "line-through" }}>US$ 30/mês</div>
@@ -584,13 +629,13 @@ export function LandingPage() {
             </div>
 
             {/* Vitalício */}
-            <div style={{ background: "linear-gradient(145deg,rgba(124,58,237,.22),rgba(79,70,229,.12))", border: "1.5px solid rgba(124,58,237,.55)", borderRadius: 24, padding: "32px 28px", position: "relative", overflow: "hidden" }}>
+            <div className="lp-price-card" style={{ background: "linear-gradient(145deg,rgba(124,58,237,.22),rgba(79,70,229,.12))", border: "1.5px solid rgba(124,58,237,.55)", borderRadius: 24, padding: "32px 28px", position: "relative", overflow: "hidden" }}>
               <div style={{ position: "absolute", top: 16, right: 16, background: "linear-gradient(135deg,#7c3aed,#4f46e5)", color: "#fff", fontSize: 10, fontWeight: 800, padding: "4px 12px", borderRadius: 99, letterSpacing: "0.07em" }}>
                 ⭐ MELHOR VALOR
               </div>
               <div style={{ fontSize: 13, fontWeight: 700, color: "#a78bfa", marginBottom: 14 }}>Plano Vitalício</div>
               <div style={{ display: "flex", alignItems: "flex-end", gap: 4, marginBottom: 6 }}>
-                <span style={{ fontSize: 40, fontWeight: 900, color: "#fff", lineHeight: 1 }}>US$ 150</span>
+                <span className="lp-price-value" style={{ fontSize: 40, fontWeight: 900, color: "#fff", lineHeight: 1 }}>US$ 150</span>
               </div>
               <p style={{ fontSize: 11, color: "rgba(255,255,255,.22)", marginBottom: 8, lineHeight: 1.4 }}>
                 Preço em dólares americanos (USD)
@@ -635,7 +680,7 @@ export function LandingPage() {
       {/* ════════════════════════════════════════
           FAQ
       ════════════════════════════════════════ */}
-      <section style={{ background: "#fff", padding: "88px 24px" }}>
+      <section className="lp-section-lg lp-section-pad" style={{ background: "#fff", padding: "88px 24px" }}>
         <div style={{ maxWidth: 680, margin: "0 auto" }}>
           <div style={{ textAlign: "center", marginBottom: 44 }}>
             <span style={{ fontSize: 11, fontWeight: 800, letterSpacing: "0.15em", color: "#7c3aed", textTransform: "uppercase" }}>FAQ</span>
@@ -645,7 +690,8 @@ export function LandingPage() {
             {FAQ_ITEMS.map((item, i) => (
               <div key={i} style={{ border: "1px solid", borderColor: openFaq === i ? "#c4b5fd" : "#e5e7eb", borderRadius: 16, overflow: "hidden", transition: "border-color .2s" }}>
                 <button onClick={() => setOpenFaq(openFaq === i ? null : i)}
-                  style={{ width: "100%", display: "flex", alignItems: "center", justifyContent: "space-between", padding: "18px 22px", background: "none", border: "none", cursor: "pointer", textAlign: "left", gap: 12 }}>
+                  className="lp-faq-btn"
+                  style={{ width: "100%", display: "flex", alignItems: "center", justifyContent: "space-between", padding: "18px 22px", background: "none", border: "none", cursor: "pointer", textAlign: "left", gap: 12, minHeight: 44 }}>
                   <span style={{ fontSize: 15, fontWeight: 700, color: "#111" }}>{item.q}</span>
                   <div style={{ width: 28, height: 28, borderRadius: "50%", background: openFaq === i ? "#ede9fe" : "#f9fafb", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, transition: "background .2s" }}>
                     {openFaq === i ? <ChevronUp size={15} color="#7c3aed" /> : <ChevronDown size={15} color="#9ca3af" />}

@@ -602,11 +602,11 @@ export function LessonPlayer() {
                 <span>{formatTime(audioDuration)}</span>
               </div>
               {/* Controlo de velocidade */}
-              <div className="flex items-center gap-1.5">
-                <span className="text-[11px] text-gray-400 flex-shrink-0">Vel.</span>
+              <div className="flex items-center gap-1">
+                <span className="text-[10px] text-gray-400 flex-shrink-0 mr-0.5">Vel.</span>
                 {SPEEDS.map(s => (
                   <button key={s} onClick={() => changeSpeed(s)}
-                    className={`flex-1 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                    className={`flex-1 py-2 min-h-[36px] rounded-lg text-[11px] font-bold transition-all ${
                       audioSpeed === s
                         ? "bg-purple-600 text-white shadow"
                         : "bg-white/10 text-gray-400 hover:bg-white/20"

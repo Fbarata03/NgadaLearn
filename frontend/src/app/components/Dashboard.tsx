@@ -229,7 +229,7 @@ export function Dashboard() {
     <div style={{ background: "#f4f3ff", minHeight: "100vh", fontFamily: "system-ui,-apple-system,sans-serif" }}>
 
       {/* ── Hero ── */}
-      <div style={{ background: "linear-gradient(135deg,#07070f 0%,#1e1b4b 55%,#312e81 100%)", padding: "clamp(20px,4vw,36px) 20px clamp(24px,4vw,40px)", position: "relative", overflow: "hidden" }}>
+      <div style={{ background: "linear-gradient(135deg,#07070f 0%,#1e1b4b 55%,#312e81 100%)", padding: "clamp(16px,4vw,36px) clamp(14px,4vw,20px) clamp(20px,4vw,40px)", position: "relative", overflow: "hidden" }}>
         <div style={{ position:"absolute", top:"-20%", left:"-5%", width:400, height:400, borderRadius:"50%", background:"radial-gradient(circle,rgba(124,58,237,.3) 0%,transparent 65%)", filter:"blur(70px)", pointerEvents:"none" }} />
         <div style={{ position:"absolute", bottom:"-30%", right:"-5%", width:320, height:320, borderRadius:"50%", background:"radial-gradient(circle,rgba(79,70,229,.2) 0%,transparent 65%)", filter:"blur(80px)", pointerEvents:"none" }} />
 
@@ -261,7 +261,7 @@ export function Dashboard() {
         </div>
       </div>
 
-      <div style={{ maxWidth: 1100, margin: "0 auto", padding: "20px 16px 80px" }}>
+      <div style={{ maxWidth: 1100, margin: "0 auto", padding: "16px clamp(12px,4vw,16px) 80px" }}>
 
         {/* ── Banner boas-vindas (só quando 0 aulas) ── */}
         {totalCompleted === 0 && (
@@ -282,18 +282,24 @@ export function Dashboard() {
         )}
 
         {/* ── Stats cards ── */}
-        <style>{`@media(max-width:500px){.stats-grid{grid-template-columns:1fr 1fr!important;}}`}</style>
-        <div className="stats-grid" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(200px,1fr))", gap: 12, marginBottom: 24 }}>
+        <style>{`
+          @media(max-width:500px){.stats-grid{grid-template-columns:1fr 1fr!important;gap:8px!important;}}
+          @media(max-width:360px){.stats-grid{grid-template-columns:1fr 1fr!important;}}
+          @media(max-width:500px){.dash-2col{grid-template-columns:1fr!important;}}
+          @media(max-width:500px){.stat-card{padding:12px 10px!important;}}
+          @media(max-width:500px){.stat-val{font-size:20px!important;}}
+        `}</style>
+        <div className="stats-grid" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(160px,1fr))", gap: 12, marginBottom: 24 }}>
           {[
             { type: "lessons" as const, value: totalCompleted, label: "Aulas Concluídas", sub: `${totalCompleted}/${totalAll}`, progress: pct },
             { type: "streak"  as const, value: streak,         label: "Dias em Sequência", sub: streak === 0 ? "Começa hoje!" : streak >= 7 ? "Incrível! 🔥" : "Continue assim!", progress: null },
             { type: "minutes" as const, value: totalMinutes,   label: "Minutos Estudados", sub: `≈ ${Math.round(totalMinutes / 60)}h de estudo`, progress: null },
             { type: "level"   as const, value: level,          label: "Nível Atual",       sub: `Próximo: ${nextLevel}`, progress: null },
           ].map(({ type, value, label, sub, progress }) => (
-            <div key={type} style={{ background: "#fff", borderRadius: 18, padding: "16px 14px", boxShadow: "0 2px 12px rgba(0,0,0,.06)", border: "1px solid rgba(0,0,0,.05)" }}>
+            <div key={type} className="stat-card" style={{ background: "#fff", borderRadius: 18, padding: "16px 14px", boxShadow: "0 2px 12px rgba(0,0,0,.06)", border: "1px solid rgba(0,0,0,.05)" }}>
               <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 10 }}>
                 <StatIcon type={type} />
-                <span style={{ fontSize: type === "level" ? 14 : 26, fontWeight: 900, color: "#111", lineHeight: 1, textAlign: "right", wordBreak: "break-word", maxWidth: "55%" }}>{value}</span>
+                <span className="stat-val" style={{ fontSize: type === "level" ? 14 : 26, fontWeight: 900, color: "#111", lineHeight: 1, textAlign: "right", wordBreak: "break-word", maxWidth: "55%" }}>{value}</span>
               </div>
               <p style={{ fontWeight: 700, fontSize: 12, color: "#374151", margin: "0 0 3px" }}>{label}</p>
               <p style={{ fontSize: 11, color: "#9ca3af", margin: 0 }}>{sub}</p>

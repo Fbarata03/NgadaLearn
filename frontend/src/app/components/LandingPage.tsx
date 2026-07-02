@@ -6,8 +6,6 @@ import {
   Globe, ArrowRight, MessageCircle, TrendingUp, Lock,
 } from "lucide-react";
 
-/* ─── Animações ─── */
-/* ─── Carrossel simples com touch ─── */
 function Carousel({ children, dots = true }: { children: React.ReactNode[]; dots?: boolean }) {
   const [idx, setIdx] = useState(0);
   const startX = useRef(0);
@@ -109,9 +107,6 @@ const ANIM = `
   .lp-card   { transition: transform .25s ease, box-shadow .25s ease; cursor:default; }
   .lp-card:hover { transform:translateY(-5px); box-shadow:0 20px 60px rgba(0,0,0,.12); }
 
-  /* ── RESPONSIVIDADE MOBILE ── */
-
-  /* Secções: reduz padding vertical em mobile */
   @media(max-width:640px){
     .lp-section-lg  { padding-top: 52px !important; padding-bottom: 52px !important; }
     .lp-section-pad { padding-left: 16px !important; padding-right: 16px !important; }
@@ -120,46 +115,38 @@ const ANIM = `
     .lp-section-lg  { padding-top: 40px !important; padding-bottom: 40px !important; }
   }
 
-  /* Pricing grid: força 1 coluna em ecrãs muito pequenos */
   @media(max-width:400px){
     .lp-price-grid { grid-template-columns: 1fr !important; }
     .lp-price-card { padding: 24px 20px !important; }
     .lp-price-value { font-size: 32px !important; }
   }
 
-  /* Trust bar: permite quebra de linha em mobile */
   @media(max-width:480px){
     .lp-trust-bar { gap: 10px 20px !important; }
     .lp-trust-item { font-size: 12px !important; }
   }
 
-  /* Stats floating cards: ocultar em ecrãs muito pequenos */
   @media(max-width:360px){
     .lp-float, .lp-float2, .lp-float3 { display: none !important; }
   }
 
-  /* Rating section: empilhar em coluna em ecrãs pequenos */
   @media(max-width:400px){
     .lp-rating-inner { flex-direction: column !important; align-items: flex-start !important; gap: 12px !important; }
   }
 
-  /* FAQ botões: reduz padding em mobile */
   @media(max-width:400px){
     .lp-faq-btn { padding: 14px 16px !important; }
     .lp-faq-btn span { font-size: 14px !important; }
   }
 
-  /* Feature cards: reduz padding em mobile */
   @media(max-width:400px){
     .lp-feat-card { padding: 20px 18px !important; }
   }
 `;
 
-/* ─── Imagens ─── */
 const HERO_PHOTO =
   "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&w=800&q=85";
 
-/* ─── Data ─── */
 const FEATURES = [
   { icon: MessageCircle, color: "#7c3aed", title: "Conversação Real",    desc: "Situações reais do dia a dia, trabalho e viagens. Não decorares regras — falas com confiança." },
   { icon: Headphones,    color: "#0891b2", title: "NgadaFlow Áudio",     desc: "Sotaques americano, britânico e australiano em velocidade real. Listening que realmente treina." },
@@ -207,9 +194,6 @@ const RATING_BARS = [
   { stars: 3, pct: 4  }, { stars: 2, pct: 1  }, { stars: 1, pct: 0 },
 ];
 
-/* ═══════════════════════════════════════════════
-   COMPONENTE
-═══════════════════════════════════════════════ */
 export function LandingPage() {
   const [openFaq, setOpenFaq] = useState<number | null>(null);
   const [rates, setRates] = useState<{ eur?: number; brl?: number } | null>(null);
@@ -232,7 +216,7 @@ export function LandingPage() {
     <div style={{ fontFamily: "system-ui,-apple-system,sans-serif", overflowX: "hidden" }}>
       <style>{ANIM}</style>
 
-      {/* ── Botão CTA Sticky (aparece ao fazer scroll) ── */}
+      {/* Botão sticky mobile */}
       {showSticky && (
         <div style={{ position: "fixed", bottom: 20, left: "50%", transform: "translateX(-50%)", zIndex: 1000, pointerEvents: "none" }}
           className="sticky-cta-wrap">
@@ -256,54 +240,47 @@ export function LandingPage() {
         </div>
       )}
 
-      {/* ════════════════════════════════════════
-          HERO — split layout
-      ════════════════════════════════════════ */}
       <section style={{ position: "relative", minHeight: "100vh", background: "#07070f", display: "flex", alignItems: "center", overflow: "hidden" }}>
 
-        {/* Blobs */}
         <div className="blob1" style={{ position: "absolute", top: "-15%", left: "-8%", width: "55vw", height: "55vw", maxWidth: 700, maxHeight: 700, borderRadius: "50%", background: "radial-gradient(circle,rgba(124,58,237,.32) 0%,transparent 65%)", filter: "blur(70px)", pointerEvents: "none" }} />
         <div className="blob2" style={{ position: "absolute", bottom: "-20%", right: "-5%", width: "50vw", height: "50vw", maxWidth: 650, maxHeight: 650, borderRadius: "50%", background: "radial-gradient(circle,rgba(79,70,229,.22) 0%,transparent 65%)", filter: "blur(80px)", pointerEvents: "none" }} />
         <div className="blob3" style={{ position: "absolute", top: "30%", right: "30%", width: "25vw", height: "25vw", maxWidth: 350, maxHeight: 350, borderRadius: "50%", background: "radial-gradient(circle,rgba(8,145,178,.14) 0%,transparent 65%)", filter: "blur(60px)", pointerEvents: "none" }} />
-
-        {/* Grid de linhas */}
-        <div style={{ position: "absolute", inset: 0, backgroundImage: "linear-gradient(rgba(255,255,255,.02) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.02) 1px,transparent 1px)", backgroundSize: "64px 64px", pointerEvents: "none" }} />
 
         <div style={{ position: "relative", zIndex: 10, maxWidth: 1200, margin: "0 auto", padding: "100px 24px 80px", width: "100%", display: "grid", gridTemplateColumns: "1fr 1fr", gap: 60, alignItems: "center" }}
           className="hero-grid">
           <style>{`
             @media(max-width:900px){
-              .hero-grid { grid-template-columns:1fr!important; gap:32px!important; padding:64px 20px 52px!important; }
-              .hero-photo-col { order:-1; max-height:260px!important; overflow:hidden; border-radius:20px; }
-              .hero-photo-col > div { max-height:260px!important; border-radius:20px!important; }
+              .hero-grid { grid-template-columns:1fr!important; gap:28px!important; padding:72px 20px 48px!important; }
+              .hero-photo-col { max-height:220px!important; overflow:hidden; border-radius:20px; }
+              .hero-photo-col > div { max-height:220px!important; border-radius:20px!important; }
             }
             @media(max-width:480px){
-              .hero-grid { padding:56px 16px 44px!important; }
+              .hero-grid { padding:60px 16px 40px!important; gap:20px!important; }
+              .hero-photo-col { max-height:180px!important; }
+            }
+            @media(max-width:360px){
+              .hero-photo-col { display:none!important; }
             }
           `}</style>
 
-          {/* ── ESQUERDA — Texto ── */}
           <div>
-            {/* Badge */}
             <div className="lp-in-1 lp-badge" style={{ display: "inline-flex", alignItems: "center", gap: 8, background: "rgba(124,58,237,0.15)", border: "1px solid rgba(124,58,237,0.4)", borderRadius: 99, padding: "6px 16px", marginBottom: 28 }}>
               <div className="lp-pulse" style={{ width: 7, height: 7, borderRadius: "50%", background: "#a78bfa" }} />
               <span style={{ fontSize: 13, color: "#c4b5fd", fontWeight: 600 }}>Conversação real · Áudio com nativos</span>
             </div>
 
-            {/* Headline */}
-            <h1 className="lp-in-2" style={{ fontSize: "clamp(36px,5.5vw,72px)", fontWeight: 900, lineHeight: 1.05, color: "#fff", margin: "0 0 22px", letterSpacing: "-1.5px" }}>
+            <h1 className="lp-in-2" style={{ fontSize: "clamp(34px,5.5vw,72px)", fontWeight: 900, lineHeight: 1.08, color: "#fff", margin: "0 0 18px", letterSpacing: "-1px" }}>
               Fala Inglês<br />
               <span style={{ background: "linear-gradient(135deg,#a78bfa 0%,#60a5fa 50%,#818cf8 100%)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text" }}>
                 com Confiança
               </span>
             </h1>
 
-            <p className="lp-in-3" style={{ fontSize: "clamp(15px,1.8vw,19px)", color: "rgba(255,255,255,0.52)", lineHeight: 1.75, maxWidth: 480, margin: "0 0 36px" }}>
+            <p className="lp-in-3" style={{ fontSize: "clamp(15px,1.8vw,18px)", color: "rgba(255,255,255,0.55)", lineHeight: 1.7, maxWidth: 480, margin: "0 0 28px" }}>
               Do zero à fluência — conversação real e áudio com nativos.{" "}
               <strong style={{ color: "rgba(255,255,255,0.82)" }}>Paga uma vez, aprende para sempre.</strong>
             </p>
 
-            {/* CTAs */}
             <div className="lp-in-4 hero-ctas" style={{ display: "flex", flexWrap: "wrap", gap: 12, marginBottom: 40 }}>
               <style>{`
                 @media(max-width:600px){
@@ -324,7 +301,6 @@ export function LandingPage() {
               </Link>
             </div>
 
-            {/* Stats */}
             <div className="lp-in-5" style={{ display: "flex", flexWrap: "wrap", gap: 10 }}>
               {[
                 { val: "2.300+",  label: "Alunos activos", icon: Users,  color: "#7c3aed" },
@@ -344,10 +320,8 @@ export function LandingPage() {
             </div>
           </div>
 
-          {/* ── DIREITA — Foto realista + cards flutuantes ── */}
           <div className="hero-photo-col lp-photo" style={{ position: "relative" }}>
 
-            {/* Foto principal */}
             <div style={{ position: "relative", borderRadius: 28, overflow: "hidden", boxShadow: "0 40px 100px rgba(0,0,0,.6)", border: "1px solid rgba(255,255,255,.08)", aspectRatio: "3/4", maxHeight: 580 }}>
               <img
                 src={HERO_PHOTO}
@@ -355,13 +329,10 @@ export function LandingPage() {
                 style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }}
                 onError={e => { (e.target as HTMLImageElement).style.display = "none"; }}
               />
-              {/* Overlay gradiente base */}
               <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to top,rgba(7,7,15,.7) 0%,rgba(7,7,15,.1) 50%,transparent 100%)" }} />
-              {/* Overlay cor brand */}
               <div style={{ position: "absolute", inset: 0, background: "linear-gradient(135deg,rgba(124,58,237,.18) 0%,transparent 60%)" }} />
             </div>
 
-            {/* Card flutuante — Áudio a tocar */}
             <div className="lp-float2" style={{ position: "absolute", top: "8%", left: "-18%", background: "rgba(255,255,255,.08)", backdropFilter: "blur(20px)", border: "1px solid rgba(255,255,255,.15)", borderRadius: 20, padding: "14px 18px", minWidth: 180, boxShadow: "0 16px 48px rgba(0,0,0,.4)" }}>
               <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 10 }}>
                 <div style={{ width: 36, height: 36, borderRadius: 10, background: "linear-gradient(135deg,#7c3aed,#4f46e5)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
@@ -372,7 +343,6 @@ export function LandingPage() {
                   <div style={{ fontSize: 10, color: "rgba(255,255,255,.5)" }}>A estudar inglês</div>
                 </div>
               </div>
-              {/* Waveform */}
               <div style={{ display: "flex", alignItems: "center", gap: 3, height: 24 }}>
                 {[0,1,2,3,4,5,6,7].map(i => (
                   <div key={i} className="lp-wave" style={{ width: 3, background: "linear-gradient(to top,#7c3aed,#a78bfa)", borderRadius: 99, animationDelay: `${i * 80}ms` }} />
@@ -381,7 +351,6 @@ export function LandingPage() {
               </div>
             </div>
 
-            {/* Card flutuante — Rating */}
             <div className="lp-float3" style={{ position: "absolute", bottom: "22%", left: "-15%", background: "rgba(255,255,255,.08)", backdropFilter: "blur(20px)", border: "1px solid rgba(255,255,255,.15)", borderRadius: 18, padding: "14px 18px", boxShadow: "0 16px 48px rgba(0,0,0,.4)" }}>
               <div style={{ fontSize: 11, color: "rgba(255,255,255,.5)", marginBottom: 4 }}>Avaliação dos alunos</div>
               <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
@@ -393,13 +362,11 @@ export function LandingPage() {
               <div style={{ fontSize: 10, color: "rgba(255,255,255,.35)", marginTop: 2 }}>1.842 avaliações verificadas</div>
             </div>
 
-            {/* Card flutuante — Alunos online */}
             <div className="lp-float2" style={{ position: "absolute", top: "30%", right: "8px", background: "rgba(255,255,255,.07)", backdropFilter: "blur(16px)", border: "1px solid rgba(255,255,255,.12)", borderRadius: 16, padding: "12px 16px", boxShadow: "0 12px 40px rgba(0,0,0,.3)" }}>
               <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 6 }}>
                 <div className="lp-pulse" style={{ width: 7, height: 7, borderRadius: "50%", background: "#4ade80", flexShrink: 0 }} />
                 <span style={{ fontSize: 11, fontWeight: 700, color: "#fff" }}>A estudar agora</span>
               </div>
-              {/* Avatares */}
               <div style={{ display: "flex" }}>
                 {[
                   "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=40&h=40&fit=crop&crop=face",
@@ -415,16 +382,8 @@ export function LandingPage() {
           </div>
         </div>
 
-        {/* Seta scroll */}
-        <div style={{ position: "absolute", bottom: 24, left: "50%", transform: "translateX(-50%)", display: "flex", flexDirection: "column", alignItems: "center", gap: 5, opacity: 0.25, pointerEvents: "none" }}>
-          <div style={{ width: 1, height: 36, background: "linear-gradient(to bottom,transparent,#fff)" }} />
-          <div style={{ width: 5, height: 5, borderRadius: "50%", background: "#fff" }} />
-        </div>
       </section>
 
-      {/* ════════════════════════════════════════
-          TRUST BAR
-      ════════════════════════════════════════ */}
       <div style={{ background: "#fff", borderBottom: "1px solid #f0f0f5", padding: "12px 16px" }}>
         <div className="lp-trust-bar" style={{ maxWidth: 960, margin: "0 auto", display: "flex", flexWrap: "wrap", alignItems: "center", justifyContent: "center", gap: "10px 24px" }}>
           {[
@@ -442,9 +401,6 @@ export function LandingPage() {
         </div>
       </div>
 
-      {/* ════════════════════════════════════════
-          FEATURES
-      ════════════════════════════════════════ */}
       <section className="lp-section-lg lp-section-pad" style={{ background: "#f8f7ff", padding: "88px 24px" }}>
         <div style={{ maxWidth: 1100, margin: "0 auto" }}>
           <div style={{ textAlign: "center", marginBottom: 52 }}>
@@ -466,16 +422,12 @@ export function LandingPage() {
         </div>
       </section>
 
-      {/* ════════════════════════════════════════
-          COMO FUNCIONA
-      ════════════════════════════════════════ */}
       <section className="lp-section-lg lp-section-pad" style={{ background: "#fff", padding: "88px 24px" }}>
         <div style={{ maxWidth: 900, margin: "0 auto" }}>
           <div style={{ textAlign: "center", marginBottom: 52 }}>
             <span style={{ fontSize: 11, fontWeight: 800, letterSpacing: "0.15em", color: "#7c3aed", textTransform: "uppercase" }}>Como funciona</span>
             <h2 style={{ fontSize: "clamp(26px,4vw,42px)", fontWeight: 900, margin: "10px 0 0", color: "#111", letterSpacing: "-0.5px" }}>3 passos para a fluência</h2>
           </div>
-          {/* Desktop: grid | Mobile: carrossel */}
           <div className="hidden sm:grid" style={{ gridTemplateColumns: "repeat(auto-fit,minmax(220px,1fr))", position: "relative" }}>
             <div style={{ position: "absolute", top: 36, left: "17%", right: "17%", height: 2, background: "linear-gradient(to right,#7c3aed,#4f46e5)", zIndex: 0 }} />
             {STEPS.map(({ n, title, desc }) => (
@@ -504,9 +456,6 @@ export function LandingPage() {
         </div>
       </section>
 
-      {/* ════════════════════════════════════════
-          TESTEMUNHOS
-      ════════════════════════════════════════ */}
       <section className="lp-section-lg lp-section-pad" style={{ background: "#f8f7ff", padding: "88px 24px" }}>
         <div style={{ maxWidth: 1100, margin: "0 auto" }}>
           <div style={{ textAlign: "center", marginBottom: 52 }}>
@@ -519,7 +468,6 @@ export function LandingPage() {
             </div>
           </div>
 
-          {/* Desktop: grid | Mobile: carrossel */}
           <div className="hidden sm:grid" style={{ gridTemplateColumns: "repeat(auto-fit,minmax(280px,1fr))", gap: 20 }}>
             {REVIEWS.map((r) => (
               <div key={r.name} className="lp-card" style={{ background: "#fff", borderRadius: 22, padding: "26px", border: "1px solid #ede9fe", display: "flex", flexDirection: "column", gap: 14 }}>
@@ -563,7 +511,6 @@ export function LandingPage() {
             </Carousel>
           </div>
 
-          {/* Barras de rating */}
           <div style={{ maxWidth: 500, margin: "40px auto 0", background: "#fff", borderRadius: 20, padding: "24px 28px", border: "1px solid #ede9fe" }}>
             <div className="lp-rating-inner" style={{ display: "flex", alignItems: "center", gap: 20 }}>
               <div style={{ textAlign: "center", flexShrink: 0 }}>
@@ -587,9 +534,6 @@ export function LandingPage() {
         </div>
       </section>
 
-      {/* ════════════════════════════════════════
-          PRICING
-      ════════════════════════════════════════ */}
       <section className="lp-section-lg lp-section-pad" style={{ background: "#07070f", padding: "88px 24px", position: "relative", overflow: "hidden" }}>
         <div className="blob1" style={{ position: "absolute", top: "-20%", left: "-10%", width: "50vw", height: "50vw", maxWidth: 600, maxHeight: 600, borderRadius: "50%", background: "radial-gradient(circle,rgba(124,58,237,.22) 0%,transparent 65%)", filter: "blur(70px)", pointerEvents: "none" }} />
         <div style={{ maxWidth: 820, margin: "0 auto", position: "relative", zIndex: 1 }}>
@@ -601,7 +545,6 @@ export function LandingPage() {
 
           <div className="lp-price-grid" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(min(280px,100%),1fr))", gap: 20, alignItems: "start" }}>
 
-            {/* Mensal */}
             <div className="lp-price-card" style={{ background: "rgba(255,255,255,.04)", border: "1px solid rgba(255,255,255,.09)", borderRadius: 24, padding: "32px 28px" }}>
               <div style={{ fontSize: 13, fontWeight: 700, color: "rgba(255,255,255,.45)", marginBottom: 14 }}>Plano Mensal</div>
               <div style={{ display: "flex", alignItems: "flex-end", gap: 4, marginBottom: 4 }}>
@@ -628,7 +571,6 @@ export function LandingPage() {
               </ul>
             </div>
 
-            {/* Vitalício */}
             <div className="lp-price-card" style={{ background: "linear-gradient(145deg,rgba(124,58,237,.22),rgba(79,70,229,.12))", border: "1.5px solid rgba(124,58,237,.55)", borderRadius: 24, padding: "32px 28px", position: "relative", overflow: "hidden" }}>
               <div style={{ position: "absolute", top: 16, right: 16, background: "linear-gradient(135deg,#7c3aed,#4f46e5)", color: "#fff", fontSize: 10, fontWeight: 800, padding: "4px 12px", borderRadius: 99, letterSpacing: "0.07em" }}>
                 ⭐ MELHOR VALOR
@@ -677,9 +619,6 @@ export function LandingPage() {
         </div>
       </section>
 
-      {/* ════════════════════════════════════════
-          FAQ
-      ════════════════════════════════════════ */}
       <section className="lp-section-lg lp-section-pad" style={{ background: "#fff", padding: "88px 24px" }}>
         <div style={{ maxWidth: 680, margin: "0 auto" }}>
           <div style={{ textAlign: "center", marginBottom: 44 }}>
@@ -710,15 +649,10 @@ export function LandingPage() {
 
 
 
-      {/* ════════════════════════════════════════
-          RODAPÉ
-      ════════════════════════════════════════ */}
       <footer style={{ background: "#07070f", borderTop: "1px solid rgba(124,58,237,.15)", padding: "52px 24px 28px" }}>
         <div style={{ maxWidth: 1100, margin: "0 auto" }}>
-          {/* 3 colunas */}
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(190px,1fr))", gap: "36px 48px", marginBottom: 40 }}>
 
-            {/* Col 1 — Marca */}
             <div>
               <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}>
                 <div style={{ width: 34, height: 34, borderRadius: 10, background: "linear-gradient(135deg,#7c3aed,#4f46e5)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16, fontWeight: 900, color: "#fff" }}>N</div>
@@ -728,7 +662,6 @@ export function LandingPage() {
               <p style={{ fontSize: 12, color: "rgba(255,255,255,.2)", margin: 0 }}>Desenvolvido em Portugal 🇵🇹</p>
             </div>
 
-            {/* Col 2 — Links */}
             <div>
               <p style={{ fontSize: 11, fontWeight: 800, letterSpacing: "0.12em", color: "rgba(255,255,255,.3)", textTransform: "uppercase", margin: "0 0 14px" }}>Plataforma</p>
               <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
@@ -746,7 +679,6 @@ export function LandingPage() {
               </div>
             </div>
 
-            {/* Col 3 — Legal & Suporte */}
             <div>
               <p style={{ fontSize: 11, fontWeight: 800, letterSpacing: "0.12em", color: "rgba(255,255,255,.3)", textTransform: "uppercase", margin: "0 0 14px" }}>Legal & Suporte</p>
               <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
@@ -763,7 +695,6 @@ export function LandingPage() {
             </div>
           </div>
 
-          {/* Linha base */}
           <div style={{ borderTop: "1px solid rgba(255,255,255,.06)", paddingTop: 24, display: "flex", flexWrap: "wrap", gap: 8, justifyContent: "space-between", alignItems: "center" }}>
             <p style={{ fontSize: 12, color: "rgba(255,255,255,.18)", margin: 0 }}>© 2026 NgadaLearn. Todos os direitos reservados.</p>
           </div>

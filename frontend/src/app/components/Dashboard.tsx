@@ -15,7 +15,6 @@ import {
 
 const CERT_UNLOCK_AT = 50;
 
-/* ── Ícone SVG realista inline ── */
 function StatIcon({ type }: { type: "lessons" | "streak" | "minutes" | "level" }) {
   const configs = {
     lessons: {
@@ -88,7 +87,6 @@ function CertificateSection({
 
   return (
     <div style={{ borderRadius: 24, overflow: "hidden", border: `2px solid ${unlocked ? "#fde68a" : "#e5e7eb"}`, background: unlocked ? "linear-gradient(135deg,#fffbeb,#fef3c7)" : "#fff", boxShadow: unlocked ? "0 8px 32px rgba(217,119,6,.15)" : "0 2px 8px rgba(0,0,0,.06)" }}>
-      {/* Header */}
       <div style={{ padding: "16px 24px", display: "flex", alignItems: "center", gap: 14, background: unlocked ? "linear-gradient(135deg,#f59e0b,#d97706)" : "linear-gradient(135deg,#f3f4f6,#e5e7eb)" }}>
         <div style={{ width: 44, height: 44, borderRadius: 14, background: "rgba(255,255,255,.25)", display: "flex", alignItems: "center", justifyContent: "center" }}>
           {unlocked
@@ -109,7 +107,6 @@ function CertificateSection({
       </div>
 
       <div style={{ padding: "24px", display: "flex", flexDirection: "column", gap: 20 }} className="sm:flex-row sm:items-center">
-        {/* Preview do certificado */}
         <div style={{ width: "100%", maxWidth: 220, height: 140, borderRadius: 16, flexShrink: 0, position: "relative", overflow: "hidden", background: unlocked ? "linear-gradient(135deg,#1e1b4b,#312e81)" : "#f9fafb", border: `2px solid ${unlocked ? "#a78bfa" : "#e5e7eb"}`, display: "flex", alignItems: "center", justifyContent: "center" }}>
           {unlocked ? (
             <div style={{ position: "absolute", inset: 0, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", textAlign: "center", padding: 16 }}>
@@ -131,7 +128,6 @@ function CertificateSection({
           )}
         </div>
 
-        {/* Info */}
         <div style={{ flex: 1 }}>
           {unlocked ? (
             <>
@@ -186,9 +182,6 @@ function CertificateSection({
   );
 }
 
-/* ══════════════════════════════════════════
-   DASHBOARD PRINCIPAL
-══════════════════════════════════════════ */
 export function Dashboard() {
   const { user, isAdmin } = useAuth();
   const { totalCompleted, totalMinutes, streak, lastOpened, isCompleted } = useProgress();
@@ -232,8 +225,7 @@ export function Dashboard() {
   return (
     <div style={{ background: "#f4f3ff", minHeight: "100vh", fontFamily: "system-ui,-apple-system,sans-serif" }}>
 
-      {/* ── Hero ── */}
-      <div style={{ background: "linear-gradient(135deg,#07070f 0%,#1e1b4b 55%,#312e81 100%)", padding: "clamp(16px,4vw,36px) clamp(14px,4vw,20px) clamp(20px,4vw,40px)", position: "relative", overflow: "hidden" }}>
+      <div style={{ background: "linear-gradient(135deg,#07070f 0%,#1e1b4b 55%,#312e81 100%)", padding: "clamp(20px,4vw,36px) clamp(16px,4vw,24px) clamp(24px,4vw,40px)", position: "relative", overflow: "hidden" }}>
         <div style={{ position:"absolute", top:"-20%", left:"-5%", width:400, height:400, borderRadius:"50%", background:"radial-gradient(circle,rgba(124,58,237,.3) 0%,transparent 65%)", filter:"blur(70px)", pointerEvents:"none" }} />
         <div style={{ position:"absolute", bottom:"-30%", right:"-5%", width:320, height:320, borderRadius:"50%", background:"radial-gradient(circle,rgba(79,70,229,.2) 0%,transparent 65%)", filter:"blur(80px)", pointerEvents:"none" }} />
 
@@ -267,7 +259,6 @@ export function Dashboard() {
 
       <div style={{ maxWidth: 1100, margin: "0 auto", padding: "16px clamp(12px,4vw,16px) 80px" }}>
 
-        {/* ── Banner boas-vindas (só quando 0 aulas) ── */}
         {totalCompleted === 0 && (
           <div style={{ background: "linear-gradient(135deg,#4f46e5 0%,#7c3aed 100%)", borderRadius: 22, padding: "24px 28px", marginBottom: 24, position: "relative", overflow: "hidden" }}>
             <div style={{ position:"absolute", top:"-30%", right:"-5%", width:200, height:200, borderRadius:"50%", background:"rgba(255,255,255,.06)", pointerEvents:"none" }} />
@@ -285,7 +276,6 @@ export function Dashboard() {
           </div>
         )}
 
-        {/* ── Stats cards ── */}
         <style>{`
           @media(max-width:500px){.stats-grid{grid-template-columns:1fr 1fr!important;gap:8px!important;}}
           @media(max-width:360px){.stats-grid{grid-template-columns:1fr 1fr!important;}}
@@ -316,11 +306,9 @@ export function Dashboard() {
           ))}
         </div>
 
-        {/* ── Progresso + Próximas Aulas ── */}
         <style>{`@media(max-width:640px){.dash-2col{grid-template-columns:1fr!important;}}`}</style>
         <div className="dash-2col" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, marginBottom: 20 }}>
 
-          {/* Progresso por Módulo */}
           <div style={{ background: "#fff", borderRadius: 22, padding: "24px", boxShadow: "0 2px 12px rgba(0,0,0,.06)", border: "1px solid rgba(0,0,0,.05)" }}>
             <h2 style={{ fontWeight: 800, fontSize: 16, color: "#111", margin: "0 0 20px", display: "flex", alignItems: "center", gap: 8 }}>
               <TrendingUp size={18} color="#7c3aed" /> Progresso por Módulo
@@ -346,7 +334,6 @@ export function Dashboard() {
             </div>
           </div>
 
-          {/* Próximas Aulas */}
           <div style={{ background: "#fff", borderRadius: 22, padding: "24px", boxShadow: "0 2px 12px rgba(0,0,0,.06)", border: "1px solid rgba(0,0,0,.05)" }}>
             <h2 style={{ fontWeight: 800, fontSize: 16, color: "#111", margin: "0 0 20px", display: "flex", alignItems: "center", gap: 8 }}>
               <Zap size={18} color="#7c3aed" /> Próximas Aulas
@@ -396,7 +383,6 @@ export function Dashboard() {
           </div>
         </div>
 
-        {/* ── Certificado ── */}
         <div style={{ marginBottom: 24 }}>
           <CertificateSection
             name={user?.name || ""}
@@ -408,7 +394,6 @@ export function Dashboard() {
           />
         </div>
 
-        {/* ── Conquistas ── */}
         <div style={{ background: "#fff", borderRadius: 22, padding: "24px", boxShadow: "0 2px 12px rgba(0,0,0,.06)", border: "1px solid rgba(0,0,0,.05)", marginBottom: 24 }}>
           <h2 style={{ fontWeight: 800, fontSize: 16, color: "#111", margin: "0 0 20px", display: "flex", alignItems: "center", gap: 8 }}>
             <Star size={18} color="#f59e0b" /> Conquistas
@@ -442,7 +427,6 @@ export function Dashboard() {
           </div>
         </div>
 
-        {/* ── CTA / Meta diária ── */}
         <div style={{ background: "linear-gradient(135deg,#07070f,#1e1b4b,#312e81)", borderRadius: 24, padding: "28px 28px", position: "relative", overflow: "hidden" }}>
           <div style={{ position:"absolute", top:"-30%", right:"-5%", width:280, height:280, borderRadius:"50%", background:"radial-gradient(circle,rgba(124,58,237,.3) 0%,transparent 65%)", filter:"blur(60px)", pointerEvents:"none" }} />
           <div style={{ display: "flex", flexDirection: "column", gap: 16, position: "relative", zIndex: 1 }} className="sm:flex-row sm:items-center sm:justify-between">

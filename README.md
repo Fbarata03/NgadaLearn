@@ -1,4 +1,4 @@
-# NgadaLearn — Aprende Inglês com Música, Netflix e Conversação
+# NgadaLearn Aprende Inglês com Música, Netflix e Conversação
 
 > Plataforma web progressiva (PWA) para aprender inglês de forma natural — música, vídeos YouTube curados e exercícios reais.
 

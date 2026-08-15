@@ -61,3 +61,8 @@ textarea {
 .scrollbar-hide::-webkit-scrollbar {
   display: none;
 }
+
+/* Normalize letter spacing for paragraphs to avoid tight/odd spacing */
+p {
+  letter-spacing: 0;
+}

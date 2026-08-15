@@ -276,9 +276,9 @@ export function LandingPage() {
               </span>
             </h1>
 
-            <p className="lp-in-3" style={{ fontSize: "clamp(15px,1.8vw,18px)", color: "rgba(255,255,255,0.55)", lineHeight: 1.7, maxWidth: 480, margin: "0 0 28px" }}>
-              Do zero à fluência — conversação real e áudio com nativos.{" "}
-              <strong style={{ color: "rgba(255,255,255,0.82)" }}>Paga uma vez, aprende para sempre.</strong>
+            <p className="lp-in-3" style={{ fontSize: "clamp(15px,1.8vw,18px)", color: "rgba(255,255,255,0.55)", lineHeight: 1.7, maxWidth: 480, margin: "0 0 28px", letterSpacing: "0px" }}>
+              Do zero à fluência, conversação real e áudio com nativos.
+              <strong style={{ color: "rgba(255,255,255,0.82)" }}> Paga uma vez, aprende para sempre.</strong>
             </p>
 
             <div className="lp-in-4 hero-ctas" style={{ display: "flex", flexWrap: "wrap", gap: 12, marginBottom: 40 }}>
@@ -658,7 +658,7 @@ export function LandingPage() {
                 <div style={{ width: 34, height: 34, borderRadius: 10, background: "linear-gradient(135deg,#7c3aed,#4f46e5)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16, fontWeight: 900, color: "#fff" }}>N</div>
                 <span style={{ fontSize: 17, fontWeight: 900, color: "#fff" }}>NgadaLearn</span>
               </div>
-              <p style={{ fontSize: 13, color: "rgba(255,255,255,.35)", lineHeight: 1.6, margin: "0 0 14px", maxWidth: 200 }}>Do zero à fluência — aprende inglês com música, filmes e conversação real.</p>
+              <p style={{ fontSize: 13, color: "rgba(255,255,255,.35)", lineHeight: 1.6, margin: "0 0 14px", maxWidth: 200, letterSpacing: "0px" }}>Do zero à fluência, aprende inglês com música, filmes e conversação real.</p>
               <p style={{ fontSize: 12, color: "rgba(255,255,255,.2)", margin: 0 }}>Desenvolvido em Portugal 🇵🇹</p>
             </div>
 
